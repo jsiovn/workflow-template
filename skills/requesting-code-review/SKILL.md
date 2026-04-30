@@ -1,64 +1,79 @@
 ---
 name: requesting-code-review
-description: Use when completing tasks, implementing major features, or before merging to verify work meets requirements
+description: Use when completing tasks, implementing major features, or before merging to verify work meets requirements. Dispatches the repo-local code-reviewer subagent.
 ---
 
 # Requesting Code Review
 
-Dispatch superpowers:code-reviewer subagent to catch issues before they cascade. The reviewer gets precisely crafted context for evaluation — never your session's history. This keeps the reviewer focused on the work product, not your thought process, and preserves your own context for continued work.
+Dispatch the repo-local `code-reviewer` subagent to catch issues before they cascade. The reviewer gets precisely crafted context for evaluation — never your session's history. This keeps the reviewer focused on the work product, not your thought process, and preserves your own context for continued work.
 
 **Core principle:** Review early, review often.
+
+## Where the reviewer lives
+
+The `code-reviewer` subagent definition is installed in the downstream repo at:
+
+- `.claude/agents/code-reviewer.md` for Claude Code sessions
+- `.codex/agents/code-reviewer.md` for Codex sessions
+
+Both files are kept in sync by the template scaffold. If neither exists, run `update-skills` against the repo to install them.
 
 ## When to Request Review
 
 **Mandatory:**
 - After each task in subagent-driven development
-- After completing major feature
+- After completing a major feature
 - Before merge to main
 
 **Optional but valuable:**
 - When stuck (fresh perspective)
 - Before refactoring (baseline check)
-- After fixing complex bug
+- After fixing a complex bug
 
 ## How to Request
 
 **1. Get git SHAs:**
+
 ```bash
 BASE_SHA=$(git rev-parse HEAD~1)  # or origin/main
 HEAD_SHA=$(git rev-parse HEAD)
 ```
 
-**2. Dispatch code-reviewer subagent:**
+**2. Dispatch the `code-reviewer` subagent:**
 
-Use Task tool with superpowers:code-reviewer type, fill template at `code-reviewer.md`
+- **Claude session:** call the Task tool with `subagent_type: code-reviewer` and a prompt built from the template at `requesting-code-review/code-reviewer.md` (this file is shipped alongside the SKILL.md).
+- **Codex session:** invoke the equivalent subagent dispatch with the same prompt template.
 
-**Placeholders:**
-- `{WHAT_WAS_IMPLEMENTED}` - What you just built
-- `{PLAN_OR_REQUIREMENTS}` - What it should do
-- `{BASE_SHA}` - Starting commit
-- `{HEAD_SHA}` - Ending commit
-- `{DESCRIPTION}` - Brief summary
+**Placeholders to fill in the prompt:**
+
+- `{WHAT_WAS_IMPLEMENTED}` — what you just built
+- `{PLAN_OR_REQUIREMENTS}` — what it should do (cite the plan file or bead description)
+- `{BASE_SHA}` — starting commit
+- `{HEAD_SHA}` — ending commit
+- `{DESCRIPTION}` — brief summary
+
+The subagent will run `git diff` itself, read the changed files, and return a structured review (Strengths / Critical / Important / Minor / Assessment). It is read-only — it cannot modify code.
 
 **3. Act on feedback:**
+
 - Fix Critical issues immediately
 - Fix Important issues before proceeding
 - Note Minor issues for later
-- Push back if reviewer is wrong (with reasoning)
+- Push back if the reviewer is wrong (with reasoning)
 
 ## Example
 
 ```
 [Just completed Task 2: Add verification function]
 
-You: Let me request code review before proceeding.
+You: Let me request a code review before proceeding.
 
 BASE_SHA=$(git log --oneline | grep "Task 1" | head -1 | awk '{print $1}')
 HEAD_SHA=$(git rev-parse HEAD)
 
-[Dispatch superpowers:code-reviewer subagent]
+[Dispatch code-reviewer subagent]
   WHAT_WAS_IMPLEMENTED: Verification and repair functions for conversation index
-  PLAN_OR_REQUIREMENTS: Task 2 from docs/superpowers/plans/deployment-plan.md
+  PLAN_OR_REQUIREMENTS: Task 2 from docs/plans/2026-04-30-deployment.md
   BASE_SHA: a7981ec
   HEAD_SHA: 3df7661
   DESCRIPTION: Added verifyIndex() and repairIndex() with 4 issue types
@@ -68,7 +83,7 @@ HEAD_SHA=$(git rev-parse HEAD)
   Issues:
     Important: Missing progress indicators
     Minor: Magic number (100) for reporting interval
-  Assessment: Ready to proceed
+  Assessment: Ready to proceed (with fixes)
 
 You: [Fix progress indicators]
 [Continue to Task 3]
@@ -76,16 +91,16 @@ You: [Fix progress indicators]
 
 ## Integration with Workflows
 
-**Subagent-Driven Development:**
+**Subagent-driven development:**
 - Review after EACH task
 - Catch issues before they compound
 - Fix before moving to next task
 
-**Executing Plans:**
+**Executing plans:**
 - Review after each batch (3 tasks)
 - Get feedback, apply, continue
 
-**Ad-Hoc Development:**
+**Ad-hoc development:**
 - Review before merge
 - Review when stuck
 
@@ -102,4 +117,11 @@ You: [Fix progress indicators]
 - Show code/tests that prove it works
 - Request clarification
 
-See template at: requesting-code-review/code-reviewer.md
+## Files in this skill
+
+- `SKILL.md` — this file
+- `code-reviewer.md` — the prompt template you fill in and pass to the subagent
+
+## Pairing with `verification-before-completion`
+
+The executor chain in `executor-once`, `executor-loop`, and `executor-loop-epic` runs `verification-before-completion` first (run the verification commands and read the output), then `requesting-code-review` (dispatch the reviewer subagent). Both are required before `beads-close` — they are NOT alternatives. `verification-before-completion` proves the change passes its own checks; `requesting-code-review` gives an independent reviewer's perspective on quality, regressions, and architectural drift before the bead closes.

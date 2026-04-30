@@ -25,8 +25,9 @@ This is the preferred manual path for work that should start from a fresh contex
    - `writing-plans`
    - implementation
    - `systematic-debugging` if blocked
-   - **`build-and-test`** — REQUIRED after implementation. Read the skill at `.codex/skills/build-and-test/SKILL.md` and follow it. Do NOT skip this step.
-   - `verification-before-completion` or `requesting-code-review`
+   - **`build-and-test`** — REQUIRED after implementation. Read the repo-local skill (`.claude/skills/build-and-test/SKILL.md` for Claude sessions or `.codex/skills/build-and-test/SKILL.md` for Codex sessions — both are kept in sync) and follow it. Do NOT skip this step.
+   - `verification-before-completion` (run the verification commands)
+   - `requesting-code-review` (dispatch the code-reviewer subagent; required, not optional)
    - `beads-close`
 6. If separate work is discovered, create follow-up beads during execution or before close.
 7. If a blocker appears, update the current bead, summarize the blocker, and stop.

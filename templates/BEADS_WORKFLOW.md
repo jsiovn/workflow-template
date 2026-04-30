@@ -45,8 +45,9 @@ Claims one bead and delivers it.
 3. implement
 4. `systematic-debugging` if blocked
 5. repo-local `build-and-test`
-6. `requesting-code-review` or `verification-before-completion`
-7. `beads-close`
+6. `verification-before-completion`
+7. `requesting-code-review`
+8. `beads-close`
 
 Entry: a ready bead from `bd ready`.
 Exit: bead closed, code committed, follow-up beads created if needed.

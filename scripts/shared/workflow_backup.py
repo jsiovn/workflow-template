@@ -33,7 +33,9 @@ DOC_FILES = (
 MANAGED_DIRS = (
     "docs/plans",
     ".codex/skills",
+    ".codex/agents",
     ".claude/skills",
+    ".claude/agents",
 )
 
 SCRIPT_FILES = (
@@ -61,7 +63,9 @@ IGNORE_ENTRIES = (
     ".beads/.gitignore",
     ".beads/README.md",
     ".codex/skills/",
+    ".codex/agents/",
     ".claude/skills/",
+    ".claude/agents/",
     "AGENTS.md",
     "BEADS_WORKFLOW.md",
     "CLAUDE.md",

@@ -148,6 +148,25 @@ if [[ -d "${template_root}/templates/.claude/skills" ]]; then
 fi
 rm -rf "${repo_path}/.claude/skills/start-epic-worktree"
 
+# Provider-specific agents (Claude subagents, Codex equivalents). Templates are
+# the source of truth; downstream copies are wiped and re-written each run.
+if [[ -d "${template_root}/templates/.codex/agents" ]]; then
+  mkdir -p "${repo_path}/.codex/agents"
+  find "${template_root}/templates/.codex/agents" -mindepth 1 -maxdepth 1 -type f | while read -r src; do
+    name="$(basename "${src}")"
+    cp "${src}" "${repo_path}/.codex/agents/${name}"
+    printf 'Copied Codex agent: %s\n' "${name}"
+  done
+fi
+if [[ -d "${template_root}/templates/.claude/agents" ]]; then
+  mkdir -p "${repo_path}/.claude/agents"
+  find "${template_root}/templates/.claude/agents" -mindepth 1 -maxdepth 1 -type f | while read -r src; do
+    name="$(basename "${src}")"
+    cp "${src}" "${repo_path}/.claude/agents/${name}"
+    printf 'Copied Claude agent: %s\n' "${name}"
+  done
+fi
+
 mkdir -p "${repo_path}/scripts/windows" "${repo_path}/scripts/posix" "${repo_path}/scripts/shared"
 cp "${template_root}/scripts/windows/workflow-status.ps1" "${repo_path}/scripts/windows/workflow-status.ps1"
 cp "${template_root}/scripts/windows/agent-mail.ps1" "${repo_path}/scripts/windows/agent-mail.ps1"

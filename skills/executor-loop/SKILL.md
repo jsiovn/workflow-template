@@ -21,8 +21,9 @@ Compatibility path only. For epic-scoped work, prefer `swarm-epic` or repeated f
    - `writing-plans`
    - implementation
    - `systematic-debugging` if blocked
-   - `build-and-test` after implementation; read `.codex/skills/build-and-test/SKILL.md` and follow it
-   - `verification-before-completion` or `requesting-code-review`
+   - `build-and-test` after implementation; read the repo-local skill (`.claude/skills/build-and-test/SKILL.md` for Claude or `.codex/skills/build-and-test/SKILL.md` for Codex) and follow it
+   - `verification-before-completion`
+   - `requesting-code-review` (required, not optional)
    - `beads-close`
 4. After a successful close and local commit, inspect `bd ready --json` again and choose the next best ready bead using the same preference order.
 5. Repeat until one of these stop conditions is reached:

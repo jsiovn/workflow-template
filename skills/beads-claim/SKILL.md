@@ -5,7 +5,7 @@ description: "Use at the start of a manual executor session to find and claim a 
 
 # Beads Claim
 
-**Workflow position:** Manual executor session, step 1 of 7. Next: `writing-plans`. See `BEADS_WORKFLOW.md`.
+**Workflow position:** Manual executor session, step 1 of 8. Next: `writing-plans`. See `BEADS_WORKFLOW.md`.
 
 Find a ready bead and claim it for this session.
 

@@ -140,6 +140,25 @@ Get-ChildItem (Join-Path $TemplateRoot "templates\.claude\skills") -Directory -E
 }
 Remove-Item -Recurse -Force (Join-Path $RepoPath ".claude\skills\start-epic-worktree") -ErrorAction SilentlyContinue
 
+# Provider-specific agents (Claude subagents, Codex equivalents). Templates are
+# the source of truth; downstream copies are wiped and re-written each run.
+$codexAgentsSource = Join-Path $TemplateRoot "templates\.codex\agents"
+if (Test-Path $codexAgentsSource) {
+    New-Item -ItemType Directory -Force -Path (Join-Path $RepoPath ".codex\agents") | Out-Null
+    Get-ChildItem $codexAgentsSource -File | ForEach-Object {
+        Copy-Item -Force $_.FullName (Join-Path $RepoPath ".codex\agents\$($_.Name)")
+        Write-Host "Copied Codex agent: $($_.Name)"
+    }
+}
+$claudeAgentsSource = Join-Path $TemplateRoot "templates\.claude\agents"
+if (Test-Path $claudeAgentsSource) {
+    New-Item -ItemType Directory -Force -Path (Join-Path $RepoPath ".claude\agents") | Out-Null
+    Get-ChildItem $claudeAgentsSource -File | ForEach-Object {
+        Copy-Item -Force $_.FullName (Join-Path $RepoPath ".claude\agents\$($_.Name)")
+        Write-Host "Copied Claude agent: $($_.Name)"
+    }
+}
+
 New-Item -ItemType Directory -Force -Path (Join-Path $RepoPath "scripts\windows") | Out-Null
 Copy-Item -Force $windowsStatusScript (Join-Path $RepoPath "scripts\windows\workflow-status.ps1")
 Copy-Item -Force $windowsAgentMailScript (Join-Path $RepoPath "scripts\windows\agent-mail.ps1")
