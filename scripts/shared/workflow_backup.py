@@ -84,6 +84,7 @@ IGNORE_ENTRIES = (
     "scripts/shared/sync_workflow_backup.py",
     "scripts/shared/target_runtime.py",
     "scripts/shared/workflow_backup.py",
+    "scripts/shared/__pycache__/",
     "scripts/windows/agent-mail.ps1",
     "scripts/windows/restore-workflow-backup.ps1",
     "scripts/windows/sync-workflow-backup.ps1",
