@@ -66,6 +66,37 @@ def command_sync(args: argparse.Namespace) -> int:
     return 0
 
 
+def command_restore(args: argparse.Namespace) -> int:
+    repo_root = workflow_backup.resolve_repo_root(args.repo)
+    backup_repo = workflow_backup.resolve_backup_repo(repo_root, args.backup_repo)
+    project_name = args.project_name or repo_root.name
+    result = workflow_backup.restore_workflow_backup(
+        repo_root,
+        backup_repo,
+        project_name,
+        dry_run=args.dry_run,
+    )
+    payload = {
+        "repo_root": str(result.repo_root),
+        "backup_repo": str(result.backup_repo),
+        "project_name": result.project_name,
+        "restored": result.restored,
+        "skipped": len(result.skipped),
+        "dry_run": result.dry_run,
+    }
+    if args.json:
+        print(json.dumps(payload, indent=2))
+    else:
+        print(f"Repo:        {result.repo_root}")
+        print(f"Backup repo: {result.backup_repo}")
+        print(f"Project:     {result.project_name}")
+        print(f"Restored:    {len(result.restored)}")
+        print(f"Skipped:     {len(result.skipped)}")
+        if result.dry_run:
+            print("(dry run — no files written)")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Manage downstream workflow backup mirrors")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -87,6 +118,15 @@ def build_parser() -> argparse.ArgumentParser:
     sync.add_argument("--no-push", action="store_true")
     sync.add_argument("--json", action="store_true")
     sync.set_defaults(func=command_sync)
+
+    restore = subparsers.add_parser(
+        "restore",
+        help="Copy managed workflow files from the backup repo subtree into the downstream repo",
+    )
+    add_repo_arguments(restore)
+    restore.add_argument("--dry-run", action="store_true")
+    restore.add_argument("--json", action="store_true")
+    restore.set_defaults(func=command_restore)
 
     return parser
 

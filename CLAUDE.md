@@ -6,15 +6,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a **template/scaffold repo**, not a deployed application. It produces and updates workflow files _in other (downstream) repos_. There is no build, no test suite, and no runtime service here — the "output" is files copied into downstream checkouts by the scripts in `scripts/`.
 
-Concretely: editing a file under `skills/` or `templates/` only takes effect after running `update-skills` (or `bootstrap-new-repo` for a fresh repo) against a downstream repo and then syncing that repo's backup mirror. Nothing in this repo runs on its own.
+Concretely: editing a file under `skills/`, `agents/`, or `templates/` only takes effect after running `update-skills` (or `bootstrap-new-repo` for a fresh repo) against a downstream repo and then syncing that repo's backup mirror. Nothing in this repo runs on its own.
 
 ## Mental Model: How Changes Propagate
 
 Three surfaces get written into every downstream repo:
 
 1. **Shared workflow skills** — one source in `skills/<name>/`, copied into both `<downstream>/.codex/skills/<name>/` and `<downstream>/.claude/skills/<name>/`.
-2. **Provider-specific skills** — sources in `templates/.codex/skills/<name>/` (and `templates/.claude/skills/<name>/` if present), copied only into the matching provider dir. The generic stage-1 `build-and-test` skill lives here and is the one file `update-skills` _preserves_ in the downstream if it already exists (downstream specialization).
-3. **Repo-root scaffolding** — `templates/BEADS_WORKFLOW.md`, `templates/PRIME.md`, `templates/.beads/*`, the managed snippets `templates/AGENTS.snippet.md` and `templates/CLAUDE.snippet.md` (merged into the downstream's `AGENTS.md` / `CLAUDE.md` between `<!-- BEGIN/END TEMPLATE BD WORKFLOW -->` markers by `scripts/shared/manage_instructions.py`), plus helper scripts under `scripts/posix/`, `scripts/windows/`, and `scripts/shared/`.
+2. **Shared agents** — one source in `agents/<name>.md`, copied into both `<downstream>/.codex/agents/<name>.md` and `<downstream>/.claude/agents/<name>.md`. Provider-specific overrides can be placed in `templates/.codex/agents/` or `templates/.claude/agents/` and are applied on top.
+3. **Provider-specific skills** — sources in `templates/.codex/skills/<name>/` (and `templates/.claude/skills/<name>/` if present), copied only into the matching provider dir. The generic stage-1 `build-and-test` skill lives here and is the one file `update-skills` _preserves_ in the downstream if it already exists (downstream specialization).
+4. **Repo-root scaffolding** — `templates/BEADS_WORKFLOW.md`, `templates/PRIME.md`, `templates/.beads/*`, the managed snippets `templates/AGENTS.snippet.md` and `templates/CLAUDE.snippet.md` (merged into the downstream's `AGENTS.md` / `CLAUDE.md` between `<!-- BEGIN/END TEMPLATE BD WORKFLOW -->` markers by `scripts/shared/manage_instructions.py`), plus helper scripts under `scripts/posix/`, `scripts/windows/`, and `scripts/shared/`.
 
 `scripts/posix/scaffold-repo-files.sh` and its `.ps1` twin are the authority on exactly what gets copied, what gets deleted (e.g. removed legacy skills like `plan-debate`, `start-epic-worktree`), and what is profile-gated. Read that script before adding or renaming anything that ships downstream.
 
@@ -31,6 +32,7 @@ All user-facing operations are invoked through these scripts (POSIX `.sh` and Wi
 | New downstream repo                              | `scripts/posix/bootstrap-new-repo.sh <repo> <prefix> [profile]` | `scripts/windows/bootstrap-new-repo.ps1`                    |
 | Refresh shared workflow surface                  | `scripts/posix/update-skills.sh <repo> [profile]`               | `scripts/windows/update-skills.ps1`                         |
 | Sync downstream → backup mirror                  | `scripts/posix/sync-workflow-backup.sh`                         | `scripts/windows/sync-workflow-backup.ps1`                  |
+| Restore backup mirror → downstream               | `scripts/posix/restore-workflow-backup.sh`                      | `scripts/windows/restore-workflow-backup.ps1`               |
 | Migrate legacy downstream to backup-mirror model | `scripts/posix/migrate-downstream-to-workflow-backup.sh`        | `scripts/windows/migrate-downstream-to-workflow-backup.ps1` |
 | Migrate legacy `br` → `bd`                       | `scripts/posix/migrate-downstream-to-bd.sh`                     | `scripts/windows/migrate-downstream-to-bd.ps1`              |
 | Prereq check                                     | `scripts/posix/check-prereqs.sh`                                | `scripts/windows/check-prereqs.ps1`                         |

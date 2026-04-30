@@ -140,14 +140,24 @@ Get-ChildItem (Join-Path $TemplateRoot "templates\.claude\skills") -Directory -E
 }
 Remove-Item -Recurse -Force (Join-Path $RepoPath ".claude\skills\start-epic-worktree") -ErrorAction SilentlyContinue
 
-# Provider-specific agents (Claude subagents, Codex equivalents). Templates are
-# the source of truth; downstream copies are wiped and re-written each run.
+# Shared agents — copied to both providers (same pattern as skills/).
+$sharedAgentsSource = Join-Path $TemplateRoot "agents"
+if (Test-Path $sharedAgentsSource) {
+    New-Item -ItemType Directory -Force -Path (Join-Path $RepoPath ".codex\agents") | Out-Null
+    New-Item -ItemType Directory -Force -Path (Join-Path $RepoPath ".claude\agents") | Out-Null
+    Get-ChildItem $sharedAgentsSource -File | ForEach-Object {
+        Copy-Item -Force $_.FullName (Join-Path $RepoPath ".codex\agents\$($_.Name)")
+        Copy-Item -Force $_.FullName (Join-Path $RepoPath ".claude\agents\$($_.Name)")
+        Write-Host "Copied shared agent: $($_.Name)"
+    }
+}
+# Provider-specific agent overrides (applied after shared, so they win).
 $codexAgentsSource = Join-Path $TemplateRoot "templates\.codex\agents"
 if (Test-Path $codexAgentsSource) {
     New-Item -ItemType Directory -Force -Path (Join-Path $RepoPath ".codex\agents") | Out-Null
     Get-ChildItem $codexAgentsSource -File | ForEach-Object {
         Copy-Item -Force $_.FullName (Join-Path $RepoPath ".codex\agents\$($_.Name)")
-        Write-Host "Copied Codex agent: $($_.Name)"
+        Write-Host "Copied Codex agent override: $($_.Name)"
     }
 }
 $claudeAgentsSource = Join-Path $TemplateRoot "templates\.claude\agents"
@@ -155,13 +165,14 @@ if (Test-Path $claudeAgentsSource) {
     New-Item -ItemType Directory -Force -Path (Join-Path $RepoPath ".claude\agents") | Out-Null
     Get-ChildItem $claudeAgentsSource -File | ForEach-Object {
         Copy-Item -Force $_.FullName (Join-Path $RepoPath ".claude\agents\$($_.Name)")
-        Write-Host "Copied Claude agent: $($_.Name)"
+        Write-Host "Copied Claude agent override: $($_.Name)"
     }
 }
 
 New-Item -ItemType Directory -Force -Path (Join-Path $RepoPath "scripts\windows") | Out-Null
 Copy-Item -Force $windowsStatusScript (Join-Path $RepoPath "scripts\windows\workflow-status.ps1")
 Copy-Item -Force $windowsAgentMailScript (Join-Path $RepoPath "scripts\windows\agent-mail.ps1")
+Copy-Item -Force (Join-Path $TemplateRoot "scripts\windows\restore-workflow-backup.ps1") (Join-Path $RepoPath "scripts\windows\restore-workflow-backup.ps1")
 Copy-Item -Force (Join-Path $TemplateRoot "scripts\windows\sync-workflow-backup.ps1") (Join-Path $RepoPath "scripts\windows\sync-workflow-backup.ps1")
 Remove-Item -Force (Join-Path $RepoPath "scripts\windows\shared-beads.ps1") -ErrorAction SilentlyContinue
 Remove-Item -Force (Join-Path $RepoPath "scripts\windows\start-epic-worktree.ps1") -ErrorAction SilentlyContinue
@@ -170,6 +181,7 @@ Write-Host "Copied scripts/windows/*"
 New-Item -ItemType Directory -Force -Path (Join-Path $RepoPath "scripts\posix") | Out-Null
 Copy-Item -Force $posixStatusScript (Join-Path $RepoPath "scripts\posix\workflow-status.sh")
 Copy-Item -Force $posixAgentMailScript (Join-Path $RepoPath "scripts\posix\agent-mail.sh")
+Copy-Item -Force (Join-Path $TemplateRoot "scripts\posix\restore-workflow-backup.sh") (Join-Path $RepoPath "scripts\posix\restore-workflow-backup.sh")
 Copy-Item -Force (Join-Path $TemplateRoot "scripts\posix\sync-workflow-backup.sh") (Join-Path $RepoPath "scripts\posix\sync-workflow-backup.sh")
 Remove-Item -Force (Join-Path $RepoPath "scripts\posix\shared-beads.sh") -ErrorAction SilentlyContinue
 Remove-Item -Force (Join-Path $RepoPath "scripts\posix\start-epic-worktree.sh") -ErrorAction SilentlyContinue

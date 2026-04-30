@@ -148,14 +148,23 @@ if [[ -d "${template_root}/templates/.claude/skills" ]]; then
 fi
 rm -rf "${repo_path}/.claude/skills/start-epic-worktree"
 
-# Provider-specific agents (Claude subagents, Codex equivalents). Templates are
-# the source of truth; downstream copies are wiped and re-written each run.
+# Shared agents — copied to both providers (same pattern as skills/).
+if [[ -d "${template_root}/agents" ]]; then
+  mkdir -p "${repo_path}/.codex/agents" "${repo_path}/.claude/agents"
+  find "${template_root}/agents" -mindepth 1 -maxdepth 1 -type f | while read -r src; do
+    name="$(basename "${src}")"
+    cp "${src}" "${repo_path}/.codex/agents/${name}"
+    cp "${src}" "${repo_path}/.claude/agents/${name}"
+    printf 'Copied shared agent: %s\n' "${name}"
+  done
+fi
+# Provider-specific agent overrides (applied after shared, so they win).
 if [[ -d "${template_root}/templates/.codex/agents" ]]; then
   mkdir -p "${repo_path}/.codex/agents"
   find "${template_root}/templates/.codex/agents" -mindepth 1 -maxdepth 1 -type f | while read -r src; do
     name="$(basename "${src}")"
     cp "${src}" "${repo_path}/.codex/agents/${name}"
-    printf 'Copied Codex agent: %s\n' "${name}"
+    printf 'Copied Codex agent override: %s\n' "${name}"
   done
 fi
 if [[ -d "${template_root}/templates/.claude/agents" ]]; then
@@ -163,22 +172,24 @@ if [[ -d "${template_root}/templates/.claude/agents" ]]; then
   find "${template_root}/templates/.claude/agents" -mindepth 1 -maxdepth 1 -type f | while read -r src; do
     name="$(basename "${src}")"
     cp "${src}" "${repo_path}/.claude/agents/${name}"
-    printf 'Copied Claude agent: %s\n' "${name}"
+    printf 'Copied Claude agent override: %s\n' "${name}"
   done
 fi
 
 mkdir -p "${repo_path}/scripts/windows" "${repo_path}/scripts/posix" "${repo_path}/scripts/shared"
 cp "${template_root}/scripts/windows/workflow-status.ps1" "${repo_path}/scripts/windows/workflow-status.ps1"
 cp "${template_root}/scripts/windows/agent-mail.ps1" "${repo_path}/scripts/windows/agent-mail.ps1"
+cp "${template_root}/scripts/windows/restore-workflow-backup.ps1" "${repo_path}/scripts/windows/restore-workflow-backup.ps1"
 cp "${template_root}/scripts/windows/sync-workflow-backup.ps1" "${repo_path}/scripts/windows/sync-workflow-backup.ps1"
 rm -f "${repo_path}/scripts/windows/shared-beads.ps1"
 rm -f "${repo_path}/scripts/windows/start-epic-worktree.ps1"
 cp "${template_root}/scripts/posix/workflow-status.sh" "${repo_path}/scripts/posix/workflow-status.sh"
 cp "${template_root}/scripts/posix/agent-mail.sh" "${repo_path}/scripts/posix/agent-mail.sh"
+cp "${template_root}/scripts/posix/restore-workflow-backup.sh" "${repo_path}/scripts/posix/restore-workflow-backup.sh"
 cp "${template_root}/scripts/posix/sync-workflow-backup.sh" "${repo_path}/scripts/posix/sync-workflow-backup.sh"
 rm -f "${repo_path}/scripts/posix/shared-beads.sh"
 rm -f "${repo_path}/scripts/posix/start-epic-worktree.sh"
-chmod +x "${repo_path}/scripts/posix/workflow-status.sh" "${repo_path}/scripts/posix/agent-mail.sh" "${repo_path}/scripts/posix/sync-workflow-backup.sh"
+chmod +x "${repo_path}/scripts/posix/workflow-status.sh" "${repo_path}/scripts/posix/agent-mail.sh" "${repo_path}/scripts/posix/restore-workflow-backup.sh" "${repo_path}/scripts/posix/sync-workflow-backup.sh"
 cp "${template_root}/scripts/shared/agent_mail.py" "${repo_path}/scripts/shared/agent_mail.py"
 cp "${template_root}/scripts/shared/manage_instructions.py" "${repo_path}/scripts/shared/manage_instructions.py"
 cp "${template_root}/scripts/shared/target_runtime.py" "${repo_path}/scripts/shared/target_runtime.py"

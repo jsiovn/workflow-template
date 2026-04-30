@@ -40,6 +40,7 @@ MANAGED_DIRS = (
 
 SCRIPT_FILES = (
     "scripts/posix/agent-mail.sh",
+    "scripts/posix/restore-workflow-backup.sh",
     "scripts/posix/sync-workflow-backup.sh",
     "scripts/posix/workflow-status.sh",
     "scripts/shared/agent_mail.py",
@@ -49,6 +50,7 @@ SCRIPT_FILES = (
     "scripts/shared/target_runtime.py",
     "scripts/shared/workflow_backup.py",
     "scripts/windows/agent-mail.ps1",
+    "scripts/windows/restore-workflow-backup.ps1",
     "scripts/windows/sync-workflow-backup.ps1",
     "scripts/windows/workflow-status.ps1",
 )
@@ -72,6 +74,7 @@ IGNORE_ENTRIES = (
     "docs/plans/",
     "docs/TROUBLESHOOTING.md",
     "scripts/posix/agent-mail.sh",
+    "scripts/posix/restore-workflow-backup.sh",
     "scripts/posix/sync-workflow-backup.sh",
     "scripts/posix/workflow-status.sh",
     "scripts/shared/agent_mail.py",
@@ -82,6 +85,7 @@ IGNORE_ENTRIES = (
     "scripts/shared/target_runtime.py",
     "scripts/shared/workflow_backup.py",
     "scripts/windows/agent-mail.ps1",
+    "scripts/windows/restore-workflow-backup.ps1",
     "scripts/windows/sync-workflow-backup.ps1",
     "scripts/windows/workflow-status.ps1",
 )
@@ -336,6 +340,62 @@ def sync_workflow_backup(
         committed=committed,
         pushed=pushed,
         commit_message=commit_message,
+    )
+
+
+@dataclass
+class RestoreResult:
+    repo_root: Path
+    backup_repo: Path
+    project_name: str
+    restored: list[str]
+    skipped: list[str]
+    dry_run: bool
+
+
+def restore_workflow_backup(
+    repo_root: Path,
+    backup_repo: Path,
+    project_name: str,
+    *,
+    dry_run: bool = False,
+) -> RestoreResult:
+    repo_root = resolve_repo_root(repo_root)
+    backup_repo = backup_repo.expanduser().resolve()
+
+    project_root = backup_repo / project_name
+    if not project_root.exists():
+        raise RuntimeError(
+            f"No backup found for project '{project_name}' in {backup_repo}"
+        )
+
+    source_files = collect_managed_files(project_root)
+
+    restored: list[str] = []
+    skipped: list[str] = []
+
+    for rel in source_files:
+        src = project_root / rel
+        dst = repo_root / rel
+        if _files_match(src, dst):
+            skipped.append(rel)
+            continue
+        restored.append(rel)
+        if dry_run:
+            continue
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(src, dst)
+
+    if not dry_run:
+        ensure_ignore_block(repo_root)
+
+    return RestoreResult(
+        repo_root=repo_root,
+        backup_repo=backup_repo,
+        project_name=project_name,
+        restored=restored,
+        skipped=skipped,
+        dry_run=dry_run,
     )
 
 
