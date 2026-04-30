@@ -44,12 +44,13 @@ All user-facing operations are invoked through these scripts (POSIX `.sh` and Wi
 Defined in `~/.zshrc`:
 
 ```bash
-alias w-bootstrap='bash /home/paolo/www/agent-workflow-template/scripts/posix/bootstrap-new-repo.sh'
-alias w-update='bash /home/paolo/www/agent-workflow-template/scripts/posix/update-skills.sh'
-alias w-sync='bash /home/paolo/www/agent-workflow-template/scripts/posix/sync-workflow-backup.sh'
+alias w-bootstrap='bash /home/paolo/www/workflow-template/scripts/posix/bootstrap-new-repo.sh'
+alias w-update='bash /home/paolo/www/workflow-template/scripts/posix/update-skills.sh'
 ```
 
-Usage: `w-bootstrap <repo-path> <prefix> [profile]`, `w-update <repo-path> [profile]`, `w-sync` (run inside a downstream repo).
+Usage: `w-bootstrap <repo-path> <prefix> [profile]`, `w-update <repo-path> [profile]`.
+
+In downstream repos, use the `/sync-workflow-backup` and `/restore-workflow-backup` skills — no need to invoke the scripts directly.
 
 ## Profiles
 
@@ -79,8 +80,10 @@ There is no test suite. To verify a change:
 
 1. Run the relevant script (`bootstrap-new-repo.sh` or `update-skills.sh`) against a scratch downstream repo.
 2. Inspect what landed in the downstream (especially `.codex/skills/`, `.claude/skills/`, `AGENTS.md` managed block, `.gitignore` managed block).
-3. Run `sync-workflow-backup.sh` in that downstream to confirm the backup-mirror round-trip.
+3. Run `/sync-workflow-backup` in that downstream to confirm the backup-mirror round-trip.
 4. If the change touches a shared skill, also verify the `.codex/` and `.claude/` copies stayed identical.
+
+To recover workflow files into a fresh clone of a downstream, run `restore-workflow-backup.sh` (or `/restore-workflow-backup` skill) — it copies from the backup mirror back into the repo without touching the main git history.
 
 ## Conventions
 
