@@ -39,8 +39,9 @@ Compatibility path only. For coordinator-plus-worker execution with reservations
    - `writing-plans`
    - implementation
    - `systematic-debugging` if blocked
-   - `build-and-test` after implementation; read `.codex/skills/build-and-test/SKILL.md` and follow it
-   - `verification-before-completion` or `requesting-code-review`
+   - `build-and-test` after implementation; read the repo-local skill (`.claude/skills/build-and-test/SKILL.md` for Claude or `.codex/skills/build-and-test/SKILL.md` for Codex) and follow it
+   - `verification-before-completion`
+   - `requesting-code-review` (required, not optional)
    - `beads-close`
 8. After a successful close and local commit, inspect the epic again for more ready descendants:
    ```bash

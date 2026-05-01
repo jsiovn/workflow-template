@@ -5,7 +5,7 @@ description: "Use after implementation and verification are complete to close th
 
 # Beads Close
 
-**Workflow position:** Manual executor session, step 7 of 7. Final step after verification. See `BEADS_WORKFLOW.md`.
+**Workflow position:** Manual executor session, step 8 of 8. Final step after verification and code review. See `BEADS_WORKFLOW.md`.
 
 Close the current bead and commit the updated tracker state.
 
@@ -14,7 +14,8 @@ Before invoking this skill, the following must already be true:
 
 - a bead was claimed at the start of this session
 - implementation is complete
-- verification has been run (`verification-before-completion` or `requesting-code-review`)
+- verification has been run (`verification-before-completion`)
+- code review has been run (`requesting-code-review`)
 
 Do not invoke this skill:
 

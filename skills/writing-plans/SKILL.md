@@ -5,7 +5,7 @@ description: "Use when you have a spec or requirements for a multi-step task, be
 
 # Writing Plans
 
-**Workflow position:** Executor session, step 2 of 7 (after claiming bead). Next: implement -> `build-and-test` -> `verification-before-completion` or `requesting-code-review` -> `beads-close`. See BEADS_WORKFLOW.md.
+**Workflow position:** Executor session, step 2 of 8 (after claiming bead). Next: implement -> `build-and-test` -> `verification-before-completion` -> `requesting-code-review` -> `beads-close`. See BEADS_WORKFLOW.md.
 
 ## Overview
 
@@ -194,4 +194,4 @@ After saving the plan:
 
 **When proceeding:** Use Codex subagents when they help, with code review (`requesting-code-review`) after each major task.
 
-**After implementation is complete:** Invoke `build-and-test` (read `.codex/skills/build-and-test/SKILL.md` and follow it). The skill executes the verification contract from the plan and may be generic or repo-specific depending on the repo's maturity. If `build-and-test` fails, fix the implementation or tighten the plan and re-run it before moving to verification. Do NOT skip this step.
+**After implementation is complete:** Invoke `build-and-test` (read the repo-local skill — `.claude/skills/build-and-test/SKILL.md` for Claude or `.codex/skills/build-and-test/SKILL.md` for Codex — and follow it). The skill executes the verification contract from the plan and may be generic or repo-specific depending on the repo's maturity. If `build-and-test` fails, fix the implementation or tighten the plan and re-run it before moving to verification. Do NOT skip this step.
