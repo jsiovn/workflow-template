@@ -247,7 +247,7 @@ Two kinds of building blocks ship with this template:
 | -------------------------------- | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
 | `requesting-code-review`         | Dispatches the `code-reviewer` subagent against the current change                    | After implementing a major task, before merging                              |
 | `address-pr-comments`            | Pulls unresolved PR threads → fixes via `pr-comment-fixer` → verifies → push → reply  | When new review comments arrive on the current PR                            |
-| `attach-screenshots`             | Takes screenshots of the running app and attaches them to the open PR                 | After implementing a UI feature, before or alongside review                  |
+| `attach-web-screenshots`             | Takes screenshots of a running **web** app (browser-based) and attaches them to the open PR | After implementing a UI feature, before or alongside review            |
 | `finishing-a-development-branch` | Pushes the branch and opens a PR; runs `sync-workflow-backup` first                   | When all work on a feature branch is done and verified                       |
 
 #### Project hygiene & workflow infra
@@ -258,7 +258,7 @@ Two kinds of building blocks ship with this template:
 | `sync-workflow-backup`     | Pushes the downstream's workflow files to the backup mirror                           | Before pushing a downstream PR (also runs automatically inside finishing skill) |
 | `restore-workflow-backup`  | Pulls workflow files *from* the backup mirror back into the downstream                | Fresh clone of an existing downstream repo                                   |
 
-> **`attach-screenshots` requires a companion CI workflow.** If you use this skill, run `update-skills` (or `bootstrap-new-repo`) against your downstream repo — it will copy `.github/workflows/cleanup-screenshots.yml` which automatically removes stale screenshot folders for merged branches.
+> **`attach-web-screenshots` requires a companion CI workflow.** If you use this skill, run `update-skills` (or `bootstrap-new-repo`) against your downstream repo — it will copy `.github/workflows/cleanup-screenshots.yml` which automatically removes stale screenshot folders for merged branches.
 
 ### Agents
 

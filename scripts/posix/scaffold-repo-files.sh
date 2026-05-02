@@ -85,6 +85,12 @@ if [[ ! -d "${repo_path}/.codex/skills/build-and-test" ]]; then
 else
   printf 'Preserved existing Codex build-and-test skill\n'
 fi
+if [[ ! -d "${repo_path}/.codex/skills/attach-web-screenshots" ]]; then
+  cp -R "${template_root}/templates/.codex/skills/attach-web-screenshots" "${repo_path}/.codex/skills/attach-web-screenshots"
+  printf 'Copied Codex attach-web-screenshots skill\n'
+else
+  printf 'Preserved existing Codex attach-web-screenshots skill\n'
+fi
 
 find "${template_root}/skills" -mindepth 1 -maxdepth 1 -type d | while read -r src; do
   name="$(basename "${src}")"
@@ -102,7 +108,7 @@ rm -rf "${repo_path}/.codex/skills/plan-critic"
 if [[ -d "${template_root}/templates/.codex/skills" ]]; then
   find "${template_root}/templates/.codex/skills" -mindepth 1 -maxdepth 1 -type d | while read -r src; do
     name="$(basename "${src}")"
-    if [[ "${name}" == "build-and-test" ]]; then
+    if [[ "${name}" == "build-and-test" || "${name}" == "attach-web-screenshots" ]]; then
       continue
     fi
     dst="${repo_path}/.codex/skills/${name}"
@@ -119,6 +125,12 @@ if [[ ! -d "${repo_path}/.claude/skills/build-and-test" ]]; then
   printf 'Copied Claude build-and-test skill\n'
 else
   printf 'Preserved existing Claude build-and-test skill\n'
+fi
+if [[ ! -d "${repo_path}/.claude/skills/attach-web-screenshots" ]]; then
+  cp -R "${template_root}/templates/.codex/skills/attach-web-screenshots" "${repo_path}/.claude/skills/attach-web-screenshots"
+  printf 'Copied Claude attach-web-screenshots skill\n'
+else
+  printf 'Preserved existing Claude attach-web-screenshots skill\n'
 fi
 
 find "${template_root}/skills" -mindepth 1 -maxdepth 1 -type d | while read -r src; do
