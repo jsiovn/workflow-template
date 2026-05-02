@@ -40,34 +40,56 @@ Screenshots are stored under `docs/screenshots/<branch-name>/` so each branch ha
    };
    ```
 
-5. **Take screenshots** — for each URL:
+5. **Take screenshots at all breakpoints** — for each URL, capture at every Tailwind CSS default breakpoint:
+
+   | Label | Tailwind prefix | Width (px) | Height (px) |
+   |-------|-----------------|------------|-------------|
+   | base  | (none)          | 390        | 844         |
+   | sm    | `sm:`           | 640        | 900         |
+   | md    | `md:`           | 768        | 1024        |
+   | lg    | `lg:`           | 1024       | 768         |
+   | xl    | `xl:`           | 1280       | 800         |
+   | 2xl   | `2xl:`          | 1536       | 864         |
+
+   For each breakpoint:
    - Open in an isolated Chrome DevTools context with `new_page`
+   - Resize the viewport with `resize_page` to the breakpoint dimensions
    - Navigate using `navigate_page` with the `initScript` above if auth is needed
    - Wait for the key content with `wait_for`
-   - Save with `take_screenshot` to `/tmp/<slug>.png`
+   - Save with `take_screenshot` to `/tmp/<slug>-<label>.png` (e.g. `home-lg.png`)
    - Use `fullPage: true` for full-page views; omit it (viewport only) for modal/overlay views
 
 6. **Commit to the branch** — store under `docs/screenshots/<branch>/`. Sanitize the branch name (replace `/` with `-`) so it stays a single flat folder:
    ```bash
    BRANCH=$(git rev-parse --abbrev-ref HEAD | tr '/' '-')
    mkdir -p "docs/screenshots/$BRANCH"
-   cp /tmp/<slug>.png "docs/screenshots/$BRANCH/"
+   cp /tmp/<slug>-base.png /tmp/<slug>-sm.png /tmp/<slug>-md.png /tmp/<slug>-lg.png /tmp/<slug>-xl.png /tmp/<slug>-2xl.png "docs/screenshots/$BRANCH/"
    git add docs/screenshots/
    git commit -m "docs: add screenshots for PR"
    git push
    ```
 
-7. **Post the PR comment** — use the template below. Keep it brief.
+7. **Post the PR comment** — use the template below. Group by feature/URL, with breakpoints as a sub-row. Keep it brief.
 
 ## Comment template
 
 ```
 ## Screenshots
 
-📸 **<Label>** (`<path>`): [<filename>.png](https://github.com/<owner>/<repo>/blob/<branch>/docs/screenshots/<branch-sanitized>/<filename>.png)
+### <Label> (`<path>`)
 
-📸 **<Label>** (`<path>`): [<filename>.png](https://github.com/<owner>/<repo>/blob/<branch>/docs/screenshots/<branch-sanitized>/<filename>.png)
+| base (390px) | sm (640px) | md (768px) | lg (1024px) | xl (1280px) | 2xl (1536px) |
+|---|---|---|---|---|---|
+| [base](<blob-url>/<slug>-base.png) | [sm](<blob-url>/<slug>-sm.png) | [md](<blob-url>/<slug>-md.png) | [lg](<blob-url>/<slug>-lg.png) | [xl](<blob-url>/<slug>-xl.png) | [2xl](<blob-url>/<slug>-2xl.png) |
+
+### <Label> (`<path>`)
+
+| base (390px) | sm (640px) | md (768px) | lg (1024px) | xl (1280px) | 2xl (1536px) |
+|---|---|---|---|---|---|
+| [base](<blob-url>/<slug>-base.png) | [sm](<blob-url>/<slug>-sm.png) | [md](<blob-url>/<slug>-md.png) | [lg](<blob-url>/<slug>-lg.png) | [xl](<blob-url>/<slug>-xl.png) | [2xl](<blob-url>/<slug>-2xl.png) |
 ```
+
+Where `<blob-url>` = `https://github.com/<owner>/<repo>/blob/<branch>/docs/screenshots/<branch-sanitized>`.
 
 Post with:
 ```bash

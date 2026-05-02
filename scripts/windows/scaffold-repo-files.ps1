@@ -221,6 +221,10 @@ New-Item -ItemType Directory -Force -Path (Join-Path $RepoPath "docs") | Out-Nul
 Copy-Item -Force $troubleshootingSource (Join-Path $RepoPath "docs\TROUBLESHOOTING.md")
 Write-Host "Copied docs/TROUBLESHOOTING.md"
 
+New-Item -ItemType Directory -Force -Path (Join-Path $RepoPath ".github\workflows") | Out-Null
+Copy-Item -Force (Join-Path $TemplateRoot "templates\.github\workflows\cleanup-screenshots.yml") (Join-Path $RepoPath ".github\workflows\cleanup-screenshots.yml")
+Write-Host "Copied .github/workflows/cleanup-screenshots.yml"
+
 if ($pythonCmd -eq "py") {
     & py -3 (Join-Path $TemplateRoot "scripts\shared\sync_workflow_backup.py") ensure-ignore --repo $RepoPath
 } else {

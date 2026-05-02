@@ -1,0 +1,48 @@
+name: Cleanup merged screenshot folders
+
+on:
+  schedule:
+    - cron: '59 23 * * 0' # Sunday 23:59 UTC
+  workflow_dispatch:
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Remove folders for merged branches
+        run: |
+          LIVE=$(git ls-remote --heads origin | sed 's|.*refs/heads/||' | tr '/' '-')
+
+          REMOVED=0
+          for dir in docs/screenshots/*/; do
+            [ -d "$dir" ] || continue
+            folder="${dir#docs/screenshots/}"
+            folder="${folder%/}"
+            if echo "$LIVE" | grep -qx "$folder"; then continue; fi
+            echo "Removing $dir (no live branch maps to '$folder')"
+            git rm -r "$dir"
+            REMOVED=$((REMOVED + 1))
+          done
+
+          if [ "$REMOVED" -gt 0 ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            BRANCH="chore/cleanup-screenshots-$(date +%Y%m%d%H%M%S)"
+            git checkout -b "$BRANCH"
+            git commit -m "chore: remove screenshots for merged branches"
+            git push -u origin "$BRANCH"
+            gh pr create --base master --title "chore: remove screenshots for merged branches" \
+              --body "Auto-cleanup by scheduled workflow. Removes \`docs/screenshots/\` folders whose branches no longer exist."
+          else
+            echo "Nothing to clean up."
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

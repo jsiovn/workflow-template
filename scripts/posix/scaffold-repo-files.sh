@@ -224,6 +224,10 @@ mkdir -p "${repo_path}/docs"
 cp "${template_root}/docs/TROUBLESHOOTING.md" "${repo_path}/docs/TROUBLESHOOTING.md"
 printf 'Copied docs/TROUBLESHOOTING.md\n'
 
+mkdir -p "${repo_path}/.github/workflows"
+cp "${template_root}/templates/.github/workflows/cleanup-screenshots.yml" "${repo_path}/.github/workflows/cleanup-screenshots.yml"
+printf 'Copied .github/workflows/cleanup-screenshots.yml\n'
+
 "${python_cmd}" "${template_root}/scripts/shared/sync_workflow_backup.py" ensure-ignore --repo "${repo_path}"
 printf 'Updated .gitignore managed workflow block\n'
 
