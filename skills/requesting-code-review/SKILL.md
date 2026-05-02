@@ -11,12 +11,14 @@ Dispatch the repo-local `code-reviewer` subagent to catch issues before they cas
 
 ## Where the reviewer lives
 
-The `code-reviewer` subagent definition is installed in the downstream repo at:
+The `code-reviewer` subagent definition is the single source of truth for the reviewer's checklist, severity rules, and output format. In this template it lives at `agents/code-reviewer.md`. The scaffold installs it into the downstream repo at:
 
 - `.claude/agents/code-reviewer.md` for Claude Code sessions
 - `.codex/agents/code-reviewer.md` for Codex sessions
 
-Both files are kept in sync by the template scaffold. If neither exists, run `update-skills` against the repo to install them.
+Both copies are kept in sync by the template scaffold. If neither exists, run `update-skills` against the repo to install them.
+
+The prompt template at `brief.md` (alongside this `SKILL.md`) is **only** the dynamic brief — placeholders for what was built, the plan, and the SHA range. It deliberately does not repeat the checklist; the agent definition already has it.
 
 ## When to Request Review
 
@@ -41,7 +43,7 @@ HEAD_SHA=$(git rev-parse HEAD)
 
 **2. Dispatch the `code-reviewer` subagent:**
 
-- **Claude session:** call the Task tool with `subagent_type: code-reviewer` and a prompt built from the template at `requesting-code-review/code-reviewer.md` (this file is shipped alongside the SKILL.md).
+- **Claude session:** call the Task tool with `subagent_type: code-reviewer` and a prompt built from the template at `requesting-code-review/brief.md` (this file is shipped alongside the SKILL.md).
 - **Codex session:** invoke the equivalent subagent dispatch with the same prompt template.
 
 **Placeholders to fill in the prompt:**
@@ -120,7 +122,9 @@ You: [Fix progress indicators]
 ## Files in this skill
 
 - `SKILL.md` — this file
-- `code-reviewer.md` — the prompt template you fill in and pass to the subagent
+- `brief.md` — the prompt template (dynamic brief only) you fill in and pass to the subagent
+
+The reviewer's standing instructions live separately at `agents/code-reviewer.md` in the template root and are deployed by the scaffold to `.claude/agents/code-reviewer.md` / `.codex/agents/code-reviewer.md`.
 
 ## Pairing with `verification-before-completion`
 
