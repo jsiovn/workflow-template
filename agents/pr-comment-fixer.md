@@ -117,7 +117,7 @@ Keep replies terse. The skill will substitute `<sha>` after it commits — you w
 Open with: `Addressed @<author> review (fixed in <sha>):` — **no apostrophe-s after the author name** (never `@author's`).
 
 ```
-Addressed @claude[bot] review (fixed in <sha>):
+Addressed @claude review (fixed in <sha>):
 - ✅ aria-live — Added `aria-live="polite" aria-atomic="true"` to RotatingWordCard inner div.
 - ✅ Static transition string — Moved to Tailwind class `transition-[opacity,transform,filter] duration-[280ms] ease-out`.
 - ✅ Inline SVGs — Replaced globe/chat SVGs with `<Globe>` and `<MessageSquare>` from lucide-react.
