@@ -74,15 +74,7 @@ Screenshots are stored under `docs/screenshots/<branch-name>/` so each branch ha
    git push
    ```
 
-7. **Close all browser pages** — after the final screenshot, close every page opened during the session:
-
-   ```
-   close_page(<pageId>)  # repeat for each opened page
-   ```
-
-   The last remaining page cannot be closed — leave it. Track page IDs from `new_page` responses.
-
-8. **Post the PR comment** — use the template below. Group by feature/URL, with breakpoints as a sub-row. Keep it brief.
+7. **Post the PR comment** — use the template below. Group by feature/URL, with breakpoints as a sub-row. Keep it brief.
 
 ## Comment template
 
@@ -109,6 +101,14 @@ Post with:
 ```bash
 gh pr comment <number> --body "..."
 ```
+
+8. **Close all browser pages** — after posting the PR comment, close every page opened during this session. This is the final step — always run it before reporting the task as done:
+
+   ```
+   close_page(<pageId>)  # repeat for each page opened via new_page
+   ```
+
+   The last remaining page cannot be closed — leave it. Track page IDs from `new_page` responses throughout the session.
 
 ## Notes
 
