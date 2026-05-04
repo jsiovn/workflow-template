@@ -114,7 +114,7 @@ Keep replies terse. The skill will substitute `<sha>` after it commits — you w
 
 **For `kind: "conversation"` items:**
 
-Open with: `Addressed @<author> review (fixed in <sha>):` — **no apostrophe-s after the author name** (never `@author's`).
+Open with: `Addressed @<author> review (fixed in <sha>):` — **no apostrophe-s after the author name** (never `@author's`). Then one bullet per named issue:
 
 ```
 Addressed @claude review (fixed in <sha>):
