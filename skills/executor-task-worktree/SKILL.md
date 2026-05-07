@@ -67,7 +67,7 @@ This is the preferred path when the main working tree has in-flight changes that
     - verify clean tree and commits ahead of `<DEFAULT_BRANCH>`
     - run the workflow-backup sync if the repo uses the local-only workflow mirror model
     - `git push -u origin HEAD`
-    - `gh pr create --base <DEFAULT_BRANCH> --fill` (or with `--title`/`--body` if the user supplied them)
+    - `gh pr create --base <DEFAULT_BRANCH> --title "<conventional-commit title>" --body "..."` — the PR body must include a `Bead: <BEAD_ID>` reference line (e.g. `Bead: lexify-a8m`). The title follows conventional commits format (`type(scope): description`) with no bead id prefix.
     - report the PR URL
 
 13. **Remove the worktree on success** (after the PR URL is confirmed):
