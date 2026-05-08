@@ -69,7 +69,7 @@ This is the preferred manual path when each bead should ship as its own pull req
     - verify clean tree and commits ahead of `<DEFAULT_BRANCH>`
     - run the workflow-backup sync if the repo uses the local-only workflow mirror model
     - `git push -u origin HEAD`
-    - `gh pr create --base <DEFAULT_BRANCH> --fill` (or with `--title`/`--body` if the user supplied them)
+    - `gh pr create --base <DEFAULT_BRANCH> --title "<conventional-commit title>" --body "..."` — the PR body must include a `Bead: <BEAD_ID>` reference line (e.g. `Bead: lexify-a8m`). The title follows conventional commits format (`type(scope): description`) with no bead id prefix.
     - report the PR URL
 
 12. Stop with a concise summary: bead id, branch name, PR URL, and a one-line note if a WIP commit was left on `<PREV_BRANCH>` so the user knows where to return.

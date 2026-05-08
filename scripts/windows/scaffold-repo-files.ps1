@@ -87,6 +87,13 @@ if (-not (Test-Path (Join-Path $RepoPath ".codex\skills\build-and-test"))) {
 } else {
     Write-Host "Preserved existing Codex build-and-test skill"
 }
+$codexAttachSkillSource = Join-Path $TemplateRoot "templates\.codex\skills\attach-web-screenshots"
+if (-not (Test-Path (Join-Path $RepoPath ".codex\skills\attach-web-screenshots"))) {
+    Copy-Item -Recurse -Force $codexAttachSkillSource (Join-Path $RepoPath ".codex\skills\attach-web-screenshots")
+    Write-Host "Copied Codex attach-web-screenshots skill"
+} else {
+    Write-Host "Preserved existing Codex attach-web-screenshots skill"
+}
 
 Get-ChildItem $skillsSource -Directory | ForEach-Object {
     if ($profileGatedSkills -contains $_.Name -and $effectiveProfile -ne "game-re") {
@@ -101,7 +108,7 @@ Get-ChildItem $skillsSource -Directory | ForEach-Object {
 Remove-Item -Recurse -Force (Join-Path $RepoPath ".codex\skills\plan-debate") -ErrorAction SilentlyContinue
 Remove-Item -Recurse -Force (Join-Path $RepoPath ".codex\skills\plan-critic") -ErrorAction SilentlyContinue
 Get-ChildItem (Join-Path $TemplateRoot "templates\.codex\skills") -Directory -ErrorAction SilentlyContinue | ForEach-Object {
-    if ($_.Name -ne "build-and-test") {
+    if ($_.Name -ne "build-and-test" -and $_.Name -ne "attach-web-screenshots") {
         $destination = Join-Path $RepoPath ".codex\skills\$($_.Name)"
         Remove-Item -Recurse -Force $destination -ErrorAction SilentlyContinue
         Copy-Item -Recurse -Force $_.FullName $destination
@@ -116,6 +123,12 @@ if (-not (Test-Path (Join-Path $RepoPath ".claude\skills\build-and-test"))) {
     Write-Host "Copied Claude build-and-test skill"
 } else {
     Write-Host "Preserved existing Claude build-and-test skill"
+}
+if (-not (Test-Path (Join-Path $RepoPath ".claude\skills\attach-web-screenshots"))) {
+    Copy-Item -Recurse -Force $codexAttachSkillSource (Join-Path $RepoPath ".claude\skills\attach-web-screenshots")
+    Write-Host "Copied Claude attach-web-screenshots skill"
+} else {
+    Write-Host "Preserved existing Claude attach-web-screenshots skill"
 }
 
 Get-ChildItem $skillsSource -Directory | ForEach-Object {
@@ -220,6 +233,10 @@ Write-Host "Persisted profile=$effectiveProfile to .beads/workflow/profile.json"
 New-Item -ItemType Directory -Force -Path (Join-Path $RepoPath "docs") | Out-Null
 Copy-Item -Force $troubleshootingSource (Join-Path $RepoPath "docs\TROUBLESHOOTING.md")
 Write-Host "Copied docs/TROUBLESHOOTING.md"
+
+New-Item -ItemType Directory -Force -Path (Join-Path $RepoPath ".github\workflows") | Out-Null
+Copy-Item -Force (Join-Path $TemplateRoot "templates\.github\workflows\cleanup-screenshots.yml") (Join-Path $RepoPath ".github\workflows\cleanup-screenshots.yml")
+Write-Host "Copied .github/workflows/cleanup-screenshots.yml"
 
 if ($pythonCmd -eq "py") {
     & py -3 (Join-Path $TemplateRoot "scripts\shared\sync_workflow_backup.py") ensure-ignore --repo $RepoPath

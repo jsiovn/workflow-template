@@ -106,6 +106,30 @@ Create the optional repo-specific stage-2 runtime setup as a standalone bead:
 """,
     },
     {
+        "title": "Specialize attach-web-screenshots for this repo",
+        "description": """Stage-1 bootstrap installed the generic attach-web-screenshots skill.
+
+Create the repo-specific stage-2 specialization as a standalone bead:
+
+## Goal
+- fill in the two project-specific gaps left as placeholders in the generic skill:
+  1. the command to start the preview server (step 3)
+  2. the auth endpoint and User shape for the fetch mock (step 4)
+- keep the Codex and Claude copies aligned
+
+## Requirements
+- inspect `package.json` (scripts section) and any project README to find the correct preview command, port, and any required env flags (e.g. mock mode). Update step 3 in both skill copies with the concrete command
+- inspect the project's auth API handler and User type to determine the correct endpoint path and response shape. Update step 4's `<auth-endpoint>` placeholder and the mock response object accordingly
+- if the project has no auth-protected routes, remove step 4 entirely from both skill copies
+- update `.codex/skills/attach-web-screenshots/SKILL.md`
+- mirror the same changes in `.claude/skills/attach-web-screenshots/SKILL.md`
+
+## Notes
+- keep this bead independent; do not nest it under a feature epic
+- do not hard-code credentials or secrets — the fetch mock only needs a valid shape, not real values
+""",
+    },
+    {
         "title": "Specialize build-and-test for this repo",
         "description": """Stage-1 bootstrap installed the generic build-and-test skill.
 

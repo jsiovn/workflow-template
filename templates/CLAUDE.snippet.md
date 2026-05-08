@@ -1,4 +1,13 @@
 <!-- BEGIN TEMPLATE BD WORKFLOW -->
+
+### PR review replies
+
+Only append `@claude review` when posting a reply to a **conversation comment authored by `claude[bot]`**. This triggers the bot to re-run its review.
+
+Do **not** include `@claude review` in replies to human reviewer inline thread comments or in any other conversation comments.
+
+## Issue tracking
+
 This repo uses `bd` for issue tracking. Use `bd`, not markdown TODO files or alternate trackers.
 
 Live `.beads` state is local-only and should not be committed. Use one top-level epic executor session at a time in a checkout.
@@ -20,4 +29,5 @@ bd update <id> --status=in_progress
 bd close <id> --reason="Completed"
 bd dep add <child-id> <parent-id>
 ```
+
 <!-- END TEMPLATE BD WORKFLOW -->

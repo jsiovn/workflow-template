@@ -29,6 +29,7 @@ flowchart LR
         RCR[requesting-code-review]
         BCL[beads-close]
         EO[executor-once<br/>orchestrator]
+        ET[executor-task<br/>orchestrator<br/>PR-per-bead]
         EL[executor-loop<br/>orchestrator]
         ELE[executor-loop-epic<br/>orchestrator]
     end
@@ -38,6 +39,14 @@ flowchart LR
         EBW[execute-bead-worker]
         RE[review-epic]
         FDB[finishing-a-development-branch]
+    end
+
+    subgraph MAINT["🔧 Maintenance / out-of-band"]
+        APC[address-pr-comments]
+        PA[project-auditor]
+        ABR[audit-backlog-rules]
+        SWB[sync-workflow-backup]
+        RWB[restore-workflow-backup]
     end
 
     subgraph CC["🧰 Cross-cutting helpers"]
@@ -54,6 +63,8 @@ flowchart LR
 ```
 
 **Hard rule encoded in the diagram:** planner skills must NOT invoke executor or swarm skills. The bead-creation handoff is the _only_ legal exit from planner mode.
+
+**Maintenance skills** are user-invoked at any point and don't belong to a phase: they sit alongside the workflow rather than inside it. They may dispatch internal subagents (see §6.5) but never claim, plan, or close beads.
 
 ---
 
@@ -73,12 +84,18 @@ flowchart LR
 | `requesting-code-review`         | executor                        | Dispatch the local code-reviewer subagent (`.claude/agents/code-reviewer.md` / `.codex/agents/code-reviewer.md`) | `executor-*` orchestrators (required, not optional)                       | —                                                                                  |
 | `beads-close`                    | executor                        | Close bead + create follow-ups + commit            | `executor-*` orchestrators, user                                          | —                                                                                  |
 | `executor-once`                  | executor (orchestrator)         | One bead, end-to-end, fresh context                | user                                                                      | `beads-claim` → `writing-plans` → impl → `build-and-test` → verify → `beads-close` |
+| `executor-task`                  | executor (orchestrator)         | One bead delivered as its own PR off a fresh branch from main | user                                                                      | stash/branch off main → same chain as `executor-once` → push + open PR             |
 | `executor-loop`                  | executor (orchestrator)         | Sequential beads from the global ready queue       | user                                                                      | same chain as `executor-once`, repeated                                            |
 | `executor-loop-epic`             | executor (orchestrator)         | Sequential beads scoped to one epic                | user                                                                      | same chain + `review-epic` + `finishing-a-development-branch`                      |
 | `swarm-epic`                     | swarm                           | Coordinate parallel workers under one epic         | user                                                                      | `execute-bead-worker` (per bead), `review-epic`, `finishing-a-development-branch`  |
 | `execute-bead-worker`            | swarm                           | Implement one assigned bead; reports back          | `swarm-epic` only                                                         | —                                                                                  |
 | `review-epic`                    | swarm                           | Epic-level quality gate after all beads close      | `swarm-epic`, `executor-loop-epic`                                        | —                                                                                  |
 | `finishing-a-development-branch` | swarm/exec                      | Sync backup mirror, push, create PR                | `swarm-epic`, `executor-loop-epic`, user                                  | —                                                                                  |
+| `address-pr-comments`            | maintenance                     | Iterative PR review-comment loop                   | user                                                                      | `pr-comment-fixer` subagent                                                        |
+| `project-auditor`                | maintenance                     | Full-repo audit (naming, structure, light arch)    | user                                                                      | `project-auditor` subagent                                                         |
+| `audit-backlog-rules`            | maintenance                     | Audit ready/blocked beads against current rules    | user                                                                      | —                                                                                  |
+| `sync-workflow-backup`           | maintenance                     | Push managed workflow files into the backup mirror | user                                                                      | `scripts/{posix,windows}/sync-workflow-backup.{sh,ps1}`                            |
+| `restore-workflow-backup`        | maintenance                     | Copy managed workflow files back from backup mirror | user                                                                      | `scripts/{posix,windows}/restore-workflow-backup.{sh,ps1}`                         |
 | `target-runtime-exec`            | cross-cutting                   | Route build/test/run through local or SSH          | implementation steps, `build-and-test`                                    | —                                                                                  |
 | `game-action-harness`            | cross-cutting (profile=game-re) | Trigger in-game actions for verification           | `writing-plans`, `systematic-debugging`, `verification-before-completion` | —                                                                                  |
 
@@ -137,7 +154,7 @@ flowchart TD
     Q2 -->|no, in scope| S3
     Q2 -->|no, blocked| BLOCK[Stop, update bead]
     Q2 -->|yes| S5[5. verification-before-completion]
-    S5 --> S6[6. requesting-code-review<br/>dispatch code-reviewer subagent]
+    S5 --> S6[6. requesting-code-review<br/>dispatch code-reviewer subagent<br/><b>required</b>]
     S6 --> S7[7. beads-close<br/>+ commit]
     S7 --> END([Stop. Do NOT auto-claim<br/>another bead])
 
@@ -258,6 +275,29 @@ flowchart LR
 
 ---
 
+## 6.5. Agents (subagents)
+
+Agents live in `agents/` (shared, copied to both `.claude/agents/` and `.codex/agents/` downstream — see `scaffold-repo-files.sh:151`). They are dispatched as fresh, sandboxed sessions that don't see the caller's chat history; the caller passes a self-contained brief.
+
+| Agent                  | Caller                                                                | Role                                                                                  |
+| ---------------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `code-reviewer`        | `requesting-code-review` skill (executor chain)                       | Per-diff review against project standards (skill-internal)                            |
+| `pr-comment-fixer`     | `address-pr-comments` skill                                           | Read unresolved PR threads, edit code, return reply plan (skill-internal)             |
+| `project-auditor`      | `project-auditor` skill                                               | Whole-repo audit + light architectural pass (skill-internal)                          |
+| `product-manager`      | user                                                                  | Acceptance criteria + "done" checklist for a feature                                  |
+| `engineering-manager`  | user (typically after `product-manager`)                              | Critical pass over the PM's spec — feasibility, scope creep, hidden cost              |
+| `solution-design`      | user (after acceptance criteria are pinned)                           | High-level solution design: components, contracts, data flow, alternatives            |
+| `backend-architect`    | user (plan or diff touching APIs/services/persistence)                | Opinionated backend review of a plan or diff                                          |
+| `frontend-architect`   | user (plan or diff touching UI/components/styling)                    | Opinionated frontend review of a plan or diff                                         |
+| `testing-strategist`   | user (after a plan is settled)                                        | Enumerate tests required to ship with confidence                                      |
+| `junior-engineer`      | user (before starting under-specified work)                           | Numbered list of clarifying questions; never writes code                              |
+
+**Hard rule:** only `code-reviewer`, `pr-comment-fixer`, and `project-auditor` are skill-internal. The rest are direct user invocations — skills must not dispatch them. If a skill needs planner-style review, it goes through the planner skills, not these agents.
+
+**Provider overrides:** if a downstream needs to diverge per provider, drop the override in `templates/.claude/agents/<name>.md` or `templates/.codex/agents/<name>.md`. Scaffold copies shared `agents/` first, then overlays the provider-specific dir (`scaffold-repo-files.sh:162-174`).
+
+---
+
 ## 7. Full invocation graph
 
 The complete picture — every legal "skill X invokes skill Y" edge in one diagram. Solid lines = orchestration; dashed lines = optional/conditional invocation.
@@ -268,6 +308,7 @@ flowchart TD
 
     USER --> PB[plan-beads]
     USER --> EO[executor-once]
+    USER --> ET[executor-task]
     USER --> EL[executor-loop]
     USER --> ELE[executor-loop-epic]
     USER --> SE[swarm-epic]
@@ -275,6 +316,11 @@ flowchart TD
     USER --> BC[beads-claim]
     USER --> BCL[beads-close]
     USER --> FDB[finishing-a-development-branch]
+    USER --> APC[address-pr-comments]
+    USER --> PA[project-auditor]
+    USER --> ABR[audit-backlog-rules]
+    USER --> SWB[sync-workflow-backup]
+    USER --> RWB[restore-workflow-backup]
 
     PB --> BS[brainstorming]
     PB -.-> PR[planner-research]
@@ -287,15 +333,23 @@ flowchart TD
     EO -.-> SD[systematic-debugging]
     EO --> BAT[build-and-test]
     EO --> VBC[verification-before-completion]
-    EO -.-> RCR[requesting-code-review]
+    EO --> RCR[requesting-code-review]
     EO --> BCL
+
+    ET --> BC
+    ET --> WP
+    ET -.-> SD
+    ET --> BAT
+    ET --> VBC
+    ET --> RCR
+    ET --> BCL
 
     EL --> BC
     EL --> WP
     EL -.-> SD
     EL --> BAT
     EL --> VBC
-    EL -.-> RCR
+    EL --> RCR
     EL --> BCL
 
     ELE --> BC
@@ -303,7 +357,7 @@ flowchart TD
     ELE -.-> SD
     ELE --> BAT
     ELE --> VBC
-    ELE -.-> RCR
+    ELE --> RCR
     ELE --> BCL
     ELE --> RE[review-epic]
     ELE --> FDB
@@ -323,15 +377,23 @@ flowchart TD
     BAT -.-> TRE[target-runtime-exec]
     EBW -.-> TRE
 
+    RCR --> AGCR([agent: code-reviewer])
+    APC --> AGPF([agent: pr-comment-fixer])
+    PA --> AGPA([agent: project-auditor])
+
     classDef planner fill:#e1f5ff,stroke:#0277bd
     classDef executor fill:#fff4e1,stroke:#ef6c00
     classDef swarm fill:#e1ffe1,stroke:#2e7d32
     classDef cross fill:#f3e1ff,stroke:#6a1b9a
+    classDef maint fill:#ffe1f0,stroke:#ad1457
+    classDef agent fill:#fffde1,stroke:#9e9d24
 
     class PB,BS,PR,BP,VB planner
-    class EO,EL,ELE,BC,WP,SD,BAT,VBC,RCR,BCL executor
+    class EO,ET,EL,ELE,BC,WP,SD,BAT,VBC,RCR,BCL executor
     class SE,EBW,RE,FDB swarm
     class TRE,GAH cross
+    class APC,PA,ABR,SWB,RWB maint
+    class AGCR,AGPF,AGPA agent
 ```
 
 ---
@@ -345,6 +407,8 @@ When you add or rename a skill, four places need to stay consistent:
 3. **Profile gating** — if the skill is profile-specific (like `game-action-harness`), add it to `profile_gated_skills` in both scaffold scripts. Don't gate ad hoc.
 4. **`templates/AGENTS.snippet.md` and `templates/CLAUDE.snippet.md`** — if the skill should appear in the managed instructions block downstream, mention it there. The block lives between `<!-- BEGIN/END TEMPLATE BD WORKFLOW -->` markers — never remove or rename those markers.
 
+**Adding an agent** is a parallel surface: drop the file in `agents/<name>.md` and scaffold copies it to both providers automatically (`scaffold-repo-files.sh:151-159`). Provider-specific overrides go in `templates/.codex/agents/` or `templates/.claude/agents/`. When _removing_ an agent, add the explicit `rm -rf` / `Remove-Item` lines for both `.codex/agents/<name>.md` and `.claude/agents/<name>.md` in both scaffold scripts so existing downstreams clean up.
+
 **Where to slot a new skill — quick decisions:**
 
 | If your new skill is…                                         | Add it as a peer of…                           | Make sure it…                                                                                                        |
@@ -354,6 +418,8 @@ When you add or rename a skill, four places need to stay consistent:
 | A new orchestrator (different bead-selection strategy)        | `executor-loop`                                | Composes the same 8-step chain; doesn't reinvent claim/close logic                                                   |
 | A new cross-cutting helper (new runtime, new external system) | `target-runtime-exec` or `game-action-harness` | Is invoked _from inside_ phase skills, doesn't introduce a new mode                                                  |
 | A new swarm role (e.g., reviewer worker)                      | `execute-bead-worker`                          | Coordinator (`swarm-epic`) is the only writer of bead state; workers report back                                     |
+| A new maintenance op (audit, backup, PR helper)               | `audit-backlog-rules` or `address-pr-comments` | User-invoked only; never claims/closes beads; if it dispatches an agent, the agent gets a self-contained brief       |
+| A new subagent (planner-style review, audit, fixer)           | `agents/<name>.md`                             | Decide if it's user-invocable (default) or skill-internal; only a skill can dispatch a skill-internal one            |
 
 **Anti-patterns to avoid** (these are repeatedly enforced in the existing SKILL.md `<HARD-GATE>` blocks):
 

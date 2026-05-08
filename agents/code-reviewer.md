@@ -72,11 +72,16 @@ Read every changed file in full when the diff is non-trivial — never review ba
 - Type safety where the language supports it
 - DRY without premature abstraction
 - Edge cases handled
+- Function / component / file size: flag sections that have grown long or multi-responsibility and would read more clearly broken into smaller functions or components. Prefer extraction when a single unit mixes concerns, has deep nesting, or repeats a pattern that has a natural name. Don't flag length alone — judge by cohesion and readability.
+- Debug artifacts: flag leftover `console.log`/print statements, commented-out code blocks, and unresolved TODO/FIXME comments that were not part of the intended change.
+- Resource cleanup: async/effectful code must release what it allocates — missing `useEffect` cleanup, unclosed file handles, unsubscribed listeners, dangling timers, leaked subscriptions.
 
 **Architecture**
 - Sound design decisions for the scope of this change
 - Performance and scalability implications
 - Security concerns (input validation at boundaries, secret handling, injection vectors)
+- Hardcoded secrets / config leakage: flag literals that look like API keys, tokens, internal URLs, credentials, or PII committed to source — even in test fixtures.
+- Dependency changes: any addition, removal, or version bump in `package.json` / `Cargo.toml` / `pyproject.toml` / `go.mod` / lockfiles must be justified by the change. Check license compatibility, maintenance status, whether the repo already has something equivalent, and whether the version pin is appropriately tight.
 
 **Testing**
 - Tests exercise real logic, not just mocks
