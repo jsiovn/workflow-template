@@ -70,13 +70,15 @@ This is the preferred path when the main working tree has in-flight changes that
     - `gh pr create --base <DEFAULT_BRANCH> --title "<conventional-commit title>" --body "..."` — the PR body must include a `Bead: <BEAD_ID>` reference line (e.g. `Bead: lexify-a8m`). The title follows conventional commits format (`type(scope): description`) with no bead id prefix.
     - report the PR URL
 
-13. **Remove the worktree on success** (after the PR URL is confirmed):
+13. **Web screenshots** — if the bead touched any UI component or page, run the `attach-web-screenshots` skill from within `<WORKTREE_PATH>` to capture browser screenshots at all Tailwind breakpoints and attach them to the open PR. Skip only when the change is purely non-visual (e.g. utility functions, API handlers, types, tests).
+
+14. **Remove the worktree on success** (after the PR URL is confirmed and screenshots are attached if applicable):
     ```
     git worktree remove <WORKTREE_PATH>
     git worktree prune
     ```
 
-14. Stop with a concise summary: bead id, branch name, PR URL. The main working tree was never touched.
+15. Stop with a concise summary: bead id, branch name, PR URL. The main working tree was never touched.
 
 ## Checkout Discipline
 
@@ -92,4 +94,4 @@ This is the preferred path when the main working tree has in-flight changes that
 - Do not silently skip verification or code review.
 - Do not continue into another bead after the PR is opened.
 - If `gh` is unavailable, push the branch and report the branch name for manual PR creation rather than failing the whole flow.
-- Remove the worktree only after the PR URL is confirmed; keep it on blocker so the user can resume.
+- Remove the worktree only after the PR URL is confirmed and screenshots are attached; keep it on blocker so the user can resume.
