@@ -10,15 +10,15 @@ Do **not** include `@claude review` in replies to human reviewer inline thread c
 
 This repo uses `bd` for issue tracking. Use `bd`, not markdown TODO files or alternate trackers.
 
-Live `.beads` state is local-only and should not be committed. Use one top-level epic executor session at a time in a checkout.
+Live `.beads` state is local-only and should not be committed. Use one top-level executor session at a time per branch.
 
-Preferred workflow entry points are `plan-beads`, `swarm-epic`, and `executor-once`. Use `planner-research` only inside planner sessions and keep `writing-plans` executor-only. Treat long-running loop executors as compatibility paths rather than the default for epic work.
+Preferred workflow entry points are `plan-beads`, `executor-task`, and `executor-task-worktree`. Use `planner-research` only inside planner sessions and keep `writing-plans` executor-only.
 
-Swarm-ready beads must be fresh-session-safe: a fresh worker should be able to execute from the bead contract, persisted inputs, and local code inspection without replaying prior chat.
+Each bead must be fresh-session-safe: a new executor session should be able to execute from the bead contract, persisted inputs, and local code inspection without replaying prior chat.
 
 Workflow scaffold files such as `AGENTS.md`, `CLAUDE.md`, `BEADS_WORKFLOW.md`, `docs/plans/`, repo-local skills under `.codex/skills/` and `.claude/skills/`, and repo-local subagents under `.codex/agents/` and `.claude/agents/` stay local-only in downstream Git. Mirror them to the backup repo with `scripts/windows/sync-workflow-backup.ps1` or `scripts/posix/sync-workflow-backup.sh` before opening a PR.
 
-Keep repo exploration local. If `.beads/workflow/runtime-target.json` selects SSH, route build, test, run, deploy, migration, or other project-execution commands through `scripts/shared/target_runtime.py` or the repo-local `target-runtime-exec` skill instead of assuming the local machine.
+Keep repo exploration local. Verify the actual environment before running build, test, run, deploy, or migration commands; do not assume local execution.
 
 Useful commands:
 

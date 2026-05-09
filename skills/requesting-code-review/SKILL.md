@@ -128,4 +128,4 @@ The reviewer's standing instructions live separately at `agents/code-reviewer.md
 
 ## Pairing with `verification-before-completion`
 
-The executor chain in `executor-once`, `executor-loop`, and `executor-loop-epic` runs `verification-before-completion` first (run the verification commands and read the output), then `requesting-code-review` (dispatch the reviewer subagent). Both are required before `beads-close` — they are NOT alternatives. `verification-before-completion` proves the change passes its own checks; `requesting-code-review` gives an independent reviewer's perspective on quality, regressions, and architectural drift before the bead closes.
+The executor chain in `executor-task` and `executor-task-worktree` runs `verification-before-completion` first (run the verification commands and read the output), then `requesting-code-review` (dispatch the reviewer subagent). Both are required before `beads-close` — they are NOT alternatives. `verification-before-completion` proves the change passes its own checks; `requesting-code-review` gives an independent reviewer's perspective on quality, regressions, and architectural drift before the bead closes.

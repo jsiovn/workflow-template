@@ -44,10 +44,8 @@ SCRIPT_FILES = (
     "scripts/posix/sync-workflow-backup.sh",
     "scripts/posix/workflow-status.sh",
     "scripts/shared/agent_mail.py",
-    "scripts/shared/harness.py",
     "scripts/shared/manage_instructions.py",
     "scripts/shared/sync_workflow_backup.py",
-    "scripts/shared/target_runtime.py",
     "scripts/shared/workflow_backup.py",
     "scripts/windows/agent-mail.ps1",
     "scripts/windows/restore-workflow-backup.ps1",
@@ -55,9 +53,7 @@ SCRIPT_FILES = (
     "scripts/windows/workflow-status.ps1",
 )
 
-OPTIONAL_DIRS = (
-    "scripts/shared/harness_backends",
-)
+OPTIONAL_DIRS = ()
 
 IGNORE_ENTRIES = (
     ".beads/workflow/",
@@ -78,11 +74,8 @@ IGNORE_ENTRIES = (
     "scripts/posix/sync-workflow-backup.sh",
     "scripts/posix/workflow-status.sh",
     "scripts/shared/agent_mail.py",
-    "scripts/shared/harness.py",
-    "scripts/shared/harness_backends/",
     "scripts/shared/manage_instructions.py",
     "scripts/shared/sync_workflow_backup.py",
-    "scripts/shared/target_runtime.py",
     "scripts/shared/workflow_backup.py",
     "scripts/shared/__pycache__/",
     "scripts/windows/agent-mail.ps1",

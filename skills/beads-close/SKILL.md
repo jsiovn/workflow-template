@@ -22,7 +22,6 @@ Do not invoke this skill:
 - in a planner session
 - before verification
 - to close beads you did not work on in this session
-- from `execute-bead-worker`; swarm workers report back to the coordinator instead
 </HARD-GATE>
 
 ## Steps
@@ -52,9 +51,8 @@ Do not invoke this skill:
   ```bash
   bd update <id> --notes "Blocked: <reason>"
   ```
-- When `executor-loop`, `executor-loop-epic`, or any other manual loop is driving the workflow, hand control back to the loop after the current bead is closed and the local commit is complete.
+- When `executor-task` or `executor-task-worktree` is driving the workflow, hand control back to it after the current bead is closed and the local commit is complete.
 - Work happens on feature branches. Merging to `main` is done via PR, not local merge.
 - Live `.beads` state is local runtime. Do not treat it as something to publish through Git during normal closeout.
-- `swarm-epic` owns bead status transitions during swarm runs. Workers never call `beads-close`.
-- Keep the closeout note concise but concrete. It should tell a fresh downstream worker what changed, where the result lives, and what is now safe to assume.
+- Keep the closeout note concise but concrete. It should tell a fresh downstream session what changed, where the result lives, and what is now safe to assume.
 

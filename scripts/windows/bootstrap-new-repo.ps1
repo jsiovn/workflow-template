@@ -1,7 +1,6 @@
 param(
     [Parameter(Mandatory = $true)][string]$RepoPath,
     [Parameter(Mandatory = $true)][string]$Prefix,
-    [ValidateSet("generic", "game-re")][string]$Profile = "generic",
     [string]$TemplateRoot = (Split-Path (Split-Path $PSScriptRoot -Parent) -Parent)
 )
 
@@ -20,7 +19,6 @@ if (-not (Test-Path (Join-Path $RepoPath ".git"))) {
 
 Write-Host "Repo:    $RepoPath"
 Write-Host "Prefix:  $Prefix"
-Write-Host "Profile: $Profile"
 
 Push-Location $RepoPath
 try {
@@ -30,6 +28,6 @@ try {
     Pop-Location
 }
 
-& (Join-Path $PSScriptRoot "scaffold-repo-files.ps1") -RepoPath $RepoPath -Prefix $Prefix -Profile $Profile -TemplateRoot $TemplateRoot
-python (Join-Path $TemplateRoot "scripts\shared\ensure_stage1_beads.py") $RepoPath --profile $Profile
+& (Join-Path $PSScriptRoot "scaffold-repo-files.ps1") -RepoPath $RepoPath -Prefix $Prefix -TemplateRoot $TemplateRoot
+python (Join-Path $TemplateRoot "scripts\shared\ensure_stage1_beads.py") $RepoPath
 Write-Host "Bootstrap complete."

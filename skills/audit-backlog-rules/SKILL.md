@@ -26,7 +26,7 @@ Do **not** use this for:
    - `BEADS_WORKFLOW.md`
    - `PRIME.md`
    - any `docs/conventions*.md`, `docs/architecture*.md`, or similar conventions files the user names
-   Extract the concrete rules: folder layout, naming conventions, file-placement rules, required commands, forbidden patterns, runtime-target expectations.
+   Extract the concrete rules: folder layout, naming conventions, file-placement rules, required commands, forbidden patterns.
 3. List the audit set:
    - `bd ready --json` for ready beads
    - `bd list --status blocked --json` for blocked beads
@@ -35,7 +35,7 @@ Do **not** use this for:
    - `Files:` paths that no longer match the new folder structure
    - `Read:` references to renamed, moved, or deleted files
    - file or symbol names in the description that violate the new naming convention
-   - `Verify:` commands that conflict with new build/test rules or runtime-target expectations
+   - `Verify:` commands that conflict with new build/test rules
    - acceptance criteria that contradict a newly added rule (e.g. "store config in X" when the rule now says "config lives in Y")
    - assumptions about tech stack, layout, or workflow that the rules update invalidated
 5. Classify each finding:

@@ -52,7 +52,6 @@ $statePath = Join-Path $workflowRoot "state.json"
 $handoffPath = Join-Path $workflowRoot "HANDOFF.json"
 $summaryPath = Join-Path $workflowRoot "STATE.md"
 $agentMailScript = Join-Path $repoRoot "scripts\windows\agent-mail.ps1"
-$targetRuntimeScript = Join-Path $repoRoot "scripts\shared\target_runtime.py"
 $pythonCmd = Get-PythonCommand
 
 Write-Host ("Repo: {0}" -f $repoRoot)
@@ -126,37 +125,6 @@ if (-not (Test-Path $workflowRoot)) {
 
     Write-Host ("Last action: {0}" -f (Get-ValueOrDefault -Value $state.last_action -Default "none"))
     Write-Host ("Next action: {0}" -f (Get-ValueOrDefault -Value $state.next_action -Default "none"))
-}
-
-$targetRuntime = $null
-if (Test-Path $targetRuntimeScript) {
-    try {
-        if ($pythonCmd -eq "py") {
-            $targetRuntimeRaw = & py -3 $targetRuntimeScript status --json
-        } elseif ($pythonCmd) {
-            $targetRuntimeRaw = & $pythonCmd $targetRuntimeScript status --json
-        }
-        if ($LASTEXITCODE -eq 0 -and $targetRuntimeRaw) {
-            $targetRuntime = $targetRuntimeRaw | ConvertFrom-Json
-        }
-    } catch {
-        $targetRuntime = $null
-    }
-}
-
-if ($targetRuntime -eq $null) {
-    Write-Host "Target runtime: local (default)"
-} else {
-    Write-Host ("Target runtime: {0}" -f (Get-ValueOrDefault -Value $targetRuntime.mode -Default "local"))
-    if ($targetRuntime.mode -eq "ssh") {
-        Write-Host ("Target host: {0}" -f (Get-ValueOrDefault -Value $targetRuntime.ssh_host -Default "unknown"))
-        Write-Host ("Target platform: {0}" -f (Get-ValueOrDefault -Value $targetRuntime.remote_platform -Default "unknown"))
-        Write-Host ("Target workdir: {0}" -f (Get-ValueOrDefault -Value $targetRuntime.remote_workdir -Default "unknown"))
-        Write-Host ("Target sync: {0}" -f (Get-ValueOrDefault -Value $targetRuntime.sync_strategy -Default "unknown"))
-        if ($targetRuntime.remote_python) {
-            Write-Host ("Target python: {0}" -f $targetRuntime.remote_python)
-        }
-    }
 }
 
 if (Test-Path $summaryPath) {

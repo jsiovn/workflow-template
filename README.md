@@ -1,6 +1,6 @@
 # Agent Workflow Template
 
-A **scaffold repo** that installs a shared Codex + Claude agent workflow into your other repos. It does not run on its own — its job is to copy a consistent set of skills, agents, docs, and helper scripts into every project you work on, so each one gets the same planner / executor / swarm flow backed by [Beads](https://github.com/steveyegge/beads) for task tracking.
+A **scaffold repo** that installs a shared Codex + Claude agent workflow into your other repos. It does not run on its own — its job is to copy a consistent set of skills, agents, docs, and helper scripts into every project you work on, so each one gets the same planner / executor flow backed by [Beads](https://github.com/steveyegge/beads) for task tracking.
 
 You install it once on your machine, then run one script per project to scaffold (or refresh) the workflow inside that project.
 
@@ -15,7 +15,7 @@ You install it once on your machine, then run one script per project to scaffold
 bash ./scripts/posix/bootstrap-new-repo.sh /path/to/your-repo myproj
 
 # 3. Inside that repo, plan and execute work using the installed skills
-#    (plan-beads → brainstorming → beads-planner → validate-beads → swarm-epic / executor-*)
+#    (plan-beads → brainstorming → beads-planner → validate-beads → executor-task / executor-task-worktree)
 
 # 4. Before pushing a PR from the downstream, sync workflow files to the backup mirror
 #    (handled automatically by the finishing-a-development-branch skill)
@@ -57,8 +57,7 @@ Per-downstream-repo install (via bootstrap script):
 - `BEADS_WORKFLOW.md`, `.beads/PRIME.md`, `.beads/README.md`
 - Managed workflow blocks injected into `AGENTS.md` and `CLAUDE.md`
 - `.codex/skills/` and `.claude/skills/` (mirrored copies of `skills/` from this template)
-- `.beads/workflow/runtime-target.json` seeded for local execution
-- Stage-2 follow-up beads to specialize `build-and-test` and configure runtime target
+- Stage-2 follow-up beads to specialize `build-and-test` and `attach-web-screenshots`
 - Managed `.gitignore` block that hides the workflow surface from the downstream's remote
 - `sync-workflow-backup` helper for pushing to the backup mirror
 
@@ -71,7 +70,7 @@ Per-downstream-repo install (via bootstrap script):
 POSIX:
 
 ```bash
-bash ./scripts/posix/bootstrap-new-repo.sh /path/to/repo myproj [profile]
+bash ./scripts/posix/bootstrap-new-repo.sh /path/to/repo myproj
 ```
 
 Windows:
@@ -79,8 +78,6 @@ Windows:
 ```powershell
 pwsh -File .\scripts\windows\bootstrap-new-repo.ps1 -RepoPath D:\path\to\repo -Prefix myproj
 ```
-
-Profiles: `generic` (default) or `game-re` (adds the game-action-harness skill for reverse-engineering game projects).
 
 ### 2. Plan the first work (in the downstream repo)
 
@@ -99,9 +96,8 @@ Make `## Verification` sections in execution plans explicit — the stage-1 `bui
 
 Pick one:
 
-- `executor-once` — one bead, fresh session
-- `executor-loop` — sequential manual execution in a long-lived session
-- `swarm-epic <epic-id>` — multi-agent execution scoped to one epic, in branch `epic/<epic-id>`
+- `executor-task` — one bead end-to-end on a fresh `feat/<bead-id>` branch + opens a PR
+- `executor-task-worktree` — same as `executor-task`, but in an isolated git worktree (parallel-safe)
 
 ### 4. Finish
 
@@ -117,8 +113,8 @@ bash ./scripts/posix/sync-workflow-backup.sh
 
 | Purpose                                          | POSIX                                                           | Windows                                                     |
 | ------------------------------------------------ | --------------------------------------------------------------- | ----------------------------------------------------------- |
-| Bootstrap a new downstream repo                  | `scripts/posix/bootstrap-new-repo.sh <repo> <prefix> [profile]` | `scripts/windows/bootstrap-new-repo.ps1`                    |
-| Refresh shared workflow surface                  | `scripts/posix/update-skills.sh <repo> [profile]`               | `scripts/windows/update-skills.ps1`                         |
+| Bootstrap a new downstream repo                  | `scripts/posix/bootstrap-new-repo.sh <repo> <prefix>`           | `scripts/windows/bootstrap-new-repo.ps1`                    |
+| Refresh shared workflow surface                  | `scripts/posix/update-skills.sh <repo>`                         | `scripts/windows/update-skills.ps1`                         |
 | Sync downstream → backup mirror                  | `scripts/posix/sync-workflow-backup.sh`                         | `scripts/windows/sync-workflow-backup.ps1`                  |
 | Restore backup mirror → downstream               | `scripts/posix/restore-workflow-backup.sh`                      | `scripts/windows/restore-workflow-backup.ps1`               |
 | Migrate legacy downstream to backup-mirror model | `scripts/posix/migrate-downstream-to-workflow-backup.sh`        | `scripts/windows/migrate-downstream-to-workflow-backup.ps1` |
@@ -138,18 +134,16 @@ Downstream repos go through two stages.
 Run automatically by the bootstrap script. Good enough to start working immediately:
 
 - Generic `build-and-test` skill that executes whatever is under each plan's `## Verification` section.
-- `.beads/workflow/runtime-target.json` defaults to **local** execution.
-- Two stage-2 follow-up beads created for you, surviving re-runs.
+- Stage-2 follow-up beads created for you, surviving re-runs.
 
 ### Stage 2 — Project-specific specialization
 
 Done in the downstream once the project's runtime shape is clear:
 
 - Specialize `build-and-test` for the project's actual stack.
-- Optionally switch runtime target to SSH (for cross-machine builds).
 - Add repo-specific operational docs.
 
-`update-skills` keeps the shared workflow synced from this template **without** overwriting your specialized `build-and-test` or your runtime-target config.
+`update-skills` keeps the shared workflow synced from this template **without** overwriting your specialized `build-and-test`.
 
 ---
 
@@ -182,12 +176,7 @@ This refreshes the scaffold, syncs to the backup, removes tracked workflow files
 
 - `.beads/` runtime state is local to each clone — never commit it, never push it through Dolt remotes.
 - Code still flows through normal feature branches and PRs.
-- Run **one** top-level epic executor session at a time per clone.
-- `swarm-epic` parallelizes ready descendant beads inside one epic, but no longer isolates multiple epics with worktrees.
-
-**Swarm-ready ≠ dependency-free.** It means each bead is _fresh-session-safe_: a new worker can execute it from the bead contract + persisted inputs + local code inspection — without replaying epic chat history.
-
-When a worker blocks: classify the blocker. Local clarifications and env issues stay on the worker; contract or scope problems go back to the coordinator and usually retry in a fresh worker.
+- Use `executor-task-worktree` when you need to run multiple beads in parallel without branch interference.
 
 ---
 
@@ -208,38 +197,26 @@ Two kinds of building blocks ship with this template:
 | `brainstorming`      | Explores user intent, requirements, and design before any coding                          | Before any creative work — required by `plan-beads` and good as a standalone         |
 | `planner-research`   | Resolves factual unknowns after brainstorming                                             | Only when uncertainty would weaken the plan                                          |
 | `beads-planner`      | Turns a settled plan into Beads epics + tasks with explicit dependencies                  | After brainstorming/research, when ready to materialize the plan                     |
-| `validate-beads`     | Quality-gates an epic for swarm execution (size, contracts, parallel-safety)              | After `beads-planner`, before `swarm-epic`                                           |
+| `validate-beads`     | Quality-gates an epic (size, contracts, fresh-session safety)                             | After `beads-planner`, before claiming any of its beads for execution                |
 | `writing-plans`      | Produces a per-bead execution plan with explicit `## Verification`                        | Inside an executor session, after a bead is claimed — never in a planner session     |
 | `audit-backlog-rules` | Audits ready/blocked beads for drift after CLAUDE.md or AGENTS.md rules change            | Right after editing project rules / conventions                                      |
 
-#### Manual execution (one bead at a time)
+#### Execution (one bead end-to-end)
 
-| Skill                | What it does                                                                       | When to use                                                                        |
-| -------------------- | ---------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| `beads-claim`        | Finds and claims a ready bead at the start of a manual executor session            | Start of a manual executor session                                                 |
-| `executor-once`      | Full cycle for one bead: claim → plan → implement → verify → close                 | One-off bead end-to-end                                                            |
-| `executor-task`      | Like `executor-once`, but on a fresh `feat/<bead-id>` branch + opens a PR          | One-bead-per-PR delivery rhythm                                                    |
-| `executor-loop`      | Repeats executor cycles bead-by-bead until the ready queue is empty                | Sequential autonomous progress, no swarm                                           |
-| `executor-loop-epic` | Same loop, scoped to descendants of one epic                                       | Sequential epic progress without swarm coordination                                |
-| `beads-close`        | Closes the bead, creates follow-ups, commits `.beads/` state                       | Final step of a manual executor cycle                                              |
-
-#### Swarm execution (multi-agent on one epic)
-
-| Skill                  | What it does                                                                                   | When to use                                                                  |
-| ---------------------- | ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| `swarm-epic <epic-id>` | Coordinates parallel workers across ready descendants of one epic, owns Beads state for them   | After `validate-beads` passes and the epic has independent parallelizable work |
-| `execute-bead-worker`  | The per-worker contract used inside a swarm — implements + verifies one bead, no state writes  | Called by `swarm-epic`; not invoked directly                                 |
-| `review-epic`          | Epic-level review after swarm/sequential execution, classifies remaining issues P1/P2/P3       | After all child beads complete, to decide close-or-follow-up                 |
+| Skill                     | What it does                                                                       | When to use                                                                        |
+| ------------------------- | ---------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `beads-claim`             | Finds and claims a ready bead at the start of an executor session                  | Start of an executor session                                                       |
+| `executor-task`           | Full cycle for one bead on a fresh `feat/<bead-id>` branch + opens a PR            | One-bead-per-PR delivery rhythm                                                    |
+| `executor-task-worktree`  | Same as `executor-task` but runs in an isolated git worktree                       | When you need to run multiple beads in parallel without branch interference        |
+| `beads-close`             | Closes the bead, creates follow-ups, commits `.beads/` state                       | Final step of an executor cycle                                                    |
 
 #### During implementation (helpers in the executor session)
 
 | Skill                            | What it does                                                                                  | When to use                                                              |
 | -------------------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
 | `systematic-debugging`           | Structured root-cause investigation before proposing a fix                                    | Any bug, test failure, or unexpected behavior                            |
-| `target-runtime-exec`            | Routes build/test/run/deploy commands through `scripts/shared/target_runtime.py` (local/SSH)  | When the repo's runtime target is not necessarily the local machine      |
 | `verification-before-completion` | Forces real verification commands before claiming "done"                                      | Before committing, opening a PR, or asserting success                    |
 | `build-and-test`                 | Runs the literal `## Verification` section of the current execution plan                      | After implementing changes; specialize per repo in stage 2                |
-| `game-action-harness`            | Triggers in-game input (ADB / SendInput) and observes via memory/log hooks                    | Reverse-engineering game repos only (`profile=game-re`)                  |
 
 #### Code review & PR delivery
 
@@ -287,11 +264,11 @@ Two kinds of building blocks ship with this template:
 **New feature, single bead:**
 `plan-beads` → `beads-planner` → `validate-beads` → `executor-task` → PR
 
-**New feature, parallelizable epic:**
-`plan-beads` → `beads-planner` → `validate-beads` → `swarm-epic <epic-id>` → `review-epic` → `finishing-a-development-branch`
+**Multiple beads in parallel:**
+`plan-beads` → `beads-planner` → `validate-beads` → `executor-task-worktree` per bead
 
 **Working through a backlog manually:**
-`beads-claim` → `writing-plans` → implement → `build-and-test` → `verification-before-completion` → `beads-close` → repeat (or `executor-loop`)
+`beads-claim` → `writing-plans` → implement → `build-and-test` → `verification-before-completion` → `beads-close` → repeat
 
 **A PR came back with comments:**
 `address-pr-comments` (re-run when more comments arrive)
@@ -321,8 +298,7 @@ Do **not** hand-edit shared skill copies inside downstream repos unless you inte
 The intended divergences in a downstream are:
 
 - the specialized `build-and-test` skill
-- repo-owned runtime wrappers
-- the checkout-local `runtime-target.json`
+- the specialized `attach-web-screenshots` skill
 
 ---
 
@@ -333,7 +309,6 @@ The intended divergences in a downstream are:
 - `templates/AGENTS.snippet.md`, `templates/CLAUDE.snippet.md` — managed snippets
 - `templates/BEADS_WORKFLOW.md`, `templates/PRIME.md` — repo-root scaffolding
 - `templates/NEW_REPO_CHECKLIST.md` — human checklist
-- `scripts/shared/target_runtime.py` — local/SSH runtime router (ships downstream)
 - `scripts/shared/workflow_backup.py` — `.gitignore` + manifest mgmt for the backup mirror
 - `scripts/shared/sync_workflow_backup.py` — pushes the downstream surface to the mirror
 - `scripts/posix/`, `scripts/windows/` — paired bootstrap, update, sync, migration scripts

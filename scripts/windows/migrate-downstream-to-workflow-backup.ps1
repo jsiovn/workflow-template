@@ -2,7 +2,6 @@ param(
     [Parameter(Mandatory = $true)][string]$RepoPath,
     [string]$BackupRepo,
     [string]$ProjectName,
-    [ValidateSet("", "generic", "game-re")][string]$Profile = "",
     [string]$TemplateRoot = (Split-Path (Split-Path $PSScriptRoot -Parent) -Parent)
 )
 
@@ -20,14 +19,7 @@ function Find-Python {
 
 & (Join-Path $PSScriptRoot "check-prereqs.ps1")
 
-$updateArgs = @{
-    RepoPath = $RepoPath
-    TemplateRoot = $TemplateRoot
-}
-if ($Profile) {
-    $updateArgs.Profile = $Profile
-}
-& (Join-Path $PSScriptRoot "update-skills.ps1") @updateArgs
+& (Join-Path $PSScriptRoot "update-skills.ps1") -RepoPath $RepoPath -TemplateRoot $TemplateRoot
 
 $python = Find-Python
 $scriptPath = Join-Path $TemplateRoot "scripts\shared\migrate_downstream_to_workflow_backup.py"
