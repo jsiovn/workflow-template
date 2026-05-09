@@ -1,6 +1,6 @@
 ---
 name: executor-task
-description: "Run a full executor cycle for one bead on a fresh feature branch off main: stash any in-flight work, switch to main, pull, create feat/<bead-id>, execute the bead end-to-end, then push and open a PR. Use when the user wants a single bead delivered as its own PR."
+description: "Run a full executor cycle for one bead on a fresh feature branch off main: stash any in-flight work, switch to main, pull, create feat/<bead-id>-<short-slug>, execute the bead end-to-end, then push and open a PR. Use when the user wants a single bead delivered as its own PR."
 ---
 
 # Executor Task
@@ -19,11 +19,23 @@ This is the preferred manual path when each bead should ship as its own pull req
    - otherwise inspect `bd ready --json` and choose the best ready bead autonomously
    - preference order: a ready bead clearly related to the current repo context or recent planner discussion, else the highest-priority ready bead
    - if the choice is ambiguous, ask before claiming
-   - record the chosen bead id as `<BEAD_ID>` (e.g. `bd-42`) for the rest of the flow
+   - record the chosen bead id as `<BEAD_ID>` (e.g. `lexify-wyk`) for the rest of the flow
 
-3. Detect the default branch. Use `git symbolic-ref refs/remotes/origin/HEAD` if present; otherwise fall back to `main` if it exists, else `master`. Record as `<DEFAULT_BRANCH>`.
+3. Derive `<TASK_SLUG>` from the bead title and record `<BRANCH_NAME>` as `feat/<BEAD_ID>-<TASK_SLUG>`:
+   - lowercase the title
+   - drop file extensions (`.tsx`, `.ts`, `.py`, etc.) and leading punctuation around tokens (`__root.tsx` → `root`)
+   - replace any non-alphanumeric run with a single `-`
+   - drop English filler words: `the`, `a`, `an`, `and`, `or`, `of`, `to`, `for`, `in`, `on`, `with`, `vs`, `via`, plus low-signal trailing words like `cleanup`, `update`, `changes`, `work`
+   - **preserve** task identifier prefixes the title carries (e.g. `t9`, `m3`, `phase2`)
+   - keep at most 4–5 meaningful tokens, joined with `-`
+   - trim leading/trailing `-`, collapse repeated `-`
+   - target ≤ 40 characters for the slug itself; truncate the last token if needed
+   - example: bead `lexify-wyk` titled `T9 — __root.tsx wiring + Home/LoggedOut swap + cleanup` → `<TASK_SLUG>` is `t9-root-wiring-swap` and `<BRANCH_NAME>` is `feat/lexify-wyk-t9-root-wiring-swap`
+   - if the title is too generic to yield ≥ 2 meaningful tokens (e.g. `Fix bug`), fall back to `<BRANCH_NAME>` = `feat/<BEAD_ID>` and note this in the final summary
 
-4. Preserve any in-flight changes on the current branch:
+4. Detect the default branch. Use `git symbolic-ref refs/remotes/origin/HEAD` if present; otherwise fall back to `main` if it exists, else `master`. Record as `<DEFAULT_BRANCH>`.
+
+5. Preserve any in-flight changes on the current branch:
    - run `git status --porcelain` to detect dirty state (tracked changes, untracked files, staged or unstaged)
    - record the current branch name as `<PREV_BRANCH>` via `git rev-parse --abbrev-ref HEAD`
    - if dirty:
@@ -36,20 +48,20 @@ This is the preferred manual path when each bead should ship as its own pull req
      - Do **not** use `git stash` — a real WIP commit on the source branch is easier to recover and survives `git checkout`.
    - if clean, no action needed
 
-5. Switch to the default branch and update it:
+6. Switch to the default branch and update it:
    ```
    git checkout <DEFAULT_BRANCH>
    git pull --ff-only
    ```
    If `pull --ff-only` fails (local divergence on the default branch), stop and ask the user — do not force or rebase silently.
 
-6. Create the feature branch off the freshly pulled default:
+7. Create the feature branch off the freshly pulled default:
    ```
-   git checkout -b feat/<BEAD_ID>
+   git checkout -b <BRANCH_NAME>
    ```
-   If `feat/<BEAD_ID>` already exists locally, stop and ask the user whether to reuse, rename, or delete it.
+   If `<BRANCH_NAME>` already exists locally, stop and ask the user whether to reuse, rename, or delete it.
 
-7. Run the executor cycle for `<BEAD_ID>` — **every step in order**:
+8. Run the executor cycle for `<BEAD_ID>` — **every step in order**:
    - `beads-claim`
    - `writing-plans`
    - implementation
@@ -59,26 +71,26 @@ This is the preferred manual path when each bead should ship as its own pull req
    - `requesting-code-review` (dispatch the code-reviewer subagent; required, not optional)
    - `beads-close`
 
-8. If separate work is discovered, create follow-up beads during execution or before close. Keep this branch scoped to `<BEAD_ID>` only.
+9. If separate work is discovered, create follow-up beads during execution or before close. Keep this branch scoped to `<BEAD_ID>` only.
 
-9. If a blocker appears, update the current bead, summarize the blocker, and stop **on the feature branch** — do not push or open a PR. The earlier WIP commit on `<PREV_BRANCH>` is intact and can be returned to with `git checkout <PREV_BRANCH>`.
+10. If a blocker appears, update the current bead, summarize the blocker, and stop **on the feature branch** — do not push or open a PR. The earlier WIP commit on `<PREV_BRANCH>` is intact and can be returned to with `git checkout <PREV_BRANCH>`.
 
-10. If build/test fails and the fix is still in scope, return to implementation and retry.
+11. If build/test fails and the fix is still in scope, return to implementation and retry.
 
-11. After successful close, finalize the branch by following the **`finishing-a-development-branch`** skill:
+12. After successful close, finalize the branch by following the **`finishing-a-development-branch`** skill:
     - verify clean tree and commits ahead of `<DEFAULT_BRANCH>`
     - run the workflow-backup sync if the repo uses the local-only workflow mirror model
     - `git push -u origin HEAD`
     - `gh pr create --base <DEFAULT_BRANCH> --title "<conventional-commit title>" --body "..."` — the PR body must include a `Bead: <BEAD_ID>` reference line (e.g. `Bead: lexify-a8m`). The title follows conventional commits format (`type(scope): description`) with no bead id prefix.
     - report the PR URL
 
-12. Stop with a concise summary: bead id, branch name, PR URL, and a one-line note if a WIP commit was left on `<PREV_BRANCH>` so the user knows where to return.
+13. Stop with a concise summary: bead id, `<BRANCH_NAME>`, PR URL, and a one-line note if a WIP commit was left on `<PREV_BRANCH>` so the user knows where to return.
 
 ## Checkout Discipline
 
 - If `bd where` fails in the current checkout, stop and repair the repo with `bd bootstrap --yes` before continuing.
 - Never rebase or force-push the default branch.
-- The feature branch must be named exactly `feat/<BEAD_ID>` so it is unambiguously tied to the bead.
+- The feature branch must be named `feat/<BEAD_ID>-<TASK_SLUG>` so it is unambiguously tied to the bead and human-readable. Fall back to `feat/<BEAD_ID>` only when the title yields fewer than 2 meaningful tokens.
 
 ## Hard Rules
 
