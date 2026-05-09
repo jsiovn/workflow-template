@@ -24,8 +24,10 @@ git checkout -b feat/<bead-id>
 ## Workflow Pointers
 
 - `plan-beads` handles discuss -> optional research -> bead creation -> validation
-- `executor-task` is the standard one-bead-per-PR executor (fresh `feat/<bead-id>` branch)
+- `executor-task` is the standard one-bead-per-PR executor (fresh `feat/<bead-id>` branch off main, PR into main)
 - `executor-task-worktree` is the same flow inside an isolated git worktree, for parallel work
+- `executor-epic-task` branches off the bead's parent epic branch (`epic/<epic-bead-id>-<slug>`) and PRs into it instead of main; auto-creates the epic branch from the default branch if it does not exist
+- `executor-epic-task-worktree` is the epic flow inside an isolated git worktree (never touches the main checkout)
 - Each bead must be fresh-session-safe: rely on the bead contract, persisted inputs, and local inspection rather than prior chat memory
 
 ## Recovery

@@ -1,0 +1,137 @@
+---
+name: executor-epic-task-worktree
+description: "Run a full executor cycle for one bead in a fresh git worktree off its parent epic branch (epic/<epic-bead-id>-<short-slug>): leaves the main working tree completely untouched, creates a sibling worktree at ../<repo>-feat-<bead-id>-<short-slug>, executes the bead end-to-end, pushes, opens a PR targeting the epic branch, then removes the worktree. Use when an epic has its own integration branch and the main tree has active work that must not be disturbed."
+---
+
+# Executor Epic Task Worktree
+
+Run exactly one full executor cycle for one bead, isolated in a fresh git worktree cut from the latest epic branch (`epic/<epic-bead-id>-<short-slug>`), and deliver it as a PR that targets that epic branch.
+
+This is the preferred path when an epic has its own long-lived integration branch (so the epic can land in main as one merge), each child bead should ship as its own PR into that epic branch, **and** the main working tree has in-flight changes that must not be touched. No WIP commit, no branch switch in the main tree — all bead work happens in a sibling worktree that is created and removed automatically.
+
+## Steps
+
+1. If the current repo is not initialized for Beads, stop and tell the user to run the template bootstrap script or at minimum `bd init --prefix <prefix>` plus the repo scaffolding steps.
+
+2. Determine the target bead **before touching anything**:
+   - if the user supplied a bead id in the current request, use that bead
+   - if the user supplied freeform selector text, treat it as a selector or hint
+   - otherwise inspect `bd ready --json` and choose the best ready bead autonomously
+   - preference order: a ready bead clearly related to the current repo context or recent planner discussion, else the highest-priority ready bead
+   - if the choice is ambiguous, ask before proceeding
+   - record the chosen bead id as `<BEAD_ID>` (e.g. `lexify-wyk`) for the rest of the flow
+
+3. Determine the **parent epic bead** for `<BEAD_ID>`:
+   - if the user supplied an epic id in the current request, use that epic
+   - otherwise inspect the bead's dependencies (`bd show <BEAD_ID> --json` and/or `bd dep list <BEAD_ID>`) and look for a parent dep whose target bead has `--type epic`
+   - if multiple epic parents exist, ask the user which one to target
+   - if no epic parent exists, stop and tell the user this skill requires the bead to be parented under an epic (or have them pass the epic id explicitly)
+   - record the epic bead id as `<EPIC_BEAD_ID>`
+
+4. Derive `<EPIC_SLUG>` from the epic bead's title using the same slug rules as below (step 5), and record `<EPIC_BRANCH>` as `epic/<EPIC_BEAD_ID>-<EPIC_SLUG>`. Fall back to `epic/<EPIC_BEAD_ID>` only when the epic title yields fewer than 2 meaningful tokens.
+
+5. Derive `<TASK_SLUG>` from the bead title and record `<BRANCH_NAME>` as `feat/<BEAD_ID>-<TASK_SLUG>`:
+   - lowercase the title
+   - drop file extensions (`.tsx`, `.ts`, `.py`, etc.) and leading punctuation around tokens (`__root.tsx` → `root`)
+   - replace any non-alphanumeric run with a single `-`
+   - drop English filler words: `the`, `a`, `an`, `and`, `or`, `of`, `to`, `for`, `in`, `on`, `with`, `vs`, `via`, plus low-signal trailing words like `cleanup`, `update`, `changes`, `work`
+   - **preserve** task identifier prefixes the title carries (e.g. `t9`, `m3`, `phase2`)
+   - keep at most 4–5 meaningful tokens, joined with `-`
+   - trim leading/trailing `-`, collapse repeated `-`
+   - target ≤ 40 characters for the slug itself; truncate the last token if needed
+   - example: bead `lexify-wyk` titled `T9 — __root.tsx wiring + Home/LoggedOut swap + cleanup` → `<TASK_SLUG>` is `t9-root-wiring-swap` and `<BRANCH_NAME>` is `feat/lexify-wyk-t9-root-wiring-swap`
+   - if the title is too generic to yield ≥ 2 meaningful tokens (e.g. `Fix bug`), fall back to `<BRANCH_NAME>` = `feat/<BEAD_ID>` and note this in the final summary
+
+6. **Do not touch the main working tree at all.** No dirty-state check, no WIP commit, no branch switch. The main tree must remain on whatever branch it is currently on.
+
+7. Resolve the epic branch. Try in this order:
+   - `git rev-parse --verify <EPIC_BRANCH>` (local)
+   - `git ls-remote --exit-code --heads origin <EPIC_BRANCH>` (remote)
+   - record whether the epic branch exists locally, only remotely, or not at all
+   - if it exists nowhere, this skill will create it from the latest default branch in step 9. Detect the default branch first: use `git symbolic-ref refs/remotes/origin/HEAD` if present; otherwise fall back to `main` if it exists, else `master`. Record as `<DEFAULT_BRANCH>`. Note in the final summary that the epic branch was created.
+
+8. Determine the worktree path. Always use just the bead id as the path suffix (no task slug) so paths stay short and predictable:
+   ```
+   REPO_NAME=$(basename $(git rev-parse --show-toplevel))
+   WORKTREE_PATH="../${REPO_NAME}-feat-${BEAD_ID}"
+   ```
+
+9. Make sure the epic branch exists on `origin` so the worktree can be cut from it cleanly. Use whichever path matches step 7:
+   - **exists on origin**:
+     ```
+     git fetch origin <EPIC_BRANCH>
+     ```
+   - **exists only locally**: push it so the worktree can branch from `origin/<EPIC_BRANCH>` (do not move the local ref):
+     ```
+     git push -u origin <EPIC_BRANCH>:<EPIC_BRANCH>
+     git fetch origin <EPIC_BRANCH>
+     ```
+   - **does not exist anywhere**: create it from the latest default branch without disturbing the main tree, then push it. Use a temporary worktree-free branch creation via `git branch` (which does not touch the working tree):
+     ```
+     git fetch origin <DEFAULT_BRANCH>
+     git branch <EPIC_BRANCH> origin/<DEFAULT_BRANCH>
+     git push -u origin <EPIC_BRANCH>
+     git fetch origin <EPIC_BRANCH>
+     ```
+
+10. Create the worktree on a new branch off the freshly fetched epic branch:
+    ```
+    git worktree add <WORKTREE_PATH> -b <BRANCH_NAME> origin/<EPIC_BRANCH>
+    ```
+    - If `<BRANCH_NAME>` already exists locally, stop and ask the user whether to reuse, rename, or delete it.
+    - If `<WORKTREE_PATH>` already exists on disk, stop and ask the user.
+
+11. Run the executor cycle for `<BEAD_ID>` — **every step in order, operating inside `<WORKTREE_PATH>`**:
+    - `beads-claim`
+    - `writing-plans`
+    - implementation
+    - `systematic-debugging` if blocked
+    - **`build-and-test`** — REQUIRED after implementation. Read the repo-local skill from the worktree (`.claude/skills/build-and-test/SKILL.md` for Claude sessions or `.codex/skills/build-and-test/SKILL.md` for Codex sessions) and follow it. Do NOT skip this step.
+    - `verification-before-completion` (run the verification commands)
+    - `requesting-code-review` (dispatch the code-reviewer subagent; required, not optional)
+    - `beads-close`
+
+12. If separate work is discovered, create follow-up beads during execution or before close. Keep this worktree scoped to `<BEAD_ID>` only.
+
+13. If a blocker appears, update the current bead, summarize the blocker, and stop — **do not remove the worktree**. Report the worktree path so the user can return to it or clean it up manually:
+    ```
+    git worktree remove <WORKTREE_PATH>   # to discard
+    git worktree prune
+    ```
+
+14. If build/test fails and the fix is still in scope, return to implementation and retry.
+
+15. After successful close, finalize the branch from within `<WORKTREE_PATH>` following the **`finishing-a-development-branch`** skill:
+    - verify clean tree and commits ahead of `<EPIC_BRANCH>` (not main)
+    - run the workflow-backup sync if the repo uses the local-only workflow mirror model
+    - `git push -u origin HEAD`
+    - `gh pr create --base <EPIC_BRANCH> --title "<conventional-commit title>" --body "..."` — the PR body must include both an `Epic: <EPIC_BEAD_ID>` line and a `Bead: <BEAD_ID>` reference line (e.g. `Bead: lexify-a8m`). The title follows conventional commits format (`type(scope): description`) with no bead id prefix.
+    - report the PR URL
+
+16. **Web screenshots** — if the bead touched any UI component or page, run the `attach-web-screenshots` skill from within `<WORKTREE_PATH>` to capture browser screenshots at all Tailwind breakpoints and attach them to the open PR. Skip only when the change is purely non-visual (e.g. utility functions, API handlers, types, tests).
+
+17. **Remove the worktree on success** (after the PR URL is confirmed and screenshots are attached if applicable):
+    ```
+    git worktree remove <WORKTREE_PATH>
+    git worktree prune
+    ```
+
+18. Stop with a concise summary: bead id, epic id, `<EPIC_BRANCH>` (PR base), `<BRANCH_NAME>`, PR URL. The main working tree was never touched. Note if the epic branch was created by this run.
+
+## Checkout Discipline
+
+- Never touch or inspect the main working tree during execution.
+- If `bd where` fails inside the worktree, stop and repair with `bd bootstrap --yes` from within the worktree before continuing.
+- Never rebase or force-push the epic branch or the default branch.
+- If the epic branch does not exist locally or on origin, create it from the latest default branch with `git branch` (no checkout, so the main tree stays put) and push it before cutting the worktree off `origin/<EPIC_BRANCH>`.
+- The feature branch must be named `feat/<BEAD_ID>-<TASK_SLUG>` so it is unambiguously tied to the bead and human-readable. Fall back to `feat/<BEAD_ID>` only when the title yields fewer than 2 meaningful tokens.
+- The worktree directory name must be `../<repo>-feat-<BEAD_ID>` (no task slug suffix) so a `git worktree list` makes the active bead obvious without the path getting unwieldy.
+
+## Hard Rules
+
+- One bead, one worktree, one PR — and the PR targets the epic branch, not the default branch.
+- Never touch the main working tree.
+- Do not silently skip verification or code review.
+- Do not continue into another bead after the PR is opened.
+- If `gh` is unavailable, push the branch and report the branch name plus the intended `--base <EPIC_BRANCH>` for manual PR creation rather than failing the whole flow.
+- Remove the worktree only after the PR URL is confirmed and screenshots are attached; keep it on blocker so the user can resume.

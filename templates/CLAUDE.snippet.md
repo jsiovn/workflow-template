@@ -12,7 +12,7 @@ This repo uses `bd` for issue tracking. Use `bd`, not markdown TODO files or alt
 
 Live `.beads` state is local-only and should not be committed. Use one top-level executor session at a time per branch.
 
-Preferred workflow entry points are `plan-beads`, `executor-task`, and `executor-task-worktree`. Use `planner-research` only inside planner sessions and keep `writing-plans` executor-only.
+Preferred workflow entry points are `plan-beads`, `executor-task`, and `executor-task-worktree`. When the bead is part of an epic that should land in main as a single merge, use `executor-epic-task` (or `executor-epic-task-worktree` for parallel work) — these branch off and PR into `epic/<epic-bead-id>-<slug>` instead of main. Use `planner-research` only inside planner sessions and keep `writing-plans` executor-only.
 
 Each bead must be fresh-session-safe: a new executor session should be able to execute from the bead contract, persisted inputs, and local code inspection without replaying prior chat.
 

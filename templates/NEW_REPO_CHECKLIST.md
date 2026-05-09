@@ -30,4 +30,4 @@
 2. Customize the repo-local `attach-web-screenshots` skill with the project's preview command and auth shape.
 3. Add repo-specific setup docs only when there is stable runtime, build, serve, deploy, or smoke-test behavior worth documenting.
 4. Keep the general workflow skills synced from this template; only the repo-local specializations should diverge.
-5. Run one top-level executor session at a time per branch. Use `executor-task-worktree` to parallelize across worktrees.
+5. Run one top-level executor session at a time per branch. Use `executor-task-worktree` (or `executor-epic-task-worktree` when the work targets an epic branch) to parallelize across worktrees.

@@ -3,7 +3,7 @@
 
 Use `BEADS_WORKFLOW.md` for the current planner and executor flow. All workflow skills are repo-local: Codex skills live under `.codex/skills/`, Claude skills under `.claude/skills/`. Subagents dispatched by skills (e.g. `code-reviewer`) live under `.codex/agents/` and `.claude/agents/`.
 
-Preferred entry points are `plan-beads`, `executor-task`, and `executor-task-worktree`. Use `planner-research` only inside a planner session when `brainstorming` still leaves material factual uncertainty.
+Preferred entry points are `plan-beads`, `executor-task`, and `executor-task-worktree`. When the bead is part of an epic that should land in main as a single merge, use `executor-epic-task` (or `executor-epic-task-worktree` for parallel work) — these branch off and PR into `epic/<epic-bead-id>-<slug>` instead of main. Use `planner-research` only inside a planner session when `brainstorming` still leaves material factual uncertainty.
 
 The executor test skill is installed under both `.claude/skills/build-and-test/SKILL.md` and `.codex/skills/build-and-test/SKILL.md` (kept in sync); read whichever matches your session and use it between implementation and final verification.
 

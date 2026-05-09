@@ -15,6 +15,8 @@ Codex and Claude Code can enter the workflow through repo-local skills installed
 - `plan-beads`
 - `executor-task`
 - `executor-task-worktree`
+- `executor-epic-task`
+- `executor-epic-task-worktree`
 
 When an executor skill stops on a blocker, continue in normal chat by telling the agent to resume the blocked bead.
 
@@ -49,7 +51,14 @@ Claims one bead and delivers it.
 Entry: a ready bead from `bd ready`.
 Exit: bead closed, code committed, follow-up beads created if needed.
 
-Use `executor-task` for the standard one-bead-per-PR rhythm. Use `executor-task-worktree` when you need to run multiple beads in parallel without branch interference.
+Pick the executor variant by base branch and isolation:
+
+- **PR base = main, current checkout:** `executor-task`
+- **PR base = main, isolated worktree (parallel-safe):** `executor-task-worktree`
+- **PR base = the bead's parent epic branch (`epic/<epic-bead-id>-<slug>`), current checkout:** `executor-epic-task`
+- **PR base = epic branch, isolated worktree:** `executor-epic-task-worktree`
+
+Use the `epic-*` variants when the whole epic should land in main as one merge and each child bead ships as its own PR into that epic branch. The epic variants resolve `<epic-bead-id>` from the task bead's parent epic; if the epic branch doesn't exist yet, they create it from the latest default branch.
 
 ## Session Boundaries
 

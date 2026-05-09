@@ -28,8 +28,10 @@ flowchart LR
         VBC[verification-before-completion]
         RCR[requesting-code-review]
         BCL[beads-close]
-        ET[executor-task<br/>orchestrator<br/>PR-per-bead]
-        ETW[executor-task-worktree<br/>orchestrator<br/>parallel-safe]
+        ET[executor-task<br/>orchestrator<br/>PR-per-bead → main]
+        ETW[executor-task-worktree<br/>orchestrator<br/>parallel-safe → main]
+        EET[executor-epic-task<br/>orchestrator<br/>PR-per-bead → epic branch]
+        EETW[executor-epic-task-worktree<br/>orchestrator<br/>parallel-safe → epic branch]
         FDB[finishing-a-development-branch]
     end
 
@@ -69,7 +71,9 @@ flowchart LR
 | `beads-close`                    | executor                        | Close bead + create follow-ups + commit            | `executor-task` orchestrators, user                                       | —                                                                                  |
 | `executor-task`                  | executor (orchestrator)         | One bead delivered as its own PR off a fresh branch from main | user                                                                      | `beads-claim` → `writing-plans` → impl → `build-and-test` → verify → `beads-close` → `finishing-a-development-branch` |
 | `executor-task-worktree`         | executor (orchestrator)         | Same as `executor-task`, but in an isolated git worktree (parallel-safe) | user                                                                      | same chain as `executor-task`                                                      |
-| `finishing-a-development-branch` | executor                        | Sync backup mirror, push, create PR                | `executor-task`, `executor-task-worktree`, user                           | —                                                                                  |
+| `executor-epic-task`             | executor (orchestrator)         | Same as `executor-task` but branches off (and PRs into) the bead's parent epic branch `epic/<epic-id>-<slug>`; auto-creates the epic branch from the default branch if missing | user                                                                      | same chain as `executor-task`                                                      |
+| `executor-epic-task-worktree`    | executor (orchestrator)         | Same as `executor-epic-task`, but in an isolated git worktree (parallel-safe; never touches the main checkout) | user                                                                      | same chain as `executor-task`                                                      |
+| `finishing-a-development-branch` | executor                        | Sync backup mirror, push, create PR                | `executor-task`, `executor-task-worktree`, `executor-epic-task`, `executor-epic-task-worktree`, user | —                                                                                  |
 | `address-pr-comments`            | maintenance                     | Iterative PR review-comment loop                   | user                                                                      | `pr-comment-fixer` subagent                                                        |
 | `project-auditor`                | maintenance                     | Full-repo audit (naming, structure, light arch)    | user                                                                      | `project-auditor` subagent                                                         |
 | `audit-backlog-rules`            | maintenance                     | Audit ready/blocked beads against current rules    | user                                                                      | —                                                                                  |
@@ -112,13 +116,20 @@ flowchart TD
 
 ---
 
-## 4. Executor flow (`executor-task` / `executor-task-worktree`)
+## 4. Executor flow (`executor-task` / `executor-task-worktree` / `executor-epic-task` / `executor-epic-task-worktree`)
 
-This is the canonical 8-step chain. `executor-task-worktree` is the same chain inside an isolated git worktree, so multiple beads can run in parallel without branch interference.
+This is the canonical 8-step chain. All four orchestrators run the same chain — they only differ in **base branch** and **isolation**:
+
+|                          | Current checkout              | Isolated worktree                    |
+| ------------------------ | ----------------------------- | ------------------------------------ |
+| **PR base = main**       | `executor-task`               | `executor-task-worktree`             |
+| **PR base = epic branch**| `executor-epic-task`          | `executor-epic-task-worktree`        |
+
+The `epic-*` variants resolve the parent epic from `bd show <BEAD_ID>` (or take an explicit epic id), branch off `epic/<epic-bead-id>-<slug>`, and target that same branch with `gh pr create --base`. If the epic branch does not exist, they create it from the latest default branch (the worktree variant uses `git branch` so the main tree stays untouched) and push it before cutting the feature branch.
 
 ```mermaid
 flowchart TD
-    START([User: 'execute bead X'<br/>or 'execute next ready']) --> ET[executor-task<br/>or executor-task-worktree]
+    START([User: 'execute bead X'<br/>or 'execute next ready']) --> ET[executor-task /<br/>executor-task-worktree /<br/>executor-epic-task /<br/>executor-epic-task-worktree]
     ET --> S1[1. beads-claim<br/>bd update --status in_progress]
     S1 --> S2[2. writing-plans<br/>save to docs/plans/...]
     S2 --> S3[3. implementation]
@@ -147,7 +158,7 @@ flowchart TD
     style BLOCK fill:#ffe1e1
 ```
 
-**`executor-task` vs `executor-task-worktree`:**
+**The four variants side by side:**
 
 ```mermaid
 flowchart LR
@@ -155,11 +166,17 @@ flowchart LR
         ETA[Branch off main:<br/>feat/&lt;bead-id&gt;] --> ETB[Run chain in current checkout] --> ETC([Stop])
     end
     subgraph ETW[executor-task-worktree]
-        ETWA[Create worktree:<br/>../&lt;repo&gt;.worktrees/feat-&lt;bead-id&gt;] --> ETWB[Run chain in worktree] --> ETWC[Cleanup worktree] --> ETWD([Stop])
+        ETWA[Create worktree<br/>off main] --> ETWB[Run chain in worktree] --> ETWC[Cleanup worktree] --> ETWD([Stop])
+    end
+    subgraph EET[executor-epic-task]
+        EETA[Resolve parent epic<br/>→ epic/&lt;epic-id&gt;-&lt;slug&gt;<br/>create if missing] --> EETB[Branch off epic:<br/>feat/&lt;bead-id&gt;] --> EETC[Run chain in current checkout] --> EETD[PR --base epic/...] --> EETE([Stop])
+    end
+    subgraph EETW[executor-epic-task-worktree]
+        EETWA[Resolve parent epic<br/>create if missing<br/>without touching main tree] --> EETWB[Create worktree<br/>off epic branch] --> EETWC[Run chain in worktree] --> EETWD[PR --base epic/...] --> EETWE[Cleanup worktree] --> EETWF([Stop])
     end
 ```
 
-Use `executor-task` for the standard one-bead-per-PR rhythm. Use `executor-task-worktree` when you need to run multiple beads in parallel without branch interference in the main checkout.
+Use `executor-task` for the standard one-bead-per-PR rhythm into main. Use `executor-task-worktree` when you need to run multiple beads in parallel without branch interference in the main checkout. Use the `executor-epic-task` variants when the whole epic should land in main as a single merge and each child bead ships as its own PR into the epic branch.
 
 ---
 
@@ -197,6 +214,8 @@ flowchart TD
     USER --> PB[plan-beads]
     USER --> ET[executor-task]
     USER --> ETW[executor-task-worktree]
+    USER --> EET[executor-epic-task]
+    USER --> EETW[executor-epic-task-worktree]
     USER --> VB[validate-beads]
     USER --> BC[beads-claim]
     USER --> BCL[beads-close]
@@ -232,6 +251,24 @@ flowchart TD
     ETW --> BCL
     ETW --> FDB
 
+    EET --> BC
+    EET --> WP
+    EET -.-> SD
+    EET --> BAT
+    EET --> VBC
+    EET --> RCR
+    EET --> BCL
+    EET --> FDB
+
+    EETW --> BC
+    EETW --> WP
+    EETW -.-> SD
+    EETW --> BAT
+    EETW --> VBC
+    EETW --> RCR
+    EETW --> BCL
+    EETW --> FDB
+
     RCR --> AGCR([agent: code-reviewer])
     APC --> AGPF([agent: pr-comment-fixer])
     PA --> AGPA([agent: project-auditor])
@@ -242,7 +279,7 @@ flowchart TD
     classDef agent fill:#fffde1,stroke:#9e9d24
 
     class PB,BS,PR,BP,VB planner
-    class ET,ETW,BC,WP,SD,BAT,VBC,RCR,BCL,FDB executor
+    class ET,ETW,EET,EETW,BC,WP,SD,BAT,VBC,RCR,BCL,FDB executor
     class APC,PA,ABR,PLB,SWB,RWB maint
     class AGCR,AGPF,AGPA agent
 ```
@@ -264,8 +301,8 @@ When you add or rename a skill, three places need to stay consistent:
 | If your new skill is…                                         | Add it as a peer of…                           | Make sure it…                                                                                                        |
 | ------------------------------------------------------------- | ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
 | A new planning step (e.g., risk assessment, security review)  | `planner-research`                             | Has a planner `<HARD-GATE>`; only invocable from `plan-beads` or directly by the user                                |
-| A new executor step (e.g., perf benchmark, contract test)     | `verification-before-completion`               | Plugs into the 8-step chain in `executor-task` / `executor-task-worktree` — update those orchestrators               |
-| A new orchestrator (different bead-selection strategy)        | `executor-task`                                | Composes the same 8-step chain; doesn't reinvent claim/close logic                                                   |
+| A new executor step (e.g., perf benchmark, contract test)     | `verification-before-completion`               | Plugs into the 8-step chain in all four `executor-task*` / `executor-epic-task*` orchestrators — update them all     |
+| A new orchestrator (different bead-selection or branching strategy) | `executor-task`                          | Composes the same 8-step chain; doesn't reinvent claim/close logic. If it just changes the base branch, model it on `executor-epic-task` |
 | A new maintenance op (audit, backup, PR helper)               | `audit-backlog-rules` or `address-pr-comments` | User-invoked only; never claims/closes beads; if it dispatches an agent, the agent gets a self-contained brief       |
 | A new subagent (planner-style review, audit, fixer)           | `agents/<name>.md`                             | Decide if it's user-invocable (default) or skill-internal; only a skill can dispatch a skill-internal one            |
 
@@ -288,5 +325,6 @@ If you're trying to learn the system from scratch, read the SKILL.md files in th
 5. `writing-plans` — the executor's most opinionated step
 6. `verification-before-completion` — why "tests pass" requires evidence
 7. `executor-task-worktree` — the parallel-safe variant
+8. `executor-epic-task` and `executor-epic-task-worktree` — same chain, but base/target the bead's parent epic branch instead of main
 
 Then re-read this document. The graph should make more sense.

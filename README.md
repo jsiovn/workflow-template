@@ -15,7 +15,9 @@ You install it once on your machine, then run one script per project to scaffold
 bash ./scripts/posix/bootstrap-new-repo.sh /path/to/your-repo myproj
 
 # 3. Inside that repo, plan and execute work using the installed skills
-#    (plan-beads → brainstorming → beads-planner → validate-beads → executor-task / executor-task-worktree)
+#    (plan-beads → brainstorming → beads-planner → validate-beads →
+#     executor-task / executor-task-worktree           ← PR into main
+#     or executor-epic-task / executor-epic-task-worktree ← PR into epic/<id> branch)
 
 # 4. Before pushing a PR from the downstream, sync workflow files to the backup mirror
 #    (handled automatically by the finishing-a-development-branch skill)
@@ -96,8 +98,10 @@ Make `## Verification` sections in execution plans explicit — the stage-1 `bui
 
 Pick one:
 
-- `executor-task` — one bead end-to-end on a fresh `feat/<bead-id>` branch + opens a PR
+- `executor-task` — one bead end-to-end on a fresh `feat/<bead-id>` branch off main + opens a PR into main
 - `executor-task-worktree` — same as `executor-task`, but in an isolated git worktree (parallel-safe)
+- `executor-epic-task` — same as `executor-task`, but branches off (and PRs into) the bead's parent epic branch `epic/<epic-bead-id>-<slug>`
+- `executor-epic-task-worktree` — same as `executor-epic-task`, but in an isolated git worktree (parallel-safe; never touches the main tree)
 
 ### 4. Finish
 
@@ -203,12 +207,14 @@ Two kinds of building blocks ship with this template:
 
 #### Execution (one bead end-to-end)
 
-| Skill                     | What it does                                                                       | When to use                                                                        |
-| ------------------------- | ---------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| `beads-claim`             | Finds and claims a ready bead at the start of an executor session                  | Start of an executor session                                                       |
-| `executor-task`           | Full cycle for one bead on a fresh `feat/<bead-id>` branch + opens a PR            | One-bead-per-PR delivery rhythm                                                    |
-| `executor-task-worktree`  | Same as `executor-task` but runs in an isolated git worktree                       | When you need to run multiple beads in parallel without branch interference        |
-| `beads-close`             | Closes the bead, creates follow-ups, commits `.beads/` state                       | Final step of an executor cycle                                                    |
+| Skill                           | What it does                                                                               | When to use                                                                            |
+| ------------------------------- | ------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
+| `beads-claim`                   | Finds and claims a ready bead at the start of an executor session                          | Start of an executor session                                                           |
+| `executor-task`                 | Full cycle for one bead on a fresh `feat/<bead-id>` branch off main + opens a PR into main | One-bead-per-PR delivery rhythm                                                        |
+| `executor-task-worktree`        | Same as `executor-task` but runs in an isolated git worktree                               | When you need to run multiple beads in parallel without branch interference            |
+| `executor-epic-task`            | Same as `executor-task` but branches off (and PRs into) the bead's parent epic branch      | Epic delivered as one merge to main; each child bead ships as its own PR into the epic |
+| `executor-epic-task-worktree`   | Same as `executor-epic-task` but runs in an isolated git worktree                          | Epic flow + parallel beads + main tree must stay untouched                             |
+| `beads-close`                   | Closes the bead, creates follow-ups, commits `.beads/` state                               | Final step of an executor cycle                                                        |
 
 #### During implementation (helpers in the executor session)
 
@@ -266,6 +272,9 @@ Two kinds of building blocks ship with this template:
 
 **Multiple beads in parallel:**
 `plan-beads` → `beads-planner` → `validate-beads` → `executor-task-worktree` per bead
+
+**Epic delivered as one merge to main, child beads as PRs into the epic branch:**
+`plan-beads` → `beads-planner` → `validate-beads` → `executor-epic-task` (or `executor-epic-task-worktree`) per child bead → final epic PR into main
 
 **Working through a backlog manually:**
 `beads-claim` → `writing-plans` → implement → `build-and-test` → `verification-before-completion` → `beads-close` → repeat
