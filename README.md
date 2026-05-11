@@ -331,6 +331,7 @@ The intended divergences in a downstream are:
 - macOS: [docs/INSTALL-MACOS.md](docs/INSTALL-MACOS.md)
 - Ubuntu/Linux: [docs/INSTALL-UBUNTU.md](docs/INSTALL-UBUNTU.md)
 - New repo walkthrough: [docs/SETUP-NEW-REPO.md](docs/SETUP-NEW-REPO.md)
+- Beads TUI: [bdtui](https://www.npmjs.com/package/bdtui)
 
 ---
 
