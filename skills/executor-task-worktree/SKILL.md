@@ -1,6 +1,6 @@
 ---
 name: executor-task-worktree
-description: "Run a full executor cycle for one bead in a fresh git worktree off main: leaves the main working tree completely untouched, creates a sibling worktree at ../<repo>-feat-<bead-id>, executes the bead end-to-end, pushes, opens a PR, then removes the worktree. Use when the main tree has active work that must not be disturbed."
+description: "Run a full executor cycle for one bead in a fresh git worktree off main: leaves the main working tree completely untouched, creates a sibling worktree at ../<repo>-feat-<bead-id>-<short-slug>, executes the bead end-to-end, pushes, opens a PR, then removes the worktree. Use when the main tree has active work that must not be disturbed."
 ---
 
 # Executor Worktree
@@ -19,31 +19,44 @@ This is the preferred path when the main working tree has in-flight changes that
    - otherwise inspect `bd ready --json` and choose the best ready bead autonomously
    - preference order: a ready bead clearly related to the current repo context or recent planner discussion, else the highest-priority ready bead
    - if the choice is ambiguous, ask before proceeding
-   - record the chosen bead id as `<BEAD_ID>` (e.g. `bd-42`) for the rest of the flow
+   - record the chosen bead id as `<BEAD_ID>` (e.g. `lexify-wyk`) for the rest of the flow
 
-3. Detect the default branch. Use `git symbolic-ref refs/remotes/origin/HEAD` if present; otherwise fall back to `main` if it exists, else `master`. Record as `<DEFAULT_BRANCH>`.
+3. Derive `<TASK_SLUG>` from the bead title and record `<BRANCH_NAME>` as `feat/<BEAD_ID>-<TASK_SLUG>`:
+   - lowercase the title
+   - drop file extensions (`.tsx`, `.ts`, `.py`, etc.) and leading punctuation around tokens (`__root.tsx` → `root`)
+   - replace any non-alphanumeric run with a single `-`
+   - drop English filler words: `the`, `a`, `an`, `and`, `or`, `of`, `to`, `for`, `in`, `on`, `with`, `vs`, `via`, plus low-signal trailing words like `cleanup`, `update`, `changes`, `work`
+   - **preserve** task identifier prefixes the title carries (e.g. `t9`, `m3`, `phase2`)
+   - keep at most 4–5 meaningful tokens, joined with `-`
+   - trim leading/trailing `-`, collapse repeated `-`
+   - target ≤ 40 characters for the slug itself; truncate the last token if needed
+   - example: bead `lexify-wyk` titled `T9 — __root.tsx wiring + Home/LoggedOut swap + cleanup` → `<TASK_SLUG>` is `t9-root-wiring-swap` and `<BRANCH_NAME>` is `feat/lexify-wyk-t9-root-wiring-swap`
+   - if the title is too generic to yield ≥ 2 meaningful tokens (e.g. `Fix bug`), fall back to `<BRANCH_NAME>` = `feat/<BEAD_ID>` and note this in the final summary
 
-4. **Do not touch the main working tree at all.** No dirty-state check, no WIP commit, no branch switch. The main tree must remain on whatever branch it is currently on.
+4. Detect the default branch. Use `git symbolic-ref refs/remotes/origin/HEAD` if present; otherwise fall back to `main` if it exists, else `master`. Record as `<DEFAULT_BRANCH>`.
 
-5. Determine the worktree path:
+5. **Do not touch the main working tree at all.** No dirty-state check, no WIP commit, no branch switch. The main tree must remain on whatever branch it is currently on.
+
+6. Determine the worktree path. Use `<BRANCH_NAME>` minus the `feat/` prefix as the path suffix so the worktree dir mirrors the branch name:
    ```
    REPO_NAME=$(basename $(git rev-parse --show-toplevel))
-   WORKTREE_PATH="../${REPO_NAME}-feat-${BEAD_ID}"
+   WORKTREE_PATH="../${REPO_NAME}-feat-${BEAD_ID}-${TASK_SLUG}"
    ```
+   (or `../${REPO_NAME}-feat-${BEAD_ID}` if you fell back to the bead-id-only branch name)
 
-6. Fetch the default branch ref so the worktree starts from the latest upstream state:
+7. Fetch the default branch ref so the worktree starts from the latest upstream state:
    ```
    git fetch origin <DEFAULT_BRANCH>
    ```
 
-7. Create the worktree on a new branch off the freshly fetched default:
+8. Create the worktree on a new branch off the freshly fetched default:
    ```
-   git worktree add <WORKTREE_PATH> -b feat/<BEAD_ID> origin/<DEFAULT_BRANCH>
+   git worktree add <WORKTREE_PATH> -b <BRANCH_NAME> origin/<DEFAULT_BRANCH>
    ```
-   - If `feat/<BEAD_ID>` already exists locally, stop and ask the user whether to reuse, rename, or delete it.
+   - If `<BRANCH_NAME>` already exists locally, stop and ask the user whether to reuse, rename, or delete it.
    - If `<WORKTREE_PATH>` already exists on disk, stop and ask the user.
 
-8. Run the executor cycle for `<BEAD_ID>` — **every step in order, operating inside `<WORKTREE_PATH>`**:
+9. Run the executor cycle for `<BEAD_ID>` — **every step in order, operating inside `<WORKTREE_PATH>`**:
    - `beads-claim`
    - `writing-plans`
    - implementation
@@ -53,39 +66,40 @@ This is the preferred path when the main working tree has in-flight changes that
    - `requesting-code-review` (dispatch the code-reviewer subagent; required, not optional)
    - `beads-close`
 
-9. If separate work is discovered, create follow-up beads during execution or before close. Keep this worktree scoped to `<BEAD_ID>` only.
+10. If separate work is discovered, create follow-up beads during execution or before close. Keep this worktree scoped to `<BEAD_ID>` only.
 
-10. If a blocker appears, update the current bead, summarize the blocker, and stop — **do not remove the worktree**. Report the worktree path so the user can return to it or clean it up manually:
+11. If a blocker appears, update the current bead, summarize the blocker, and stop — **do not remove the worktree**. Report the worktree path so the user can return to it or clean it up manually:
     ```
     git worktree remove <WORKTREE_PATH>   # to discard
     git worktree prune
     ```
 
-11. If build/test fails and the fix is still in scope, return to implementation and retry.
+12. If build/test fails and the fix is still in scope, return to implementation and retry.
 
-12. After successful close, finalize the branch from within `<WORKTREE_PATH>` following the **`finishing-a-development-branch`** skill:
+13. After successful close, finalize the branch from within `<WORKTREE_PATH>` following the **`finishing-a-development-branch`** skill:
     - verify clean tree and commits ahead of `<DEFAULT_BRANCH>`
     - run the workflow-backup sync if the repo uses the local-only workflow mirror model
     - `git push -u origin HEAD`
     - `gh pr create --base <DEFAULT_BRANCH> --title "<conventional-commit title>" --body "..."` — the PR body must include a `Bead: <BEAD_ID>` reference line (e.g. `Bead: lexify-a8m`). The title follows conventional commits format (`type(scope): description`) with no bead id prefix.
     - report the PR URL
 
-13. **Web screenshots** — if the bead touched any UI component or page, run the `attach-web-screenshots` skill from within `<WORKTREE_PATH>` to capture browser screenshots at all Tailwind breakpoints and attach them to the open PR. Skip only when the change is purely non-visual (e.g. utility functions, API handlers, types, tests).
+14. **Web screenshots** — if the bead touched any UI component or page, run the `attach-web-screenshots` skill from within `<WORKTREE_PATH>` to capture browser screenshots at all Tailwind breakpoints and attach them to the open PR. Skip only when the change is purely non-visual (e.g. utility functions, API handlers, types, tests).
 
-14. **Remove the worktree on success** (after the PR URL is confirmed and screenshots are attached if applicable):
+15. **Remove the worktree on success** (after the PR URL is confirmed and screenshots are attached if applicable):
     ```
     git worktree remove <WORKTREE_PATH>
     git worktree prune
     ```
 
-15. Stop with a concise summary: bead id, branch name, PR URL. The main working tree was never touched.
+16. Stop with a concise summary: bead id, `<BRANCH_NAME>`, PR URL. The main working tree was never touched.
 
 ## Checkout Discipline
 
 - Never touch or inspect the main working tree during execution.
 - If `bd where` fails inside the worktree, stop and repair with `bd bootstrap --yes` from within the worktree before continuing.
 - Never rebase or force-push the default branch.
-- The feature branch must be named exactly `feat/<BEAD_ID>` so it is unambiguously tied to the bead.
+- The feature branch must be named `feat/<BEAD_ID>-<TASK_SLUG>` so it is unambiguously tied to the bead and human-readable. Fall back to `feat/<BEAD_ID>` only when the title yields fewer than 2 meaningful tokens.
+- The worktree directory name must mirror the branch (`../<repo>-feat-<BEAD_ID>-<TASK_SLUG>`) so a `git worktree list` makes the active bead obvious.
 
 ## Hard Rules
 
@@ -95,3 +109,4 @@ This is the preferred path when the main working tree has in-flight changes that
 - Do not continue into another bead after the PR is opened.
 - If `gh` is unavailable, push the branch and report the branch name for manual PR creation rather than failing the whole flow.
 - Remove the worktree only after the PR URL is confirmed and screenshots are attached; keep it on blocker so the user can resume.
+- **No pausing between sub-skill invocations.** After each sub-skill (`beads-claim`, `writing-plans`, `build-and-test`, `verification-before-completion`, `requesting-code-review`, `beads-close`) completes, invoke the next one immediately without asking the user for confirmation. Only stop mid-flow for a genuine blocker (build failure, merge conflict, ambiguous bead choice).

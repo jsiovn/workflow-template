@@ -11,25 +11,23 @@
    - `bd ready --json`
    - `bd where`
    - `scripts/windows/workflow-status.ps1` or `scripts/posix/workflow-status.sh`
-4. Confirm the standalone bootstrap bead exists:
-   - `Configure target runtime for this repo`
+4. Confirm the standalone bootstrap beads exist:
    - `Specialize build-and-test for this repo`
+   - `Specialize attach-web-screenshots for this repo`
 5. Use the general planner flow immediately, even in an empty repo:
    - `plan-beads`
    - `brainstorming`
    - `planner-research` if needed
    - `beads-planner`
-   - `validate-beads` if the epic is intended for `swarm-epic`
-6. Ensure early swarm-targeted beads include `Read:`, `Inputs:`, `Files:`, and `Verify:` so a fresh worker can execute them without replaying planner chat.
-7. Keep the bootstrap-created runtime-target and build-and-test beads independent; do not nest them under the first feature epic.
+   - `validate-beads`
+6. Ensure beads include `Read:`, `Inputs:`, `Files:`, and `Verify:` so a new executor session can execute them without replaying planner chat.
+7. Keep the bootstrap-created build-and-test bead independent; do not nest it under the first feature epic.
 8. Ensure the first execution plans include an exact `## Verification` section because the stage-1 `build-and-test` skill is generic and follows the plan literally.
-9. If the first runtime-changing feature must verify against a remote machine, finish `Configure target runtime for this repo` first.
 
 ## Stage 2: Project-Specific Specialization
 
-1. After the first plan and beads make the real runtime shape clear, optionally configure the target runtime for the active checkout.
-2. Customize the repo-local `build-and-test` skill once the repeated verification flow is clear.
+1. Customize the repo-local `build-and-test` skill once the repeated verification flow is clear.
+2. Customize the repo-local `attach-web-screenshots` skill with the project's preview command and auth shape.
 3. Add repo-specific setup docs only when there is stable runtime, build, serve, deploy, or smoke-test behavior worth documenting.
 4. Keep the general workflow skills synced from this template; only the repo-local specializations should diverge.
-5. For epic swarm work, run one top-level epic executor session at a time in the checkout.
-6. Prefer `executor-once` for manual bead-by-bead work; treat long-running loop executors as compatibility paths.
+5. Run one top-level executor session at a time per branch. Use `executor-task-worktree` (or `executor-epic-task-worktree` when the work targets an epic branch) to parallelize across worktrees.

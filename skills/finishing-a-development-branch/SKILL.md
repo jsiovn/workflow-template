@@ -105,7 +105,7 @@ Branch: <branch-name>
 ## Integration
 
 **Called by:**
-- **`executor-loop-epic`** — after all beads in the epic are closed
+- **`executor-task`** / **`executor-task-worktree`** — after the bead is closed and committed
 - Any workflow that completes work on a feature branch
 
 **Pairs with:**

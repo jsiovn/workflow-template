@@ -13,7 +13,7 @@ This scaffold is the **stage 1** validator for a brand-new repo. It does not ass
 
 Once the repo has a stable runtime workflow, replace this generic version with a repo-specific one that knows the normal build, serve, launch, and smoke-test path.
 
-Project-execution commands may run locally or through an SSH-backed target runtime depending on `.beads/workflow/runtime-target.json`. Keep repo exploration local, but route runtime-dependent verification commands through `scripts/shared/target_runtime.py`.
+Keep repo exploration local. Verify the actual environment before running commands; do not assume local execution.
 
 ## Core Rule
 
@@ -76,26 +76,16 @@ If the plan says vague things like "run the app" or "make sure it works," stop a
 
 ### 5. Run the plan's verification commands in order
 
-Use the commands exactly as written in the current plan.
-
-Run runtime-dependent commands through:
-
-```bash
-python scripts/shared/target_runtime.py run -- <exact command>
-```
-
-If `.beads/workflow/runtime-target.json` is missing or still set to `local`, the helper keeps execution local. If the repo configured `ssh`, the helper syncs the repo and runs the command on the selected SSH host instead.
+Use the commands exactly as written in the current plan. Adapt them to the actual environment (platform differences, etc.) as needed, but use the exact command strings from the plan.
 
 Examples of acceptable stage-1 verification flows:
 
-- `python scripts/shared/target_runtime.py run -- npm run build`, `python scripts/shared/target_runtime.py run -- npm run preview`, then `python scripts/shared/target_runtime.py run -- curl http://127.0.0.1:4173/health`
-- `python scripts/shared/target_runtime.py run -- pytest tests/viewer/test_session.py -q`
-- `python scripts/shared/target_runtime.py run -- docker compose up -d`, then `python scripts/shared/target_runtime.py run -- curl http://localhost:3000/api/status`
+- `npm run build`, `npm run preview`, then `curl http://127.0.0.1:4173/health`
+- `pytest tests/viewer/test_session.py -q`
+- `docker compose up -d`, then `curl http://localhost:3000/api/status`
 - start a local server and inspect the UI in a browser if the plan explicitly says to do that
 
 When the plan requires manual observation, record what you actually saw. Do not replace it with a lighter automated check unless the plan explicitly allows that.
-
-**Harness-aware runs:** If the plan's verification calls for in-game actions and the repo has `.harness/actions.yaml` (profile=game-re), run those actions via `python scripts/shared/harness.py trigger <action> --json` yourself. Do NOT substitute "ask the user to click X" for a catalogued trigger. If the plan writes "user does X" but an action exists for X, that is a plan defect — return to `writing-plans` before executing. If the plan calls for an action that is not yet catalogued, either catalogue it (small scope) or flag to the user that the plan should either be tightened or a follow-up bead created.
 
 ### 6. Capture evidence while running
 
@@ -133,7 +123,6 @@ Typical stage-2 specialization examples:
 - CLI tool: package build plus command-line smoke tests
 - service: compose or process launch plus API health checks
 - device app: app launch plus live-device smoke tests
-- mixed local/remote runtime: repo-owned wrapper scripts plus target-runtime-aware verification commands
 
 ## Fix-and-Retry Loop
 

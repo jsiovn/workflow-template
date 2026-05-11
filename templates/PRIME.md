@@ -7,7 +7,7 @@
 - Default: use `bd` for all issue tracking
 - Do not create parallel TODO lists or markdown trackers
 - Live `.beads` state is local-only and not meant for Git sharing
-- Run one top-level epic executor session at a time per checkout
+- Run one top-level executor session at a time per branch
 - Planner sessions stay planner-only; executor sessions do implementation
 
 ## Useful Commands
@@ -18,16 +18,17 @@ bd show <id>
 bd update <id> --status=in_progress
 bd close <id> --reason="Completed"
 bd dep add <child-id> <parent-id>
-git checkout -b epic/<epic-id>
+git checkout -b feat/<bead-id>
 ```
 
 ## Workflow Pointers
 
-- `plan-beads` handles discuss -> optional research -> optional debate -> bead creation -> validation
-- `executor-once` is the manual single-bead executor
-- `swarm-epic` is the epic-scoped composed executor
-- `review-epic` runs before branch completion in swarm flow
-- Swarm-ready beads must be fresh-session-safe: rely on the bead contract, persisted inputs, and local inspection rather than prior chat memory
+- `plan-beads` handles discuss -> optional research -> bead creation -> validation
+- `executor-task` is the standard one-bead-per-PR executor (fresh `feat/<bead-id>` branch off main, PR into main)
+- `executor-task-worktree` is the same flow inside an isolated git worktree, for parallel work
+- `executor-epic-task` branches off the bead's parent epic branch (`epic/<epic-bead-id>-<slug>`) and PRs into it instead of main; auto-creates the epic branch from the default branch if it does not exist
+- `executor-epic-task-worktree` is the epic flow inside an isolated git worktree (never touches the main checkout)
+- Each bead must be fresh-session-safe: rely on the bead contract, persisted inputs, and local inspection rather than prior chat memory
 
 ## Recovery
 

@@ -2,7 +2,7 @@
 set -euo pipefail
 
 if [[ $# -lt 1 ]]; then
-  printf 'usage: %s <repo-path> [--backup-repo <path>] [--project-name <name>] [profile]\n' "$0" >&2
+  printf 'usage: %s <repo-path> [--backup-repo <path>] [--project-name <name>]\n' "$0" >&2
   exit 1
 fi
 
@@ -11,7 +11,6 @@ shift
 
 backup_repo=""
 project_name=""
-profile=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --backup-repo)
@@ -21,10 +20,6 @@ while [[ $# -gt 0 ]]; do
     --project-name)
       project_name="$2"
       shift 2
-      ;;
-    generic|game-re)
-      profile="$1"
-      shift
       ;;
     *)
       printf 'unknown argument: %s\n' "$1" >&2
@@ -48,11 +43,7 @@ else
   exit 1
 fi
 
-update_args=("${repo_path}")
-if [[ -n "${profile}" ]]; then
-  update_args+=("${profile}")
-fi
-bash "${script_dir}/update-skills.sh" "${update_args[@]}"
+bash "${script_dir}/update-skills.sh" "${repo_path}"
 
 args=(--repo "${repo_path}")
 if [[ -n "${backup_repo}" ]]; then

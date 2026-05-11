@@ -64,7 +64,7 @@ digraph brainstorming {
 }
 ```
 
-**The terminal state is planner handoff.** Do NOT invoke `writing-plans`, `swarm-epic`, `beads-claim`, or any implementation skill from `brainstorming`.
+**The terminal state is planner handoff.** Do NOT invoke `writing-plans`, `beads-claim`, or any implementation skill from `brainstorming`.
 
 ## The Process
 

@@ -1,7 +1,6 @@
 param(
     [Parameter(Mandatory = $true)][string]$RepoPath,
     [string]$Prefix,
-    [ValidateSet("", "generic", "game-re")][string]$Profile = "",
     [string]$TemplateRoot = (Split-Path (Split-Path $PSScriptRoot -Parent) -Parent)
 )
 
@@ -10,23 +9,6 @@ $ErrorActionPreference = "Stop"
 if (-not (Test-Path $RepoPath)) {
     throw "RepoPath does not exist: $RepoPath"
 }
-
-# Resolve effective profile: CLI flag > persisted profile.json > "generic" default.
-$profileFile = Join-Path $RepoPath ".beads\workflow\profile.json"
-$effectiveProfile = $Profile
-if (-not $effectiveProfile) {
-    if (Test-Path $profileFile) {
-        try {
-            $effectiveProfile = (Get-Content $profileFile -Raw | ConvertFrom-Json).profile
-        } catch {
-            $effectiveProfile = ""
-        }
-    }
-}
-if (-not $effectiveProfile) { $effectiveProfile = "generic" }
-
-# Skills that live in shared skills/ but are profile-gated (not copied to generic repos).
-$profileGatedSkills = @("game-action-harness")
 
 function Get-PythonCommand {
     foreach ($cmd in @("py", "python", "python3")) {
@@ -40,7 +22,6 @@ function Get-PythonCommand {
 
 $pythonCmd = Get-PythonCommand
 $workflowSource = Join-Path $TemplateRoot "templates\BEADS_WORKFLOW.md"
-$workflowStateSource = Join-Path $TemplateRoot "templates\.beads\workflow"
 $troubleshootingSource = Join-Path $TemplateRoot "docs\TROUBLESHOOTING.md"
 $codexBuildSkillSource = Join-Path $TemplateRoot "templates\.codex\skills\build-and-test"
 $skillsSource = Join-Path $TemplateRoot "skills"
@@ -52,7 +33,6 @@ $posixStatusScript = Join-Path $TemplateRoot "scripts\posix\workflow-status.sh"
 $posixAgentMailScript = Join-Path $TemplateRoot "scripts\posix\agent-mail.sh"
 $sharedAgentMailScript = Join-Path $TemplateRoot "scripts\shared\agent_mail.py"
 $sharedManageInstructionsScript = Join-Path $TemplateRoot "scripts\shared\manage_instructions.py"
-$sharedTargetRuntimeScript = Join-Path $TemplateRoot "scripts\shared\target_runtime.py"
 
 Copy-Item -Force $workflowSource (Join-Path $RepoPath "BEADS_WORKFLOW.md")
 Write-Host "Copied BEADS_WORKFLOW.md"
@@ -65,20 +45,6 @@ Copy-Item -Force (Join-Path $TemplateRoot "templates\.beads\README.md") (Join-Pa
 Write-Host "Copied .beads/PRIME.md"
 Write-Host "Copied .beads/.gitignore"
 Write-Host "Copied .beads/README.md"
-
-$workflowDestination = Join-Path $beadsDir "workflow"
-New-Item -ItemType Directory -Force -Path $workflowDestination | Out-Null
-if (Test-Path $workflowStateSource) {
-    Get-ChildItem -Path $workflowStateSource -File | ForEach-Object {
-        $destination = Join-Path $workflowDestination $_.Name
-        if (-not (Test-Path $destination)) {
-            Copy-Item -Force $_.FullName $destination
-        }
-    }
-    Write-Host "Seeded missing .beads/workflow/*"
-} else {
-    Write-Host "No .beads/workflow seed files in template; skipped"
-}
 
 New-Item -ItemType Directory -Force -Path (Join-Path $RepoPath ".codex\skills") | Out-Null
 if (-not (Test-Path (Join-Path $RepoPath ".codex\skills\build-and-test"))) {
@@ -96,10 +62,6 @@ if (-not (Test-Path (Join-Path $RepoPath ".codex\skills\attach-web-screenshots")
 }
 
 Get-ChildItem $skillsSource -Directory | ForEach-Object {
-    if ($profileGatedSkills -contains $_.Name -and $effectiveProfile -ne "game-re") {
-        Write-Host "Skipped Codex skill (profile=$effectiveProfile): $($_.Name)"
-        return
-    }
     $destination = Join-Path $RepoPath ".codex\skills\$($_.Name)"
     Remove-Item -Recurse -Force $destination -ErrorAction SilentlyContinue
     Copy-Item -Recurse -Force $_.FullName $destination
@@ -107,6 +69,15 @@ Get-ChildItem $skillsSource -Directory | ForEach-Object {
 }
 Remove-Item -Recurse -Force (Join-Path $RepoPath ".codex\skills\plan-debate") -ErrorAction SilentlyContinue
 Remove-Item -Recurse -Force (Join-Path $RepoPath ".codex\skills\plan-critic") -ErrorAction SilentlyContinue
+Remove-Item -Recurse -Force (Join-Path $RepoPath ".codex\skills\start-epic-worktree") -ErrorAction SilentlyContinue
+Remove-Item -Recurse -Force (Join-Path $RepoPath ".codex\skills\game-action-harness") -ErrorAction SilentlyContinue
+Remove-Item -Recurse -Force (Join-Path $RepoPath ".codex\skills\target-runtime-exec") -ErrorAction SilentlyContinue
+Remove-Item -Recurse -Force (Join-Path $RepoPath ".codex\skills\executor-once") -ErrorAction SilentlyContinue
+Remove-Item -Recurse -Force (Join-Path $RepoPath ".codex\skills\executor-loop") -ErrorAction SilentlyContinue
+Remove-Item -Recurse -Force (Join-Path $RepoPath ".codex\skills\executor-loop-epic") -ErrorAction SilentlyContinue
+Remove-Item -Recurse -Force (Join-Path $RepoPath ".codex\skills\swarm-epic") -ErrorAction SilentlyContinue
+Remove-Item -Recurse -Force (Join-Path $RepoPath ".codex\skills\review-epic") -ErrorAction SilentlyContinue
+Remove-Item -Recurse -Force (Join-Path $RepoPath ".codex\skills\execute-bead-worker") -ErrorAction SilentlyContinue
 Get-ChildItem (Join-Path $TemplateRoot "templates\.codex\skills") -Directory -ErrorAction SilentlyContinue | ForEach-Object {
     if ($_.Name -ne "build-and-test" -and $_.Name -ne "attach-web-screenshots") {
         $destination = Join-Path $RepoPath ".codex\skills\$($_.Name)"
@@ -115,7 +86,6 @@ Get-ChildItem (Join-Path $TemplateRoot "templates\.codex\skills") -Directory -Er
         Write-Host "Copied Codex provider skill: $($_.Name)"
     }
 }
-Remove-Item -Recurse -Force (Join-Path $RepoPath ".codex\skills\start-epic-worktree") -ErrorAction SilentlyContinue
 
 New-Item -ItemType Directory -Force -Path (Join-Path $RepoPath ".claude\skills") | Out-Null
 if (-not (Test-Path (Join-Path $RepoPath ".claude\skills\build-and-test"))) {
@@ -132,10 +102,6 @@ if (-not (Test-Path (Join-Path $RepoPath ".claude\skills\attach-web-screenshots"
 }
 
 Get-ChildItem $skillsSource -Directory | ForEach-Object {
-    if ($profileGatedSkills -contains $_.Name -and $effectiveProfile -ne "game-re") {
-        Write-Host "Skipped Claude skill (profile=$effectiveProfile): $($_.Name)"
-        return
-    }
     $destination = Join-Path $RepoPath ".claude\skills\$($_.Name)"
     Remove-Item -Recurse -Force $destination -ErrorAction SilentlyContinue
     Copy-Item -Recurse -Force $_.FullName $destination
@@ -143,6 +109,15 @@ Get-ChildItem $skillsSource -Directory | ForEach-Object {
 }
 Remove-Item -Recurse -Force (Join-Path $RepoPath ".claude\skills\plan-debate") -ErrorAction SilentlyContinue
 Remove-Item -Recurse -Force (Join-Path $RepoPath ".claude\skills\plan-critic") -ErrorAction SilentlyContinue
+Remove-Item -Recurse -Force (Join-Path $RepoPath ".claude\skills\start-epic-worktree") -ErrorAction SilentlyContinue
+Remove-Item -Recurse -Force (Join-Path $RepoPath ".claude\skills\game-action-harness") -ErrorAction SilentlyContinue
+Remove-Item -Recurse -Force (Join-Path $RepoPath ".claude\skills\target-runtime-exec") -ErrorAction SilentlyContinue
+Remove-Item -Recurse -Force (Join-Path $RepoPath ".claude\skills\executor-once") -ErrorAction SilentlyContinue
+Remove-Item -Recurse -Force (Join-Path $RepoPath ".claude\skills\executor-loop") -ErrorAction SilentlyContinue
+Remove-Item -Recurse -Force (Join-Path $RepoPath ".claude\skills\executor-loop-epic") -ErrorAction SilentlyContinue
+Remove-Item -Recurse -Force (Join-Path $RepoPath ".claude\skills\swarm-epic") -ErrorAction SilentlyContinue
+Remove-Item -Recurse -Force (Join-Path $RepoPath ".claude\skills\review-epic") -ErrorAction SilentlyContinue
+Remove-Item -Recurse -Force (Join-Path $RepoPath ".claude\skills\execute-bead-worker") -ErrorAction SilentlyContinue
 Get-ChildItem (Join-Path $TemplateRoot "templates\.claude\skills") -Directory -ErrorAction SilentlyContinue | ForEach-Object {
     if ($_.Name -ne "build-and-test") {
         $destination = Join-Path $RepoPath ".claude\skills\$($_.Name)"
@@ -151,7 +126,6 @@ Get-ChildItem (Join-Path $TemplateRoot "templates\.claude\skills") -Directory -E
         Write-Host "Copied Claude provider skill: $($_.Name)"
     }
 }
-Remove-Item -Recurse -Force (Join-Path $RepoPath ".claude\skills\start-epic-worktree") -ErrorAction SilentlyContinue
 
 # Shared agents — copied to both providers (same pattern as skills/).
 $sharedAgentsSource = Join-Path $TemplateRoot "agents"
@@ -203,32 +177,15 @@ Write-Host "Copied scripts/posix/*"
 New-Item -ItemType Directory -Force -Path (Join-Path $RepoPath "scripts\shared") | Out-Null
 Copy-Item -Force $sharedAgentMailScript (Join-Path $RepoPath "scripts\shared\agent_mail.py")
 Copy-Item -Force $sharedManageInstructionsScript (Join-Path $RepoPath "scripts\shared\manage_instructions.py")
-Copy-Item -Force $sharedTargetRuntimeScript (Join-Path $RepoPath "scripts\shared\target_runtime.py")
 Remove-Item -Force (Join-Path $RepoPath "scripts\shared\run_plan_critic.py") -ErrorAction SilentlyContinue
 Copy-Item -Force (Join-Path $TemplateRoot "scripts\shared\sync_workflow_backup.py") (Join-Path $RepoPath "scripts\shared\sync_workflow_backup.py")
 Copy-Item -Force (Join-Path $TemplateRoot "scripts\shared\workflow_backup.py") (Join-Path $RepoPath "scripts\shared\workflow_backup.py")
 Remove-Item -Force (Join-Path $RepoPath "scripts\shared\shared_beads.py") -ErrorAction SilentlyContinue
 Remove-Item -Force (Join-Path $RepoPath "scripts\shared\start_epic_worktree.py") -ErrorAction SilentlyContinue
+Remove-Item -Force (Join-Path $RepoPath "scripts\shared\harness.py") -ErrorAction SilentlyContinue
+Remove-Item -Recurse -Force (Join-Path $RepoPath "scripts\shared\harness_backends") -ErrorAction SilentlyContinue
+Remove-Item -Force (Join-Path $RepoPath "scripts\shared\target_runtime.py") -ErrorAction SilentlyContinue
 Write-Host "Copied scripts/shared/*"
-
-# Profile-gated: harness runtime installs only for game-re repos.
-if ($effectiveProfile -eq "game-re") {
-    $harnessSrc = Join-Path $TemplateRoot "scripts\shared\harness.py"
-    $harnessBackendsSrc = Join-Path $TemplateRoot "scripts\shared\harness_backends"
-    $harnessBackendsDst = Join-Path $RepoPath "scripts\shared\harness_backends"
-    Copy-Item -Force $harnessSrc (Join-Path $RepoPath "scripts\shared\harness.py")
-    New-Item -ItemType Directory -Force -Path $harnessBackendsDst | Out-Null
-    Get-ChildItem $harnessBackendsSrc -File | ForEach-Object {
-        Copy-Item -Force $_.FullName (Join-Path $harnessBackendsDst $_.Name)
-    }
-    Write-Host "Copied scripts/shared/harness.py and harness_backends/ (profile=game-re)"
-}
-
-# Persist the effective profile so subsequent runs without -Profile stay consistent.
-New-Item -ItemType Directory -Force -Path (Join-Path $RepoPath ".beads\workflow") | Out-Null
-$profileJson = @{ version = 1; profile = $effectiveProfile } | ConvertTo-Json -Compress
-[System.IO.File]::WriteAllText($profileFile, $profileJson, (New-Object System.Text.UTF8Encoding($false)))
-Write-Host "Persisted profile=$effectiveProfile to .beads/workflow/profile.json"
 
 New-Item -ItemType Directory -Force -Path (Join-Path $RepoPath "docs") | Out-Null
 Copy-Item -Force $troubleshootingSource (Join-Path $RepoPath "docs\TROUBLESHOOTING.md")

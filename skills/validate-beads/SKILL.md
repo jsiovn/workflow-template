@@ -1,6 +1,6 @@
 ---
 name: validate-beads
-description: "Validate a planned epic before autonomous execution. Use after beads-planner and before swarm-epic to check dependency quality, bead size, fresh-session-safe bead contracts, verification instructions, and parallel-safety notes."
+description: "Validate a planned epic before autonomous execution. Use after beads-planner to check dependency quality, bead size, fresh-session-safe bead contracts, verification instructions, and parallel-safety notes."
 ---
 
 # Validate Beads
@@ -9,7 +9,7 @@ Run a pre-execution quality gate for an epic before autonomous execution starts.
 
 ## Goal
 
-Catch planning defects before workers start coding. This is a planner-side validation pass, not an implementation step.
+Catch planning defects before execution starts coding. This is a planner-side validation pass, not an implementation step.
 
 ## Steps
 
@@ -20,12 +20,11 @@ Catch planning defects before workers start coding. This is a planner-side valid
 3. Inspect the epic and its child beads. Use `bd show <epic-id> --json` plus the current planning context and `.beads/` state as needed.
 4. Validate the epic against this checklist:
    - the target is actually an epic
-   - child beads are small enough for one focused worker session
+   - child beads are small enough for one focused executor session
    - dependencies are explicit and coherent
    - no two child beads describe the same work
    - there is a meaningful final integration or `build-and-test` bead when runtime behavior changed
-   - if verification depends on SSH execution or a non-default target platform, the dependency graph includes a runtime-target setup bead before affected implementation beads
-   - every swarm-ready bead includes:
+   - every bead includes:
      - `Read:`
      - `Inputs:`
      - `Files:`
@@ -33,25 +32,25 @@ Catch planning defects before workers start coding. This is a planner-side valid
      - `Risk:`
      - `Parallel:`
      - `Escalate:`
-   - every swarm-ready bead is fresh-session-safe: a worker can execute it from the bead contract plus local inspection without replaying prior chat context
+   - every bead is fresh-session-safe: an executor can run it from the bead contract plus local inspection without replaying prior chat context
    - `Inputs:` references persisted state only, not conversational memory
    - beads marked as parallel do not obviously overlap the same file scope
 5. Classify findings:
    - blocking: missing execution contract, duplicate work, broken dependency shape, oversized bead, or chat-context-dependent bead
    - non-blocking: wording cleanup, minor note improvements
 6. If blocking findings exist:
-   - do not start `swarm-epic`
+   - do not approve any bead for execution
    - update beads, notes, or dependencies until the blockers are removed
    - report exactly what still needs to change
 7. If the epic passes:
-   - report that the epic is validated for swarm execution
+   - report that the epic is validated
    - identify the first ready descendants or likely first wave
-   - recommend `swarm-epic`
+   - recommend claiming a bead via `executor-task` or `executor-task-worktree`
 
 ## Hard Rules
 
 - Do not claim beads.
 - Do not implement code.
-- Do not approve a swarm run while any bead is missing `Read:`, `Inputs:`, `Files:`, or `Verify:`.
-- Fail closed if a bead would require a worker to infer missing product intent from earlier conversation history.
+- Do not approve any bead while it is missing `Read:`, `Inputs:`, `Files:`, or `Verify:`.
+- Fail closed if a bead would require an executor to infer missing product intent from earlier conversation history.
 - When in doubt about parallel safety, fail closed and mark the work as sequential.

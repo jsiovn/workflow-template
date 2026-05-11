@@ -29,7 +29,7 @@ Run a planner-only Beads session.
 - Do not claim beads.
 - Do not start implementation.
 - Do not create a parallel planning tracker or second source of truth outside the settled plan/spec plus Beads.
-- Do not invoke `beads-claim`, `writing-plans`, repo-local `build-and-test`, `swarm-epic`, or `beads-close`.
+- Do not invoke `beads-claim`, `writing-plans`, repo-local `build-and-test`, or `beads-close`.
 - Keep Beads as the source of truth for task state.
 - In the normal flow, the explicit user confirmation gate is the bead-creation handoff right before `beads-planner`.
 
