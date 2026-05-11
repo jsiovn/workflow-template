@@ -1,11 +1,11 @@
 ---
 name: executor-epic-task-worktree
-description: "Run a full executor cycle for one bead in a fresh git worktree off its parent epic branch (epic/<epic-bead-id>-<short-slug>): leaves the main working tree completely untouched, creates a sibling worktree at ../<repo>-feat-<bead-id>-<short-slug>, executes the bead end-to-end, pushes, opens a PR targeting the epic branch, then removes the worktree. Use when an epic has its own integration branch and the main tree has active work that must not be disturbed."
+description: "Run a full executor cycle for one bead in a fresh git worktree off its parent epic branch (epic/<epic-bead-id>): leaves the main working tree completely untouched, creates a sibling worktree at ../<repo>-feat-<bead-id>, executes the bead end-to-end, pushes, opens a PR targeting the epic branch, then removes the worktree. Use when an epic has its own integration branch and the main tree has active work that must not be disturbed."
 ---
 
 # Executor Epic Task Worktree
 
-Run exactly one full executor cycle for one bead, isolated in a fresh git worktree cut from the latest epic branch (`epic/<epic-bead-id>-<short-slug>`), and deliver it as a PR that targets that epic branch.
+Run exactly one full executor cycle for one bead, isolated in a fresh git worktree cut from the latest epic branch (`epic/<epic-bead-id>`), and deliver it as a PR that targets that epic branch.
 
 This is the preferred path when an epic has its own long-lived integration branch (so the epic can land in main as one merge), each child bead should ship as its own PR into that epic branch, **and** the main working tree has in-flight changes that must not be touched. No WIP commit, no branch switch in the main tree — all bead work happens in a sibling worktree that is created and removed automatically.
 
@@ -28,7 +28,7 @@ This is the preferred path when an epic has its own long-lived integration branc
    - if no epic parent exists, stop and tell the user this skill requires the bead to be parented under an epic (or have them pass the epic id explicitly)
    - record the epic bead id as `<EPIC_BEAD_ID>`
 
-4. Derive `<EPIC_SLUG>` from the epic bead's title using the same slug rules as below (step 5), and record `<EPIC_BRANCH>` as `epic/<EPIC_BEAD_ID>-<EPIC_SLUG>`. Fall back to `epic/<EPIC_BEAD_ID>` only when the epic title yields fewer than 2 meaningful tokens.
+4. Record `<EPIC_BRANCH>` as `epic/<EPIC_BEAD_ID>` — no slug. Using just the bead id prevents duplicate branches when different sessions derive different slugs from the same epic title.
 
 5. Derive `<TASK_SLUG>` from the bead title and record `<BRANCH_NAME>` as `feat/<BEAD_ID>-<TASK_SLUG>`:
    - lowercase the title
@@ -123,7 +123,7 @@ This is the preferred path when an epic has its own long-lived integration branc
 - Never touch or inspect the main working tree during execution.
 - If `bd where` fails inside the worktree, stop and repair with `bd bootstrap --yes` from within the worktree before continuing.
 - Never rebase or force-push the epic branch or the default branch.
-- If the epic branch does not exist locally or on origin, create it from the latest default branch with `git branch` (no checkout, so the main tree stays put) and push it before cutting the worktree off `origin/<EPIC_BRANCH>`.
+- If the epic branch (`epic/<EPIC_BEAD_ID>`) does not exist locally or on origin, create it from the latest default branch with `git branch` (no checkout, so the main tree stays put) and push it before cutting the worktree off `origin/<EPIC_BRANCH>`.
 - The feature branch must be named `feat/<BEAD_ID>-<TASK_SLUG>` so it is unambiguously tied to the bead and human-readable. Fall back to `feat/<BEAD_ID>` only when the title yields fewer than 2 meaningful tokens.
 - The worktree directory name must be `../<repo>-feat-<BEAD_ID>` (no task slug suffix) so a `git worktree list` makes the active bead obvious without the path getting unwieldy.
 
@@ -135,3 +135,4 @@ This is the preferred path when an epic has its own long-lived integration branc
 - Do not continue into another bead after the PR is opened.
 - If `gh` is unavailable, push the branch and report the branch name plus the intended `--base <EPIC_BRANCH>` for manual PR creation rather than failing the whole flow.
 - Remove the worktree only after the PR URL is confirmed and screenshots are attached; keep it on blocker so the user can resume.
+- **No pausing between sub-skill invocations.** After each sub-skill (`beads-claim`, `writing-plans`, `build-and-test`, `verification-before-completion`, `requesting-code-review`, `beads-close`) completes, invoke the next one immediately without asking the user for confirmation. Only stop mid-flow for a genuine blocker (build failure, merge conflict, ambiguous bead choice).

@@ -1,11 +1,11 @@
 ---
 name: executor-epic-task
-description: "Run a full executor cycle for one bead on a fresh feature branch off its parent epic branch (epic/<epic-bead-id>-<short-slug>): stash any in-flight work, switch to the epic branch, pull, create feat/<bead-id>-<short-slug>, execute the bead end-to-end, then push and open a PR targeting the epic branch. Use when the user wants a single bead delivered as its own PR into an in-progress epic branch instead of main."
+description: "Run a full executor cycle for one bead on a fresh feature branch off its parent epic branch (epic/<epic-bead-id>): stash any in-flight work, switch to the epic branch, pull, create feat/<bead-id>-<short-slug>, execute the bead end-to-end, then push and open a PR targeting the epic branch. Use when the user wants a single bead delivered as its own PR into an in-progress epic branch instead of main."
 ---
 
 # Executor Epic Task
 
-Run exactly one full executor cycle for one bead, isolated on a fresh feature branch cut from the latest epic branch (`epic/<epic-bead-id>-<short-slug>`), and deliver it as a PR that targets that epic branch.
+Run exactly one full executor cycle for one bead, isolated on a fresh feature branch cut from the latest epic branch (`epic/<epic-bead-id>`), and deliver it as a PR that targets that epic branch.
 
 This is the preferred manual path when an epic has its own long-lived integration branch (so the epic can land in main as one merge) and each child bead should ship as its own PR into that epic branch.
 
@@ -28,7 +28,7 @@ This is the preferred manual path when an epic has its own long-lived integratio
    - if no epic parent exists, stop and tell the user this skill requires the bead to be parented under an epic (or have them pass the epic id explicitly)
    - record the epic bead id as `<EPIC_BEAD_ID>`
 
-4. Derive `<EPIC_SLUG>` from the epic bead's title using the same slug rules as below (step 5), and record `<EPIC_BRANCH>` as `epic/<EPIC_BEAD_ID>-<EPIC_SLUG>`. Fall back to `epic/<EPIC_BEAD_ID>` only when the epic title yields fewer than 2 meaningful tokens.
+4. Record `<EPIC_BRANCH>` as `epic/<EPIC_BEAD_ID>` — no slug. Using just the bead id prevents duplicate branches when different sessions derive different slugs from the same epic title.
 
 5. Derive `<TASK_SLUG>` from the bead title and record `<BRANCH_NAME>` as `feat/<BEAD_ID>-<TASK_SLUG>`:
    - lowercase the title
@@ -117,3 +117,4 @@ This is the preferred manual path when an epic has its own long-lived integratio
 - Do not silently skip verification or code review.
 - Do not continue into another bead after the PR is opened.
 - If `gh` is unavailable, push the branch and report the branch name plus the intended `--base <EPIC_BRANCH>` for manual PR creation rather than failing the whole flow.
+- **No pausing between sub-skill invocations.** After each sub-skill (`beads-claim`, `writing-plans`, `build-and-test`, `verification-before-completion`, `requesting-code-review`, `beads-close`) completes, invoke the next one immediately without asking the user for confirmation. Only stop mid-flow for a genuine blocker (build failure, merge conflict, ambiguous bead choice).

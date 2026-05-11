@@ -99,3 +99,4 @@ This is the preferred manual path when each bead should ship as its own pull req
 - Do not silently skip verification or code review.
 - Do not continue into another bead after the PR is opened.
 - If `gh` is unavailable, push the branch and report the branch name for manual PR creation rather than failing the whole flow.
+- **No pausing between sub-skill invocations.** After each sub-skill (`beads-claim`, `writing-plans`, `build-and-test`, `verification-before-completion`, `requesting-code-review`, `beads-close`) completes, invoke the next one immediately without asking the user for confirmation. Only stop mid-flow for a genuine blocker (build failure, merge conflict, ambiguous bead choice).
