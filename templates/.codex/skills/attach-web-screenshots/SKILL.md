@@ -21,9 +21,15 @@ Screenshots are stored under `docs/screenshots/<branch-name>/` so each branch ha
 
 2. **Identify what to screenshot** — from the bead description, plan, or user input, determine which URLs to visit and what to call each one (e.g. "Full-page mode", "Modal mode", "Mobile view").
 
-3. **Ensure the preview server is running** — the app must be live at a known port. Check if it is already running; if not, look at `package.json` scripts or the project README to find the right preview command and start it in the background. Common patterns: `npm run preview`, `vite preview`, a mock-mode flag like `VITE_USE_MOCKS=true`. Wait a couple of seconds after starting before navigating.
+3. **Ensure the preview server is running** — the app must be live at port `5173`. Check if it is already running; if not, start it in the background from `apps/web/`:
 
-4. **Inject auth (if the route is protected)** — use `initScript` in `navigate_page` to monkey-patch `window.fetch` before MSW or any other interceptor. Check the project's auth API (e.g. a `/auth/me` or `/api/session` endpoint) and the app's User type to know what shape to return. The pattern:
+   ```bash
+   (cd apps/web && VITE_USE_MOCKS=true bun run dev) &
+   ```
+
+   The `VITE_USE_MOCKS=true` flag activates the MSW service worker so all API calls are intercepted by mock handlers — no real C++ API server needed. Wait 2–3 seconds for Vite to finish HMR startup before navigating.
+
+4. **Inject auth (if the route is protected)** — use `initScript` in `navigate_page` to monkey-patch `window.fetch` before MSW or any other interceptor. The app's auth check calls `GET /auth/me`; return a shape matching the `User` schema (`id`, `email`, `name`, `created_at`, `language`, `theme`; omit optional `avatar_url`):
 
    ```js
    const orig = window.fetch;
@@ -34,9 +40,16 @@ Screenshots are stored under `docs/screenshots/<branch-name>/` so each branch ha
          : input instanceof URL
            ? input.href
            : (input && input.url) || "";
-     if (url.includes("<auth-endpoint>")) {
+     if (url.includes("/auth/me")) {
        return new Response(
-         JSON.stringify({ /* fields matching the app's User shape */ }),
+         JSON.stringify({
+           id: "mock-user-1",
+           email: "demo@lexify.app",
+           name: "Demo User",
+           created_at: "2024-01-01T00:00:00Z",
+           language: "en",
+           theme: "light"
+         }),
          { status: 200, headers: { "Content-Type": "application/json" } },
        );
      }
@@ -63,18 +76,27 @@ Screenshots are stored under `docs/screenshots/<branch-name>/` so each branch ha
    - Save with `take_screenshot` to `/tmp/<slug>-<label>.png` (e.g. `home-lg.png`)
    - Use `fullPage: true` for full-page views; omit it (viewport only) for modal/overlay views
 
-6. **Commit to the branch** — store under `docs/screenshots/<branch>/`. Sanitize the branch name (replace `/` with `-`) so it stays a single flat folder:
+6. **Commit to the branch** — store under `docs/screenshots/<branch>/` at the **repo root** (never inside `apps/web/`). Sanitize the branch name (replace `/` with `-`) so it stays a single flat folder:
 
    ```bash
+   REPO_ROOT=$(git rev-parse --show-toplevel)
    BRANCH=$(git rev-parse --abbrev-ref HEAD | tr '/' '-')
-   mkdir -p "docs/screenshots/$BRANCH"
-   cp /tmp/<slug>-base.png /tmp/<slug>-sm.png /tmp/<slug>-md.png /tmp/<slug>-lg.png /tmp/<slug>-xl.png /tmp/<slug>-2xl.png "docs/screenshots/$BRANCH/"
-   git add docs/screenshots/
-   git commit -m "docs: add screenshots for PR"
-   git push
+   mkdir -p "$REPO_ROOT/docs/screenshots/$BRANCH"
+   cp /tmp/<slug>-base.png /tmp/<slug>-sm.png /tmp/<slug>-md.png /tmp/<slug>-lg.png /tmp/<slug>-xl.png /tmp/<slug>-2xl.png "$REPO_ROOT/docs/screenshots/$BRANCH/"
+   git -C "$REPO_ROOT" add docs/screenshots/
+   git -C "$REPO_ROOT" commit -m "docs: add screenshots for PR"
+   git -C "$REPO_ROOT" push
    ```
 
-7. **Post the PR comment** — use the template below. Group by feature/URL, with breakpoints as a sub-row. Keep it brief.
+7. **Close all browser pages** — after the final screenshot, close every page opened during the session:
+
+   ```
+   close_page(<pageId>)  # repeat for each opened page
+   ```
+
+   The last remaining page cannot be closed — leave it. Track page IDs from `new_page` responses.
+
+8. **Post the PR comment** — use the template below. Group by feature/URL, with breakpoints as a sub-row. Keep it brief.
 
 ## Comment template
 
@@ -101,14 +123,6 @@ Post with:
 ```bash
 gh pr comment <number> --body "..."
 ```
-
-8. **Close all browser pages** — after posting the PR comment, close every page opened during this session. This is the final step — always run it before reporting the task as done:
-
-   ```
-   close_page(<pageId>)  # repeat for each page opened via new_page
-   ```
-
-   The last remaining page cannot be closed — leave it. Track page IDs from `new_page` responses throughout the session.
 
 ## Notes
 
