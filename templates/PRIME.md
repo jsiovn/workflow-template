@@ -28,6 +28,7 @@ git checkout -b feat/<bead-id>
 - `executor-task-worktree` is the same flow inside an isolated git worktree, for parallel work
 - `executor-epic-task` branches off the bead's parent epic branch (`epic/<epic-bead-id>-<slug>`) and PRs into it instead of main; auto-creates the epic branch from the default branch if it does not exist
 - `executor-epic-task-worktree` is the epic flow inside an isolated git worktree (never touches the main checkout)
+- `executor-rework-in-place` re-executes a reopened bead on the **current** feature branch and pushes more commits into its **existing** open PR (no new branch, no new PR); use after `bd reopen <id>` when the task was wrong
 - Each bead must be fresh-session-safe: rely on the bead contract, persisted inputs, and local inspection rather than prior chat memory
 
 ## Recovery

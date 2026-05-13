@@ -1,199 +1,137 @@
 # Agent Workflow Template
 
-A **scaffold repo** that installs a shared Codex + Claude agent workflow into your other repos. It does not run on its own — its job is to copy a consistent set of skills, agents, docs, and helper scripts into every project you work on, so each one gets the same planner / executor flow backed by [Beads](https://github.com/steveyegge/beads) for task tracking.
+A scaffold that drops a consistent **planner → executor** agent workflow into any repo you work on. It installs a shared set of skills, agents, helper scripts, and [Beads](https://github.com/steveyegge/beads)-backed task tracking so that **Claude Code** and **Codex** follow the same playbook in every project — you plan once, execute one bead per PR, and ship.
 
-You install it once on your machine, then run one script per project to scaffold (or refresh) the workflow inside that project.
+This repo doesn't run anything itself. You install it once on your machine, then run one script per project to scaffold (or refresh) the workflow inside that project.
 
 ---
 
-## TL;DR
+## Preinstall
+
+You need three machine-wide tools before bootstrapping any project:
+
+| Tool      | What for                          | Verify                  |
+| --------- | --------------------------------- | ----------------------- |
+| `bd`      | Beads CLI (issue tracking)        | `bd version`            |
+| `dolt`    | Storage backend used by `bd`      | `dolt version`          |
+| `python3` | Helper scripts in `scripts/`      | `python3 --version`     |
+
+Per-OS install instructions:
+
+- macOS — [docs/INSTALL-MACOS.md](docs/INSTALL-MACOS.md)
+- Ubuntu / Linux — [docs/INSTALL-UBUNTU.md](docs/INSTALL-UBUNTU.md)
+- Windows — [docs/INSTALL-WINDOWS.md](docs/INSTALL-WINDOWS.md)
+
+To verify everything is in place in one shot:
 
 ```bash
-# 1. One-time, per machine: install bd, dolt, python (see install guides below)
-
-# 2. Per project: bootstrap a downstream repo
-bash ./scripts/posix/bootstrap-new-repo.sh /path/to/your-repo myproj
-
-# 3. Inside that repo, plan and execute work using the installed skills
-#    (plan-beads → brainstorming → beads-planner → validate-beads →
-#     executor-task / executor-task-worktree           ← PR into main
-#     or executor-epic-task / executor-epic-task-worktree ← PR into epic/<id> branch)
-
-# 4. Before pushing a PR from the downstream, sync workflow files to the backup mirror
-#    (handled automatically by the finishing-a-development-branch skill)
+bash ./scripts/posix/check-prereqs.sh
+# Windows:
+pwsh -File .\scripts\windows\check-prereqs.ps1
 ```
 
-To refresh an already-bootstrapped repo with the latest template:
+---
+
+## How to install
+
+### 1. Clone this template to a stable path on your machine
 
 ```bash
-bash ./scripts/posix/update-skills.sh /path/to/your-repo
+git clone https://github.com/jsiovn/workflow-template.git ~/www/workflow-template
 ```
 
-Windows users: every `.sh` has a `.ps1` twin under `scripts/windows/`.
+Pick any path you like — just keep it stable, because your shell aliases (next section) and downstream `update-skills` invocations will point at it.
 
----
+### 2. Bootstrap a project
 
-## Mental Model
-
-There are **three** distinct repos to keep straight:
-
-| Repo                        | What lives there                                                                | Tracked by Git?              |
-| --------------------------- | ------------------------------------------------------------------------------- | ---------------------------- |
-| **This template repo**      | Source of truth for skills, agents, snippets, scripts                           | Yes (this repo's own remote) |
-| **Downstream project repo** | Your actual code + a _local-only_ copy of the workflow files scaffolded in      | Code: yes. Workflow: no.     |
-| **Workflow backup mirror**  | `agentic-workflows/<project>/` — the remote history for the workflow files only | Yes (separate remote)        |
-
-Why three? The downstream's main remote should only carry product code. The workflow scaffold (`AGENTS.md`, `CLAUDE.md` managed blocks, `.codex/`, `.claude/`, `BEADS_WORKFLOW.md`, `docs/plans/`, helper scripts) lives on disk in the downstream but is `.gitignore`d there — its remote history goes to the sibling backup mirror instead. This keeps PRs in the downstream focused on product changes.
-
-### What gets installed where
-
-Per-machine install (once):
-
-- `bd` (Beads CLI)
-- `dolt` (server mode, used by `bd`)
-- Python (helpers)
-
-Per-downstream-repo install (via bootstrap script):
-
-- `bd init -p <prefix> --server --skip-agents --skip-hooks` + `bd setup codex`
-- `BEADS_WORKFLOW.md`, `.beads/PRIME.md`, `.beads/README.md`
-- Managed workflow blocks injected into `AGENTS.md` and `CLAUDE.md`
-- `.codex/skills/` and `.claude/skills/` (mirrored copies of `skills/` from this template)
-- Stage-2 follow-up beads to specialize `build-and-test` and `attach-web-screenshots`
-- Managed `.gitignore` block that hides the workflow surface from the downstream's remote
-- `sync-workflow-backup` helper for pushing to the backup mirror
-
----
-
-## Quick Start
-
-### 1. Bootstrap a new project
-
-POSIX:
+Run this once per repo you want to use the workflow in:
 
 ```bash
-bash ./scripts/posix/bootstrap-new-repo.sh /path/to/repo myproj
+bash ~/www/workflow-template/scripts/posix/bootstrap-new-repo.sh /path/to/your-repo myprefix
 ```
 
 Windows:
 
 ```powershell
-pwsh -File .\scripts\windows\bootstrap-new-repo.ps1 -RepoPath D:\path\to\repo -Prefix myproj
+pwsh -File "$HOME\www\workflow-template\scripts\windows\bootstrap-new-repo.ps1" -RepoPath D:\path\to\repo -Prefix myprefix
 ```
 
-### 2. Plan the first work (in the downstream repo)
+`myprefix` is the short tag Beads uses for issue IDs in that repo (e.g. `acme` → `acme-1`, `acme-2`). The bootstrap script initializes git if needed, runs `bd init` and `bd setup codex`, and copies the shared skills, agents, and helper scripts into the project.
 
-Even if the repo is mostly empty, run the planner flow:
+### 3. Refresh later
 
-1. `plan-beads`
-2. `brainstorming`
-3. `planner-research` — only when facts still need verification
-4. confirm the settled plan
-5. `beads-planner` — turns the plan into Beads
-6. `validate-beads` — quality-gate the epic before swarm execution
-
-Make `## Verification` sections in execution plans explicit — the stage-1 `build-and-test` skill follows them literally.
-
-### 3. Execute
-
-Pick one:
-
-- `executor-task` — one bead end-to-end on a fresh `feat/<bead-id>` branch off main + opens a PR into main
-- `executor-task-worktree` — same as `executor-task`, but in an isolated git worktree (parallel-safe)
-- `executor-epic-task` — same as `executor-task`, but branches off (and PRs into) the bead's parent epic branch `epic/<epic-bead-id>-<slug>`
-- `executor-epic-task-worktree` — same as `executor-epic-task`, but in an isolated git worktree (parallel-safe; never touches the main tree)
-
-### 4. Finish
-
-The `finishing-a-development-branch` skill runs `sync-workflow-backup` automatically before branch push / PR creation. Manual sync if needed:
+When this template gets updates, refresh any downstream repo with:
 
 ```bash
-bash ./scripts/posix/sync-workflow-backup.sh
+bash ~/www/workflow-template/scripts/posix/update-skills.sh /path/to/your-repo
 ```
 
----
-
-## Command Reference
-
-| Purpose                                          | POSIX                                                           | Windows                                                     |
-| ------------------------------------------------ | --------------------------------------------------------------- | ----------------------------------------------------------- |
-| Bootstrap a new downstream repo                  | `scripts/posix/bootstrap-new-repo.sh <repo> <prefix>`           | `scripts/windows/bootstrap-new-repo.ps1`                    |
-| Refresh shared workflow surface                  | `scripts/posix/update-skills.sh <repo>`                         | `scripts/windows/update-skills.ps1`                         |
-| Sync downstream → backup mirror                  | `scripts/posix/sync-workflow-backup.sh`                         | `scripts/windows/sync-workflow-backup.ps1`                  |
-| Restore backup mirror → downstream               | `scripts/posix/restore-workflow-backup.sh`                      | `scripts/windows/restore-workflow-backup.ps1`               |
-| Migrate legacy downstream to backup-mirror model | `scripts/posix/migrate-downstream-to-workflow-backup.sh`        | `scripts/windows/migrate-downstream-to-workflow-backup.ps1` |
-| Migrate legacy `br` → `bd`                       | `scripts/posix/migrate-downstream-to-bd.sh`                     | `scripts/windows/migrate-downstream-to-bd.ps1`              |
-| Prereq check                                     | `scripts/posix/check-prereqs.sh`                                | `scripts/windows/check-prereqs.ps1`                         |
-
-`update-skills` preserves the downstream's specialized `build-and-test`, refreshes the managed `.gitignore` block, and re-applies the managed AGENTS.md / CLAUDE.md snippets.
+For a guided walkthrough of a brand-new project, see [docs/SETUP-NEW-REPO.md](docs/SETUP-NEW-REPO.md).
 
 ---
 
-## Two-Stage Adoption
+## How to setup aliases
 
-Downstream repos go through two stages.
+Typing the full path every time is annoying. Add aliases to your shell:
 
-### Stage 1 — Generic bootstrap
-
-Run automatically by the bootstrap script. Good enough to start working immediately:
-
-- Generic `build-and-test` skill that executes whatever is under each plan's `## Verification` section.
-- Stage-2 follow-up beads created for you, surviving re-runs.
-
-### Stage 2 — Project-specific specialization
-
-Done in the downstream once the project's runtime shape is clear:
-
-- Specialize `build-and-test` for the project's actual stack.
-- Add repo-specific operational docs.
-
-`update-skills` keeps the shared workflow synced from this template **without** overwriting your specialized `build-and-test`.
-
----
-
-## Workflow Backup Mirror
-
-Why workflow files are _not_ in the downstream's main remote:
-
-- Keeps product PRs free of workflow churn.
-- Lets the workflow evolve independently, per-project.
-- Still gives you a remote history (the backup mirror).
-
-Layout:
-
-- Downstream: workflow files exist on disk, are `.gitignore`.
-- Backup mirror: sibling checkout `../agentic-workflows/<project>/` (override with `AGENTIC_WORKFLOWS_REPO`).
-- `finishing-a-development-branch` skill syncs to the mirror before push.
-- `sync-workflow-backup` and `restore-workflow-backup` for manual sync / recovery.
-
-To migrate an older downstream that still tracks workflow files in its main remote:
+**bash / zsh** (`~/.bashrc` or `~/.zshrc`):
 
 ```bash
-bash ./scripts/posix/migrate-downstream-to-workflow-backup.sh /path/to/repo
+alias w-bootstrap='bash ~/www/workflow-template/scripts/posix/bootstrap-new-repo.sh'
+alias w-update='bash ~/www/workflow-template/scripts/posix/update-skills.sh'
 ```
 
-This refreshes the scaffold, syncs to the backup, removes tracked workflow files from the downstream Git index (leaving them on disk), and updates `.gitignore`.
+**PowerShell** (`$PROFILE`):
+
+```powershell
+function w-bootstrap { pwsh -File "$HOME\www\workflow-template\scripts\windows\bootstrap-new-repo.ps1" @args }
+function w-update    { pwsh -File "$HOME\www\workflow-template\scripts\windows\update-skills.ps1" @args }
+```
+
+Reload the shell, then:
+
+```bash
+w-bootstrap /path/to/your-repo myprefix
+w-update    /path/to/your-repo
+```
 
 ---
 
-## Local-Only Beads Model
+## How to use skills and agents
 
-- `.beads/` runtime state is local to each clone — never commit it, never push it through Dolt remotes.
-- Code still flows through normal feature branches and PRs.
-- Use `executor-task-worktree` when you need to run multiple beads in parallel without branch interference.
+Once a repo is bootstrapped, your AI tool (Claude Code or Codex) sees two kinds of building blocks:
 
----
+- **Skills** — runnable workflows. You invoke a skill by name (e.g. `plan-beads`, `executor-task`) and the model executes the whole workflow end-to-end.
+- **Agents** — focused single-purpose roles (PM, architect, reviewer, …). You invoke an agent when you want that specific perspective on the current work.
 
-## Skills & Agents Catalog
+### The two flows you'll run most often
 
-Two kinds of building blocks ship with this template:
+**Planning** — turn an idea into Beads tasks:
 
-- **Skills** — runnable workflows. The user types the skill name (e.g. `plan-beads`) and the model executes the workflow end-to-end.
-- **Agents** — focused single-purpose roles (PM, architect, reviewer, etc.). Most are invoked by the user on demand for a specific perspective; a few are called internally by skills.
+```
+plan-beads → brainstorming → (planner-research, optional) → beads-planner → validate-beads
+```
 
-### Skills, grouped by what they do
+**Execution** — pick up one bead, ship one PR:
 
-#### Planning (turn an idea into beads)
+```
+executor-task                # default: PR into main
+executor-task-worktree       # same, in an isolated worktree (parallel-safe)
+executor-epic-task           # bead belongs to an epic — PR into the epic branch
+executor-rework-in-place <bead-id>   # bead was reopened, amend the existing PR
+```
+
+Other useful skills you'll reach for:
+
+- `address-pr-comments` — when a reviewer left comments on your PR
+- `finishing-a-development-branch` — push and open the PR (handles workflow-file backup automatically)
+- `audit-backlog-rules` — re-check the backlog after editing project rules
+- `requesting-code-review` — get a review of the current change before merging
+
+### Full skills catalog
+
+<details>
+<summary><b>Planning skills</b> — turn an idea into beads</summary>
 
 | Skill                | What it does                                                                              | When to use                                                                          |
 | -------------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
@@ -203,9 +141,12 @@ Two kinds of building blocks ship with this template:
 | `beads-planner`      | Turns a settled plan into Beads epics + tasks with explicit dependencies                  | After brainstorming/research, when ready to materialize the plan                     |
 | `validate-beads`     | Quality-gates an epic (size, contracts, fresh-session safety)                             | After `beads-planner`, before claiming any of its beads for execution                |
 | `writing-plans`      | Produces a per-bead execution plan with explicit `## Verification`                        | Inside an executor session, after a bead is claimed — never in a planner session     |
-| `audit-backlog-rules` | Audits ready/blocked beads for drift after CLAUDE.md or AGENTS.md rules change            | Right after editing project rules / conventions                                      |
+| `audit-backlog-rules`| Audits ready/blocked beads for drift after CLAUDE.md or AGENTS.md rules change            | Right after editing project rules / conventions                                      |
 
-#### Execution (one bead end-to-end)
+</details>
+
+<details>
+<summary><b>Execution skills</b> — one bead end-to-end</summary>
 
 | Skill                           | What it does                                                                               | When to use                                                                            |
 | ------------------------------- | ------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
@@ -214,38 +155,50 @@ Two kinds of building blocks ship with this template:
 | `executor-task-worktree`        | Same as `executor-task` but runs in an isolated git worktree                               | When you need to run multiple beads in parallel without branch interference            |
 | `executor-epic-task`            | Same as `executor-task` but branches off (and PRs into) the bead's parent epic branch      | Epic delivered as one merge to main; each child bead ships as its own PR into the epic |
 | `executor-epic-task-worktree`   | Same as `executor-epic-task` but runs in an isolated git worktree                          | Epic flow + parallel beads + main tree must stay untouched                             |
+| `executor-rework-in-place`      | Re-execute a reopened bead on the current feature branch; push commits into the existing open PR (no new branch, no new PR); requires `bead_id` | Bead was already executed but the task was wrong — user reopened the bead, updated its requirements, and wants to amend the existing PR |
 | `beads-close`                   | Closes the bead, creates follow-ups, commits `.beads/` state                               | Final step of an executor cycle                                                        |
 
-#### During implementation (helpers in the executor session)
+</details>
+
+<details>
+<summary><b>Helpers used during implementation</b></summary>
 
 | Skill                            | What it does                                                                                  | When to use                                                              |
 | -------------------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
 | `systematic-debugging`           | Structured root-cause investigation before proposing a fix                                    | Any bug, test failure, or unexpected behavior                            |
 | `verification-before-completion` | Forces real verification commands before claiming "done"                                      | Before committing, opening a PR, or asserting success                    |
-| `build-and-test`                 | Runs the literal `## Verification` section of the current execution plan                      | After implementing changes; specialize per repo in stage 2                |
+| `build-and-test`                 | Runs the literal `## Verification` section of the current execution plan                      | After implementing changes; specialize per repo in stage 2               |
 
-#### Code review & PR delivery
+</details>
+
+<details>
+<summary><b>Code review & PR delivery</b></summary>
 
 | Skill                            | What it does                                                                          | When to use                                                                  |
 | -------------------------------- | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
 | `requesting-code-review`         | Dispatches the `code-reviewer` subagent against the current change                    | After implementing a major task, before merging                              |
 | `address-pr-comments`            | Pulls unresolved PR threads → fixes via `pr-comment-fixer` → verifies → push → reply  | When new review comments arrive on the current PR                            |
-| `attach-web-screenshots`             | Takes screenshots of a running **web** app (browser-based) and attaches them to the open PR | After implementing a UI feature, before or alongside review            |
+| `attach-web-screenshots`         | Takes screenshots of a running web app and attaches them to the open PR               | After implementing a UI feature, before or alongside review                  |
 | `finishing-a-development-branch` | Pushes the branch and opens a PR; runs `sync-workflow-backup` first                   | When all work on a feature branch is done and verified                       |
 
-#### Project hygiene & workflow infra
+> `attach-web-screenshots` ships a companion CI workflow (`.github/workflows/cleanup-screenshots.yml`) that prunes stale screenshot folders for merged branches. Re-run `update-skills` if you adopt it later.
+
+</details>
+
+<details>
+<summary><b>Project hygiene & workflow infra</b></summary>
 
 | Skill                      | What it does                                                                          | When to use                                                                  |
 | -------------------------- | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
 | `project-auditor`          | Full-repo audit: naming, folder layout, tech-stack consistency, light architecture    | Project health check (not per-PR — use `requesting-code-review` for diffs)   |
-| `sync-workflow-backup`     | Pushes the downstream's workflow files to the backup mirror                           | Before pushing a downstream PR (also runs automatically inside finishing skill) |
-| `restore-workflow-backup`  | Pulls workflow files *from* the backup mirror back into the downstream                | Fresh clone of an existing downstream repo                                   |
+| `prune-local-branches`     | Removes stale local branches whose PRs are merged or closed                           | Periodic cleanup                                                             |
+| `sync-workflow-backup`     | Pushes the downstream's workflow files to the backup mirror                           | Before pushing a PR (also runs automatically inside `finishing-…`)           |
+| `restore-workflow-backup`  | Pulls workflow files from the backup mirror back into the downstream                  | Fresh clone of an existing downstream repo                                   |
 
-> **`attach-web-screenshots` requires a companion CI workflow.** If you use this skill, run `update-skills` (or `bootstrap-new-repo`) against your downstream repo — it will copy `.github/workflows/cleanup-screenshots.yml` which automatically removes stale screenshot folders for merged branches.
+</details>
 
-### Agents
-
-#### User-invoked agents (call them directly when you want that perspective)
+<details>
+<summary><b>Agents — call them directly when you want that perspective</b></summary>
 
 | Agent                  | What it does                                                                          | When to use                                                      |
 | ---------------------- | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
@@ -257,7 +210,10 @@ Two kinds of building blocks ship with this template:
 | `frontend-architect`   | Reviews plans + diffs for frontend work against opinionated standards                 | Plan touches UI, components, styling, client state               |
 | `testing-strategist`   | Produces the test list required to ship a plan/diff with confidence                   | After a plan is settled, before coding — or before opening a PR  |
 
-#### Skill-internal agents (called by a skill, not by you)
+</details>
+
+<details>
+<summary><b>Skill-internal agents</b> (called by a skill, not by you)</summary>
 
 | Agent              | What it does                                                                          | Called by                                  |
 | ------------------ | ------------------------------------------------------------------------------------- | ------------------------------------------ |
@@ -265,82 +221,48 @@ Two kinds of building blocks ship with this template:
 | `project-auditor`  | Full-repo audit (naming, folders, tech stack, architecture hotspots, dead code)       | `project-auditor` skill                    |
 | `pr-comment-fixer` | Reads unresolved PR threads, applies fixes, returns reply plan (does not push/post)   | `address-pr-comments`                      |
 
-### Typical flows
+</details>
 
-**New feature, single bead:**
-`plan-beads` → `beads-planner` → `validate-beads` → `executor-task` → PR
-
-**Multiple beads in parallel:**
-`plan-beads` → `beads-planner` → `validate-beads` → `executor-task-worktree` per bead
-
-**Epic delivered as one merge to main, child beads as PRs into the epic branch:**
-`plan-beads` → `beads-planner` → `validate-beads` → `executor-epic-task` (or `executor-epic-task-worktree`) per child bead → final epic PR into main
-
-**Working through a backlog manually:**
-`beads-claim` → `writing-plans` → implement → `build-and-test` → `verification-before-completion` → `beads-close` → repeat
-
-**A PR came back with comments:**
-`address-pr-comments` (re-run when more comments arrive)
-
-**Project rules just changed:**
-edit CLAUDE.md / AGENTS.md → `audit-backlog-rules` → fix flagged beads
+For the internal "who calls whom" graph view of the skills, see [docs/SKILLS_RELATIONSHIPS.md](docs/SKILLS_RELATIONSHIPS.md).
 
 ---
 
-## Editing Skills
+## Browse beads visually with bdtui
 
-This template has two skill source locations:
+![bdtui screenshot](https://raw.githubusercontent.com/jsiovn/bdtui/master/docs/images/bdtui.png)
 
-- `skills/<name>/` — shared skills, copied to **both** `.codex/skills/` and `.claude/skills/` in every downstream.
-- `templates/.codex/skills/<name>/` and `templates/.claude/skills/<name>/` — provider-specific overrides.
+[`bdtui`](https://www.npmjs.com/package/bdtui) is a terminal UI for browsing the Beads backlog — ready vs. blocked beads, dependencies, status, the lot. Install once:
 
-Workflow for editing a shared skill:
+```bash
+npm install -g bdtui
+```
 
-1. Edit `skills/<name>/` here.
-2. Run `update-skills` against each downstream that uses it.
-3. Run `sync-workflow-backup` in the downstream before pushing a PR there.
-
-Same flow for provider-specific skills, but edit under `templates/.codex/skills/` or `templates/.claude/skills/`.
-
-Do **not** hand-edit shared skill copies inside downstream repos unless you intentionally want a repo-specific divergence.
-
-The intended divergences in a downstream are:
-
-- the specialized `build-and-test` skill
-- the specialized `attach-web-screenshots` skill
+Then run `bdtui` from inside any bootstrapped repo.
 
 ---
 
-## Files In This Repo
+## Command reference
 
-- `skills/` — shared workflow skills (mirrored to `.codex/` + `.claude/` downstream)
-- `templates/.codex/skills/build-and-test/` — generic stage-1 validator (downstream-specializable)
-- `templates/AGENTS.snippet.md`, `templates/CLAUDE.snippet.md` — managed snippets
-- `templates/BEADS_WORKFLOW.md`, `templates/PRIME.md` — repo-root scaffolding
-- `templates/NEW_REPO_CHECKLIST.md` — human checklist
-- `scripts/shared/workflow_backup.py` — `.gitignore` + manifest mgmt for the backup mirror
-- `scripts/shared/sync_workflow_backup.py` — pushes the downstream surface to the mirror
-- `scripts/posix/`, `scripts/windows/` — paired bootstrap, update, sync, migration scripts
-- `docs/` — install + troubleshooting guides
-
----
-
-## Install Guides
-
-- Windows: [docs/INSTALL-WINDOWS.md](docs/INSTALL-WINDOWS.md)
-- macOS: [docs/INSTALL-MACOS.md](docs/INSTALL-MACOS.md)
-- Ubuntu/Linux: [docs/INSTALL-UBUNTU.md](docs/INSTALL-UBUNTU.md)
-- New repo walkthrough: [docs/SETUP-NEW-REPO.md](docs/SETUP-NEW-REPO.md)
-- Beads TUI: [bdtui](https://www.npmjs.com/package/bdtui)
+| Purpose                                          | POSIX                                                           | Windows                                                     |
+| ------------------------------------------------ | --------------------------------------------------------------- | ----------------------------------------------------------- |
+| Bootstrap a new downstream repo                  | `scripts/posix/bootstrap-new-repo.sh <repo> <prefix>`           | `scripts/windows/bootstrap-new-repo.ps1`                    |
+| Refresh shared workflow surface                  | `scripts/posix/update-skills.sh <repo>`                         | `scripts/windows/update-skills.ps1`                         |
+| Sync downstream → backup mirror                  | `scripts/posix/sync-workflow-backup.sh`                         | `scripts/windows/sync-workflow-backup.ps1`                  |
+| Restore backup mirror → downstream               | `scripts/posix/restore-workflow-backup.sh`                      | `scripts/windows/restore-workflow-backup.ps1`               |
+| Migrate legacy downstream to backup-mirror model | `scripts/posix/migrate-downstream-to-workflow-backup.sh`        | `scripts/windows/migrate-downstream-to-workflow-backup.ps1` |
+| Migrate legacy `br` → `bd`                       | `scripts/posix/migrate-downstream-to-bd.sh`                     | `scripts/windows/migrate-downstream-to-bd.ps1`              |
+| Prerequisite check                               | `scripts/posix/check-prereqs.sh`                                | `scripts/windows/check-prereqs.ps1`                         |
 
 ---
 
-## Notes & Gotchas
+## More docs
 
-- `bd init` and `bd setup codex` are per repo, not per machine.
-- The scaffolding scripts do **not** use Dolt remotes — Beads state stays local.
-- Scaffolded workflow files in a downstream are local-only; mirror them via `sync-workflow-backup` before pushing a downstream PR.
-- POSIX/Windows scripts are paired twins — keep them in sync when editing.
+- [docs/INSTALL-MACOS.md](docs/INSTALL-MACOS.md) — macOS install
+- [docs/INSTALL-UBUNTU.md](docs/INSTALL-UBUNTU.md) — Ubuntu / Linux install
+- [docs/INSTALL-WINDOWS.md](docs/INSTALL-WINDOWS.md) — Windows install
+- [docs/SETUP-NEW-REPO.md](docs/SETUP-NEW-REPO.md) — guided new-repo walkthrough
+- [docs/SKILLS_RELATIONSHIPS.md](docs/SKILLS_RELATIONSHIPS.md) — internal skill graph
+- [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) — common issues
 
 ---
 
