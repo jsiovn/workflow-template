@@ -39,24 +39,18 @@ MANAGED_DIRS = (
 )
 
 SCRIPT_FILES = (
-    "scripts/posix/agent-mail.sh",
     "scripts/posix/restore-workflow-backup.sh",
     "scripts/posix/sync-workflow-backup.sh",
-    "scripts/posix/workflow-status.sh",
-    "scripts/shared/agent_mail.py",
     "scripts/shared/manage_instructions.py",
     "scripts/shared/sync_workflow_backup.py",
     "scripts/shared/workflow_backup.py",
-    "scripts/windows/agent-mail.ps1",
     "scripts/windows/restore-workflow-backup.ps1",
     "scripts/windows/sync-workflow-backup.ps1",
-    "scripts/windows/workflow-status.ps1",
 )
 
 OPTIONAL_DIRS = ()
 
 IGNORE_ENTRIES = (
-    ".beads/workflow/",
     ".beads/PRIME.md",
     ".beads/.gitignore",
     ".beads/README.md",
@@ -69,19 +63,14 @@ IGNORE_ENTRIES = (
     "CLAUDE.md",
     "docs/plans/",
     "docs/TROUBLESHOOTING.md",
-    "scripts/posix/agent-mail.sh",
     "scripts/posix/restore-workflow-backup.sh",
     "scripts/posix/sync-workflow-backup.sh",
-    "scripts/posix/workflow-status.sh",
-    "scripts/shared/agent_mail.py",
     "scripts/shared/manage_instructions.py",
     "scripts/shared/sync_workflow_backup.py",
     "scripts/shared/workflow_backup.py",
     "scripts/shared/__pycache__/",
-    "scripts/windows/agent-mail.ps1",
     "scripts/windows/restore-workflow-backup.ps1",
     "scripts/windows/sync-workflow-backup.ps1",
-    "scripts/windows/workflow-status.ps1",
 )
 
 

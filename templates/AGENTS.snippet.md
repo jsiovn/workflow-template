@@ -7,7 +7,6 @@ Preferred entry points are `plan-beads`, `executor-task`, and `executor-task-wor
 
 The executor test skill is installed under both `.claude/skills/build-and-test/SKILL.md` and `.codex/skills/build-and-test/SKILL.md` (kept in sync); read whichever matches your session and use it between implementation and final verification.
 
-Use `scripts/windows/workflow-status.ps1` or `scripts/posix/workflow-status.sh` to inspect `.beads/workflow/`, the shared control plane, and Beads backend state. Use `scripts/windows/agent-mail.ps1` or `scripts/posix/agent-mail.sh` for shared locks, reservations, and mailbox inspection.
 Workflow scaffold files such as `AGENTS.md`, `CLAUDE.md`, `BEADS_WORKFLOW.md`, `docs/plans/`, and `.codex/.claude` skills stay local-only in downstream Git. Mirror them to the backup repo with `scripts/windows/sync-workflow-backup.ps1` or `scripts/posix/sync-workflow-backup.sh` before opening a PR.
 
 Keep repo exploration local. Verify the actual environment before running build, test, run, deploy, or migration commands; do not assume local execution.

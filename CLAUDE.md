@@ -33,8 +33,6 @@ All user-facing operations are invoked through these scripts (POSIX `.sh` and Wi
 | Refresh shared workflow surface                  | `scripts/posix/update-skills.sh <repo>`                         | `scripts/windows/update-skills.ps1`                         |
 | Sync downstream → backup mirror                  | `scripts/posix/sync-workflow-backup.sh`                         | `scripts/windows/sync-workflow-backup.ps1`                  |
 | Restore backup mirror → downstream               | `scripts/posix/restore-workflow-backup.sh`                      | `scripts/windows/restore-workflow-backup.ps1`               |
-| Migrate legacy downstream to backup-mirror model | `scripts/posix/migrate-downstream-to-workflow-backup.sh`        | `scripts/windows/migrate-downstream-to-workflow-backup.ps1` |
-| Migrate legacy `br` → `bd`                       | `scripts/posix/migrate-downstream-to-bd.sh`                     | `scripts/windows/migrate-downstream-to-bd.ps1`              |
 | Prereq check                                     | `scripts/posix/check-prereqs.sh`                                | `scripts/windows/check-prereqs.ps1`                         |
 
 `bootstrap-new-repo` delegates to `scaffold-repo-files` + `scripts/shared/ensure_stage1_beads.py` (which creates the standalone stage-2 follow-up beads: specialize `build-and-test` and `attach-web-screenshots`). `update-skills` re-runs scaffold on an existing repo.

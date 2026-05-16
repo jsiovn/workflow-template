@@ -21,7 +21,6 @@ Use this guide when starting a downstream repo from scratch or when a repo is st
 4. Verify the repo is ready:
    - `bd where`
    - `bd ready --json`
-   - `scripts/posix/workflow-status.sh` or `scripts/windows/workflow-status.ps1`
 
 ## First Work In An Empty Repo
 

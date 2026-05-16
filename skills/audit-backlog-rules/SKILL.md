@@ -14,7 +14,7 @@ Re-read the current project rules and report which open beads in the backlog sti
 
 Do **not** use this for:
 - Auditing the source code itself — that is `project-auditor`.
-- Validating a single epic for swarm execution — that is `validate-beads`.
+- Validating a single epic for autonomous execution — that is `validate-beads`.
 - Reviewing in-progress or closed beads.
 
 ## Steps
