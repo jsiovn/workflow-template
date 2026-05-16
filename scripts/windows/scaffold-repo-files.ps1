@@ -78,6 +78,7 @@ Remove-Item -Recurse -Force (Join-Path $RepoPath ".codex\skills\executor-loop-ep
 Remove-Item -Recurse -Force (Join-Path $RepoPath ".codex\skills\swarm-epic") -ErrorAction SilentlyContinue
 Remove-Item -Recurse -Force (Join-Path $RepoPath ".codex\skills\review-epic") -ErrorAction SilentlyContinue
 Remove-Item -Recurse -Force (Join-Path $RepoPath ".codex\skills\execute-bead-worker") -ErrorAction SilentlyContinue
+Remove-Item -Recurse -Force (Join-Path $RepoPath ".codex\skills\test-on-android-device") -ErrorAction SilentlyContinue
 Get-ChildItem (Join-Path $TemplateRoot "templates\.codex\skills") -Directory -ErrorAction SilentlyContinue | ForEach-Object {
     if ($_.Name -ne "build-and-test" -and $_.Name -ne "attach-web-screenshots") {
         $destination = Join-Path $RepoPath ".codex\skills\$($_.Name)"
@@ -118,6 +119,7 @@ Remove-Item -Recurse -Force (Join-Path $RepoPath ".claude\skills\executor-loop-e
 Remove-Item -Recurse -Force (Join-Path $RepoPath ".claude\skills\swarm-epic") -ErrorAction SilentlyContinue
 Remove-Item -Recurse -Force (Join-Path $RepoPath ".claude\skills\review-epic") -ErrorAction SilentlyContinue
 Remove-Item -Recurse -Force (Join-Path $RepoPath ".claude\skills\execute-bead-worker") -ErrorAction SilentlyContinue
+Remove-Item -Recurse -Force (Join-Path $RepoPath ".claude\skills\test-on-android-device") -ErrorAction SilentlyContinue
 Get-ChildItem (Join-Path $TemplateRoot "templates\.claude\skills") -Directory -ErrorAction SilentlyContinue | ForEach-Object {
     if ($_.Name -ne "build-and-test") {
         $destination = Join-Path $RepoPath ".claude\skills\$($_.Name)"

@@ -66,6 +66,7 @@ rm -rf "${repo_path}/.codex/skills/executor-loop-epic"
 rm -rf "${repo_path}/.codex/skills/swarm-epic"
 rm -rf "${repo_path}/.codex/skills/review-epic"
 rm -rf "${repo_path}/.codex/skills/execute-bead-worker"
+rm -rf "${repo_path}/.codex/skills/test-on-android-device"
 if [[ -d "${template_root}/templates/.codex/skills" ]]; then
   find "${template_root}/templates/.codex/skills" -mindepth 1 -maxdepth 1 -type d | while read -r src; do
     name="$(basename "${src}")"
@@ -111,6 +112,7 @@ rm -rf "${repo_path}/.claude/skills/executor-loop-epic"
 rm -rf "${repo_path}/.claude/skills/swarm-epic"
 rm -rf "${repo_path}/.claude/skills/review-epic"
 rm -rf "${repo_path}/.claude/skills/execute-bead-worker"
+rm -rf "${repo_path}/.claude/skills/test-on-android-device"
 if [[ -d "${template_root}/templates/.claude/skills" ]]; then
   find "${template_root}/templates/.claude/skills" -mindepth 1 -maxdepth 1 -type d | while read -r src; do
     name="$(basename "${src}")"
