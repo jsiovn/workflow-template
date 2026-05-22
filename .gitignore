@@ -4,3 +4,4 @@ __pycache__/
 *.py[cod]
 /.beads/
 .idea/
+.claude/settings.local.json

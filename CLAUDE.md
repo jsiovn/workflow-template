@@ -61,6 +61,8 @@ In downstream repos, use the `/sync-workflow-backup` and `/restore-workflow-back
 
 ## Verifying Changes
 
+When adding or editing a skill, follow `docs/AUTHORING-SKILLS.md` — it covers the SKILL.md conventions, the subagent pressure-test, and the propagation checks before the round-trip below.
+
 There is no test suite. To verify a change:
 
 1. Run the relevant script (`bootstrap-new-repo.sh` or `update-skills.sh`) against a scratch downstream repo.
