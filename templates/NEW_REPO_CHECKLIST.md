@@ -10,7 +10,6 @@
    - `bd version`
    - `bd ready --json`
    - `bd where`
-   - `scripts/windows/workflow-status.ps1` or `scripts/posix/workflow-status.sh`
 4. Confirm the standalone bootstrap beads exist:
    - `Specialize build-and-test for this repo`
    - `Specialize attach-web-screenshots for this repo`

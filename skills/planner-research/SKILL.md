@@ -17,7 +17,7 @@ Use `planner-research` only when one or more unresolved factual unknowns would m
 - integration points or file ownership
 - library, framework, or platform behavior
 - external API constraints
-- the clarity of swarm-ready bead contracts
+- the clarity of executor-ready bead contracts
 
 Do not use this skill for user preferences, product decisions, or speculative "nice to know" investigation.
 
@@ -31,7 +31,7 @@ Typical flow:
 2. `planner-research` if needed
 3. approve the refined design
 4. `beads-planner`
-5. `validate-beads` when the epic is intended for swarm execution
+5. `validate-beads` when the epic is intended for autonomous execution
 
 ## Required Behavior
 

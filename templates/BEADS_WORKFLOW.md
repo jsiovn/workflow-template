@@ -17,6 +17,7 @@ Codex and Claude Code can enter the workflow through repo-local skills installed
 - `executor-task-worktree`
 - `executor-epic-task`
 - `executor-epic-task-worktree`
+- `executor-rework-in-place`
 
 When an executor skill stops on a blocker, continue in normal chat by telling the agent to resume the blocked bead.
 
@@ -60,6 +61,12 @@ Pick the executor variant by base branch and isolation:
 
 Use the `epic-*` variants when the whole epic should land in main as one merge and each child bead ships as its own PR into that epic branch. The epic variants resolve `<epic-bead-id>` from the task bead's parent epic; if the epic branch doesn't exist yet, they create it from the latest default branch.
 
+When a bead was already executed but the task itself turned out to be wrong:
+
+- **Rework into the existing PR (no new branch, no new PR):** `executor-rework-in-place`
+
+Use this after `bd reopen <bead-id>` and editing the bead's requirements. It stays on the current feature branch in the current working tree, re-runs the executor chain against the updated bead, pushes new commits into the existing open PR, and posts a top-level fixup comment naming the bead id and the new tip SHA. Requires `bead_id`; refuses to run on the default branch, on a dirty tree, or when the current branch has no open PR.
+
 ## Session Boundaries
 
 - Planner sessions do not write code.
@@ -76,7 +83,6 @@ Use the `epic-*` variants when the whole epic should land in main as one merge a
 
 ## Operational Notes
 
-- Run `scripts/windows/workflow-status.ps1` or `scripts/posix/workflow-status.sh` to inspect checkout runtime plus Agent Mail state.
 - Run `scripts/windows/sync-workflow-backup.ps1` or `scripts/posix/sync-workflow-backup.sh` before a PR when you need to sync workflow docs, skills, or helper scripts outside the normal branch-finish flow.
 - If `bd where` or `bd context` fails in the current checkout, repair the repo with `bd bootstrap --yes` before continuing.
 - Use `bd ready` before asking what to work on next.

@@ -14,14 +14,14 @@ Run a planner-only Beads session.
 3. Otherwise, use the current conversation topic.
 4. If the topic is still unclear, ask clarifying questions before planning.
 5. Use `brainstorming` when the problem is still fuzzy or underexplored.
-6. If `brainstorming` leaves material factual uncertainty that affects architecture, feasibility, integration points, or swarm bead quality, use `planner-research` before finalizing the plan.
+6. If `brainstorming` leaves material factual uncertainty that affects architecture, feasibility, integration points, or bead quality, use `planner-research` before finalizing the plan.
 7. Produce or confirm an execution plan using the discussion and any planner research findings.
 8. Keep moving autonomously through normal design uncertainty. Ask the user only when a missing decision is genuinely product-defining, preference-sensitive, or too risky to choose on the user's behalf.
 9. Once the plan is settled and ready to translate, stop once to brief the user on the final recommended plan and ask for confirmation to create Beads.
 10. After confirmation, use `beads-planner` to create or update the beads from the settled plan.
 11. If the plan is intended for epic-scoped autonomous execution, immediately run `validate-beads` in the same planner session.
 12. If validation fails, tighten the beads, dependencies, or execution contract, then re-run `validate-beads` before ending the session.
-13. Stop after the beads are created and either validated for swarm execution or explicitly marked as manual-only.
+13. Stop after the beads are created and either validated for autonomous execution or explicitly marked as manual-only.
 
 ## Hard Rules
 

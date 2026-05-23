@@ -11,12 +11,14 @@ config.yaml
 metadata.json
 issues.jsonl
 interactions.jsonl
+events.jsonl
 backup/
 last-touched
 bd.sock
 bd.sock.startlock
 sync-state.json
 push-state.json
+export-state.json
 workflow/
 redirect
 

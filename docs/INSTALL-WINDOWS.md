@@ -41,9 +41,3 @@ pwsh -File .\scripts\windows\bootstrap-new-repo.ps1 -RepoPath D:\path\to\repo -P
 The bootstrap script initializes git if needed, runs `bd init -p yourprefix --server --skip-agents --skip-hooks`, installs Codex integration, and scaffolds the shared workflow files.
 
 For the full stage-1 then stage-2 adoption flow, see [SETUP-NEW-REPO.md](SETUP-NEW-REPO.md).
-
-## Migrate an Existing `br` Repo
-
-```powershell
-pwsh -File .\scripts\windows\migrate-downstream-to-bd.ps1 -RepoPath D:\path\to\repo
-```

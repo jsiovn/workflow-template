@@ -3,11 +3,10 @@
 
 Use `BEADS_WORKFLOW.md` for the current planner and executor flow. All workflow skills are repo-local: Codex skills live under `.codex/skills/`, Claude skills under `.claude/skills/`. Subagents dispatched by skills (e.g. `code-reviewer`) live under `.codex/agents/` and `.claude/agents/`.
 
-Preferred entry points are `plan-beads`, `executor-task`, and `executor-task-worktree`. When the bead is part of an epic that should land in main as a single merge, use `executor-epic-task` (or `executor-epic-task-worktree` for parallel work) — these branch off and PR into `epic/<epic-bead-id>-<slug>` instead of main. Use `planner-research` only inside a planner session when `brainstorming` still leaves material factual uncertainty.
+Preferred entry points are `plan-beads`, `executor-task`, and `executor-task-worktree`. When the bead is part of an epic that should land in main as a single merge, use `executor-epic-task` (or `executor-epic-task-worktree` for parallel work) — these branch off and PR into `epic/<epic-bead-id>-<slug>` instead of main. When a bead was already executed and a PR is open but the task turned out to be wrong, reopen the bead, edit its requirements, then run `executor-rework-in-place <bead-id>` to amend the existing PR in the current working tree (no new branch, no new PR). Use `planner-research` only inside a planner session when `brainstorming` still leaves material factual uncertainty.
 
 The executor test skill is installed under both `.claude/skills/build-and-test/SKILL.md` and `.codex/skills/build-and-test/SKILL.md` (kept in sync); read whichever matches your session and use it between implementation and final verification.
 
-Use `scripts/windows/workflow-status.ps1` or `scripts/posix/workflow-status.sh` to inspect `.beads/workflow/`, the shared control plane, and Beads backend state. Use `scripts/windows/agent-mail.ps1` or `scripts/posix/agent-mail.sh` for shared locks, reservations, and mailbox inspection.
 Workflow scaffold files such as `AGENTS.md`, `CLAUDE.md`, `BEADS_WORKFLOW.md`, `docs/plans/`, and `.codex/.claude` skills stay local-only in downstream Git. Mirror them to the backup repo with `scripts/windows/sync-workflow-backup.ps1` or `scripts/posix/sync-workflow-backup.sh` before opening a PR.
 
 Keep repo exploration local. Verify the actual environment before running build, test, run, deploy, or migration commands; do not assume local execution.

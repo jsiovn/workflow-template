@@ -27,11 +27,6 @@ $codexBuildSkillSource = Join-Path $TemplateRoot "templates\.codex\skills\build-
 $skillsSource = Join-Path $TemplateRoot "skills"
 $agentsSnippet = Join-Path $TemplateRoot "templates\AGENTS.snippet.md"
 $claudeSnippet = Join-Path $TemplateRoot "templates\CLAUDE.snippet.md"
-$windowsStatusScript = Join-Path $TemplateRoot "scripts\windows\workflow-status.ps1"
-$windowsAgentMailScript = Join-Path $TemplateRoot "scripts\windows\agent-mail.ps1"
-$posixStatusScript = Join-Path $TemplateRoot "scripts\posix\workflow-status.sh"
-$posixAgentMailScript = Join-Path $TemplateRoot "scripts\posix\agent-mail.sh"
-$sharedAgentMailScript = Join-Path $TemplateRoot "scripts\shared\agent_mail.py"
 $sharedManageInstructionsScript = Join-Path $TemplateRoot "scripts\shared\manage_instructions.py"
 
 Copy-Item -Force $workflowSource (Join-Path $RepoPath "BEADS_WORKFLOW.md")
@@ -78,6 +73,7 @@ Remove-Item -Recurse -Force (Join-Path $RepoPath ".codex\skills\executor-loop-ep
 Remove-Item -Recurse -Force (Join-Path $RepoPath ".codex\skills\swarm-epic") -ErrorAction SilentlyContinue
 Remove-Item -Recurse -Force (Join-Path $RepoPath ".codex\skills\review-epic") -ErrorAction SilentlyContinue
 Remove-Item -Recurse -Force (Join-Path $RepoPath ".codex\skills\execute-bead-worker") -ErrorAction SilentlyContinue
+Remove-Item -Recurse -Force (Join-Path $RepoPath ".codex\skills\test-on-android-device") -ErrorAction SilentlyContinue
 Get-ChildItem (Join-Path $TemplateRoot "templates\.codex\skills") -Directory -ErrorAction SilentlyContinue | ForEach-Object {
     if ($_.Name -ne "build-and-test" -and $_.Name -ne "attach-web-screenshots") {
         $destination = Join-Path $RepoPath ".codex\skills\$($_.Name)"
@@ -118,6 +114,7 @@ Remove-Item -Recurse -Force (Join-Path $RepoPath ".claude\skills\executor-loop-e
 Remove-Item -Recurse -Force (Join-Path $RepoPath ".claude\skills\swarm-epic") -ErrorAction SilentlyContinue
 Remove-Item -Recurse -Force (Join-Path $RepoPath ".claude\skills\review-epic") -ErrorAction SilentlyContinue
 Remove-Item -Recurse -Force (Join-Path $RepoPath ".claude\skills\execute-bead-worker") -ErrorAction SilentlyContinue
+Remove-Item -Recurse -Force (Join-Path $RepoPath ".claude\skills\test-on-android-device") -ErrorAction SilentlyContinue
 Get-ChildItem (Join-Path $TemplateRoot "templates\.claude\skills") -Directory -ErrorAction SilentlyContinue | ForEach-Object {
     if ($_.Name -ne "build-and-test") {
         $destination = Join-Path $RepoPath ".claude\skills\$($_.Name)"
@@ -157,25 +154,28 @@ if (Test-Path $claudeAgentsSource) {
 }
 
 New-Item -ItemType Directory -Force -Path (Join-Path $RepoPath "scripts\windows") | Out-Null
-Copy-Item -Force $windowsStatusScript (Join-Path $RepoPath "scripts\windows\workflow-status.ps1")
-Copy-Item -Force $windowsAgentMailScript (Join-Path $RepoPath "scripts\windows\agent-mail.ps1")
 Copy-Item -Force (Join-Path $TemplateRoot "scripts\windows\restore-workflow-backup.ps1") (Join-Path $RepoPath "scripts\windows\restore-workflow-backup.ps1")
 Copy-Item -Force (Join-Path $TemplateRoot "scripts\windows\sync-workflow-backup.ps1") (Join-Path $RepoPath "scripts\windows\sync-workflow-backup.ps1")
 Remove-Item -Force (Join-Path $RepoPath "scripts\windows\shared-beads.ps1") -ErrorAction SilentlyContinue
 Remove-Item -Force (Join-Path $RepoPath "scripts\windows\start-epic-worktree.ps1") -ErrorAction SilentlyContinue
+Remove-Item -Force (Join-Path $RepoPath "scripts\windows\workflow-status.ps1") -ErrorAction SilentlyContinue
+Remove-Item -Force (Join-Path $RepoPath "scripts\windows\agent-mail.ps1") -ErrorAction SilentlyContinue
+Remove-Item -Force (Join-Path $RepoPath "scripts\windows\migrate-downstream-to-bd.ps1") -ErrorAction SilentlyContinue
+Remove-Item -Force (Join-Path $RepoPath "scripts\windows\migrate-downstream-to-workflow-backup.ps1") -ErrorAction SilentlyContinue
 Write-Host "Copied scripts/windows/*"
 
 New-Item -ItemType Directory -Force -Path (Join-Path $RepoPath "scripts\posix") | Out-Null
-Copy-Item -Force $posixStatusScript (Join-Path $RepoPath "scripts\posix\workflow-status.sh")
-Copy-Item -Force $posixAgentMailScript (Join-Path $RepoPath "scripts\posix\agent-mail.sh")
 Copy-Item -Force (Join-Path $TemplateRoot "scripts\posix\restore-workflow-backup.sh") (Join-Path $RepoPath "scripts\posix\restore-workflow-backup.sh")
 Copy-Item -Force (Join-Path $TemplateRoot "scripts\posix\sync-workflow-backup.sh") (Join-Path $RepoPath "scripts\posix\sync-workflow-backup.sh")
 Remove-Item -Force (Join-Path $RepoPath "scripts\posix\shared-beads.sh") -ErrorAction SilentlyContinue
 Remove-Item -Force (Join-Path $RepoPath "scripts\posix\start-epic-worktree.sh") -ErrorAction SilentlyContinue
+Remove-Item -Force (Join-Path $RepoPath "scripts\posix\workflow-status.sh") -ErrorAction SilentlyContinue
+Remove-Item -Force (Join-Path $RepoPath "scripts\posix\agent-mail.sh") -ErrorAction SilentlyContinue
+Remove-Item -Force (Join-Path $RepoPath "scripts\posix\migrate-downstream-to-bd.sh") -ErrorAction SilentlyContinue
+Remove-Item -Force (Join-Path $RepoPath "scripts\posix\migrate-downstream-to-workflow-backup.sh") -ErrorAction SilentlyContinue
 Write-Host "Copied scripts/posix/*"
 
 New-Item -ItemType Directory -Force -Path (Join-Path $RepoPath "scripts\shared") | Out-Null
-Copy-Item -Force $sharedAgentMailScript (Join-Path $RepoPath "scripts\shared\agent_mail.py")
 Copy-Item -Force $sharedManageInstructionsScript (Join-Path $RepoPath "scripts\shared\manage_instructions.py")
 Remove-Item -Force (Join-Path $RepoPath "scripts\shared\run_plan_critic.py") -ErrorAction SilentlyContinue
 Copy-Item -Force (Join-Path $TemplateRoot "scripts\shared\sync_workflow_backup.py") (Join-Path $RepoPath "scripts\shared\sync_workflow_backup.py")
@@ -185,6 +185,10 @@ Remove-Item -Force (Join-Path $RepoPath "scripts\shared\start_epic_worktree.py")
 Remove-Item -Force (Join-Path $RepoPath "scripts\shared\harness.py") -ErrorAction SilentlyContinue
 Remove-Item -Recurse -Force (Join-Path $RepoPath "scripts\shared\harness_backends") -ErrorAction SilentlyContinue
 Remove-Item -Force (Join-Path $RepoPath "scripts\shared\target_runtime.py") -ErrorAction SilentlyContinue
+Remove-Item -Force (Join-Path $RepoPath "scripts\shared\agent_mail.py") -ErrorAction SilentlyContinue
+Remove-Item -Force (Join-Path $RepoPath "scripts\shared\migrate_br_to_bd.py") -ErrorAction SilentlyContinue
+Remove-Item -Force (Join-Path $RepoPath "scripts\shared\migrate_downstream_to_workflow_backup.py") -ErrorAction SilentlyContinue
+Remove-Item -Recurse -Force (Join-Path $RepoPath ".beads\workflow") -ErrorAction SilentlyContinue
 Write-Host "Copied scripts/shared/*"
 
 New-Item -ItemType Directory -Force -Path (Join-Path $RepoPath "docs") | Out-Null

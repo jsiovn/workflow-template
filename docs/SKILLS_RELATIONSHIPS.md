@@ -32,6 +32,7 @@ flowchart LR
         ETW[executor-task-worktree<br/>orchestrator<br/>parallel-safe → main]
         EET[executor-epic-task<br/>orchestrator<br/>PR-per-bead → epic branch]
         EETW[executor-epic-task-worktree<br/>orchestrator<br/>parallel-safe → epic branch]
+        ERIP[executor-rework-in-place<br/>orchestrator<br/>amend existing PR in current tree]
         FDB[finishing-a-development-branch]
     end
 
@@ -73,7 +74,8 @@ flowchart LR
 | `executor-task-worktree`         | executor (orchestrator)         | Same as `executor-task`, but in an isolated git worktree (parallel-safe) | user                                                                      | same chain as `executor-task`                                                      |
 | `executor-epic-task`             | executor (orchestrator)         | Same as `executor-task` but branches off (and PRs into) the bead's parent epic branch `epic/<epic-id>-<slug>`; auto-creates the epic branch from the default branch if missing | user                                                                      | same chain as `executor-task`                                                      |
 | `executor-epic-task-worktree`    | executor (orchestrator)         | Same as `executor-epic-task`, but in an isolated git worktree (parallel-safe; never touches the main checkout) | user                                                                      | same chain as `executor-task`                                                      |
-| `finishing-a-development-branch` | executor                        | Sync backup mirror, push, create PR                | `executor-task`, `executor-task-worktree`, `executor-epic-task`, `executor-epic-task-worktree`, user | —                                                                                  |
+| `executor-rework-in-place`       | executor (orchestrator)         | Re-execute a reopened bead on the **current** feature branch and push into its **existing** open PR (no new branch, no new PR) | user                                                                      | `beads-claim` → `writing-plans` (regenerate) → impl → `build-and-test` → verify → `requesting-code-review` → `beads-close` → push + fixup PR comment |
+| `finishing-a-development-branch` | executor                        | Sync backup mirror, push, create PR                | `executor-task`, `executor-task-worktree`, `executor-epic-task`, `executor-epic-task-worktree`, `executor-rework-in-place`, user | —                                                                                  |
 | `address-pr-comments`            | maintenance                     | Iterative PR review-comment loop                   | user                                                                      | `pr-comment-fixer` subagent                                                        |
 | `project-auditor`                | maintenance                     | Full-repo audit (naming, structure, light arch)    | user                                                                      | `project-auditor` subagent                                                         |
 | `audit-backlog-rules`            | maintenance                     | Audit ready/blocked beads against current rules    | user                                                                      | —                                                                                  |
@@ -178,6 +180,10 @@ flowchart LR
 
 Use `executor-task` for the standard one-bead-per-PR rhythm into main. Use `executor-task-worktree` when you need to run multiple beads in parallel without branch interference in the main checkout. Use the `executor-epic-task` variants when the whole epic should land in main as a single merge and each child bead ships as its own PR into the epic branch.
 
+### Rework variant (`executor-rework-in-place`)
+
+When a bead has already been executed end-to-end, the PR is open, and reviewer or product feedback shows the task itself was wrong (mis-scoped, wrong approach), the user reopens the bead (`bd reopen <id>`), edits its requirements, and invokes `executor-rework-in-place` with the bead id. Unlike the four orchestrators above, this skill **stays on the current feature branch** in the **current main worktree** — no branch is created, no `git checkout <main>` happens, no new PR is opened. The chain re-runs `beads-claim` → `writing-plans` (regenerated against the updated bead text) → impl → `build-and-test` → verify → `requesting-code-review` → `beads-close`, then pushes additional commits into the existing PR and posts a fixup summary comment naming the bead id and the new tip SHA. Hard prereqs: `bead_id` is required, the working tree must be clean, the current branch must not be the default branch, and the branch must have an open PR. Used after, not instead of, `executor-task` / `executor-task-worktree`.
+
 ---
 
 ## 5. Agents (subagents)
@@ -216,6 +222,7 @@ flowchart TD
     USER --> ETW[executor-task-worktree]
     USER --> EET[executor-epic-task]
     USER --> EETW[executor-epic-task-worktree]
+    USER --> ERIP[executor-rework-in-place]
     USER --> VB[validate-beads]
     USER --> BC[beads-claim]
     USER --> BCL[beads-close]
@@ -269,6 +276,14 @@ flowchart TD
     EETW --> BCL
     EETW --> FDB
 
+    ERIP --> BC
+    ERIP --> WP
+    ERIP -.-> SD
+    ERIP --> BAT
+    ERIP --> VBC
+    ERIP --> RCR
+    ERIP --> BCL
+
     RCR --> AGCR([agent: code-reviewer])
     APC --> AGPF([agent: pr-comment-fixer])
     PA --> AGPA([agent: project-auditor])
@@ -279,7 +294,7 @@ flowchart TD
     classDef agent fill:#fffde1,stroke:#9e9d24
 
     class PB,BS,PR,BP,VB planner
-    class ET,ETW,EET,EETW,BC,WP,SD,BAT,VBC,RCR,BCL,FDB executor
+    class ET,ETW,EET,EETW,ERIP,BC,WP,SD,BAT,VBC,RCR,BCL,FDB executor
     class APC,PA,ABR,PLB,SWB,RWB maint
     class AGCR,AGPF,AGPA agent
 ```
