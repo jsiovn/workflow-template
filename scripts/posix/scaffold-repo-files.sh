@@ -73,18 +73,6 @@ find "${template_root}/skills" -mindepth 1 -maxdepth 1 -type d | while read -r s
   cp -R "${src}" "${dst}"
   printf 'Copied Codex skill: %s\n' "${name}"
 done
-rm -rf "${repo_path}/.codex/skills/plan-debate"
-rm -rf "${repo_path}/.codex/skills/plan-critic"
-rm -rf "${repo_path}/.codex/skills/start-epic-worktree"
-rm -rf "${repo_path}/.codex/skills/game-action-harness"
-rm -rf "${repo_path}/.codex/skills/target-runtime-exec"
-rm -rf "${repo_path}/.codex/skills/executor-once"
-rm -rf "${repo_path}/.codex/skills/executor-loop"
-rm -rf "${repo_path}/.codex/skills/executor-loop-epic"
-rm -rf "${repo_path}/.codex/skills/swarm-epic"
-rm -rf "${repo_path}/.codex/skills/review-epic"
-rm -rf "${repo_path}/.codex/skills/execute-bead-worker"
-rm -rf "${repo_path}/.codex/skills/test-on-android-device"
 
 mkdir -p "${repo_path}/.claude/skills"
 if [[ ! -d "${repo_path}/.claude/skills/build-and-test" ]]; then
@@ -109,18 +97,29 @@ find "${template_root}/skills" -mindepth 1 -maxdepth 1 -type d | while read -r s
   cp -R "${src}" "${dst}"
   printf 'Copied Claude skill: %s\n' "${name}"
 done
-rm -rf "${repo_path}/.claude/skills/plan-debate"
-rm -rf "${repo_path}/.claude/skills/plan-critic"
-rm -rf "${repo_path}/.claude/skills/start-epic-worktree"
-rm -rf "${repo_path}/.claude/skills/game-action-harness"
-rm -rf "${repo_path}/.claude/skills/target-runtime-exec"
-rm -rf "${repo_path}/.claude/skills/executor-once"
-rm -rf "${repo_path}/.claude/skills/executor-loop"
-rm -rf "${repo_path}/.claude/skills/executor-loop-epic"
-rm -rf "${repo_path}/.claude/skills/swarm-epic"
-rm -rf "${repo_path}/.claude/skills/review-epic"
-rm -rf "${repo_path}/.claude/skills/execute-bead-worker"
-rm -rf "${repo_path}/.claude/skills/test-on-android-device"
+
+# Prune legacy skills that previous versions of this template scaffolded.
+# Removing a name here also removes it from existing downstreams on next
+# update-skills run. Keep in lockstep with scripts/windows/scaffold-repo-files.ps1.
+legacy_skills=(
+  plan-debate
+  plan-critic
+  start-epic-worktree
+  game-action-harness
+  target-runtime-exec
+  executor-once
+  executor-loop
+  executor-loop-epic
+  swarm-epic
+  review-epic
+  execute-bead-worker
+  test-on-android-device
+)
+for provider in .codex .claude; do
+  for legacy in "${legacy_skills[@]}"; do
+    rm -rf "${repo_path}/${provider}/skills/${legacy}"
+  done
+done
 
 # Shared agents — copied to both providers (same pattern as skills/).
 if [[ -d "${template_root}/agents" ]]; then

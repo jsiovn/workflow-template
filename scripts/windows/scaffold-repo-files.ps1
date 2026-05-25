@@ -72,18 +72,6 @@ Get-ChildItem $skillsSource -Directory | ForEach-Object {
     Copy-Item -Recurse -Force $_.FullName $destination
     Write-Host "Copied Codex skill: $($_.Name)"
 }
-Remove-Item -Recurse -Force (Join-Path $RepoPath ".codex\skills\plan-debate") -ErrorAction SilentlyContinue
-Remove-Item -Recurse -Force (Join-Path $RepoPath ".codex\skills\plan-critic") -ErrorAction SilentlyContinue
-Remove-Item -Recurse -Force (Join-Path $RepoPath ".codex\skills\start-epic-worktree") -ErrorAction SilentlyContinue
-Remove-Item -Recurse -Force (Join-Path $RepoPath ".codex\skills\game-action-harness") -ErrorAction SilentlyContinue
-Remove-Item -Recurse -Force (Join-Path $RepoPath ".codex\skills\target-runtime-exec") -ErrorAction SilentlyContinue
-Remove-Item -Recurse -Force (Join-Path $RepoPath ".codex\skills\executor-once") -ErrorAction SilentlyContinue
-Remove-Item -Recurse -Force (Join-Path $RepoPath ".codex\skills\executor-loop") -ErrorAction SilentlyContinue
-Remove-Item -Recurse -Force (Join-Path $RepoPath ".codex\skills\executor-loop-epic") -ErrorAction SilentlyContinue
-Remove-Item -Recurse -Force (Join-Path $RepoPath ".codex\skills\swarm-epic") -ErrorAction SilentlyContinue
-Remove-Item -Recurse -Force (Join-Path $RepoPath ".codex\skills\review-epic") -ErrorAction SilentlyContinue
-Remove-Item -Recurse -Force (Join-Path $RepoPath ".codex\skills\execute-bead-worker") -ErrorAction SilentlyContinue
-Remove-Item -Recurse -Force (Join-Path $RepoPath ".codex\skills\test-on-android-device") -ErrorAction SilentlyContinue
 
 New-Item -ItemType Directory -Force -Path (Join-Path $RepoPath ".claude\skills") | Out-Null
 if (-not (Test-Path (Join-Path $RepoPath ".claude\skills\build-and-test"))) {
@@ -107,18 +95,29 @@ Get-ChildItem $skillsSource -Directory | ForEach-Object {
     Copy-Item -Recurse -Force $_.FullName $destination
     Write-Host "Copied Claude skill: $($_.Name)"
 }
-Remove-Item -Recurse -Force (Join-Path $RepoPath ".claude\skills\plan-debate") -ErrorAction SilentlyContinue
-Remove-Item -Recurse -Force (Join-Path $RepoPath ".claude\skills\plan-critic") -ErrorAction SilentlyContinue
-Remove-Item -Recurse -Force (Join-Path $RepoPath ".claude\skills\start-epic-worktree") -ErrorAction SilentlyContinue
-Remove-Item -Recurse -Force (Join-Path $RepoPath ".claude\skills\game-action-harness") -ErrorAction SilentlyContinue
-Remove-Item -Recurse -Force (Join-Path $RepoPath ".claude\skills\target-runtime-exec") -ErrorAction SilentlyContinue
-Remove-Item -Recurse -Force (Join-Path $RepoPath ".claude\skills\executor-once") -ErrorAction SilentlyContinue
-Remove-Item -Recurse -Force (Join-Path $RepoPath ".claude\skills\executor-loop") -ErrorAction SilentlyContinue
-Remove-Item -Recurse -Force (Join-Path $RepoPath ".claude\skills\executor-loop-epic") -ErrorAction SilentlyContinue
-Remove-Item -Recurse -Force (Join-Path $RepoPath ".claude\skills\swarm-epic") -ErrorAction SilentlyContinue
-Remove-Item -Recurse -Force (Join-Path $RepoPath ".claude\skills\review-epic") -ErrorAction SilentlyContinue
-Remove-Item -Recurse -Force (Join-Path $RepoPath ".claude\skills\execute-bead-worker") -ErrorAction SilentlyContinue
-Remove-Item -Recurse -Force (Join-Path $RepoPath ".claude\skills\test-on-android-device") -ErrorAction SilentlyContinue
+
+# Prune legacy skills that previous versions of this template scaffolded.
+# Removing a name here also removes it from existing downstreams on next
+# update-skills run. Keep in lockstep with scripts/posix/scaffold-repo-files.sh.
+$legacySkills = @(
+    "plan-debate",
+    "plan-critic",
+    "start-epic-worktree",
+    "game-action-harness",
+    "target-runtime-exec",
+    "executor-once",
+    "executor-loop",
+    "executor-loop-epic",
+    "swarm-epic",
+    "review-epic",
+    "execute-bead-worker",
+    "test-on-android-device"
+)
+foreach ($provider in @(".codex", ".claude")) {
+    foreach ($legacy in $legacySkills) {
+        Remove-Item -Recurse -Force (Join-Path $RepoPath "$provider\skills\$legacy") -ErrorAction SilentlyContinue
+    }
+}
 
 # Shared agents — copied to both providers (same pattern as skills/).
 $sharedAgentsSource = Join-Path $TemplateRoot "agents"
