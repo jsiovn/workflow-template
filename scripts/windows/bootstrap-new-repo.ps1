@@ -1,6 +1,7 @@
 param(
     [Parameter(Mandatory = $true)][string]$RepoPath,
     [Parameter(Mandatory = $true)][string]$Prefix,
+    [switch]$WithScreenshots,
     [string]$TemplateRoot = (Split-Path (Split-Path $PSScriptRoot -Parent) -Parent)
 )
 
@@ -28,6 +29,6 @@ try {
     Pop-Location
 }
 
-& (Join-Path $PSScriptRoot "scaffold-repo-files.ps1") -RepoPath $RepoPath -Prefix $Prefix -TemplateRoot $TemplateRoot
+& (Join-Path $PSScriptRoot "scaffold-repo-files.ps1") -RepoPath $RepoPath -Prefix $Prefix -WithScreenshots:$WithScreenshots -TemplateRoot $TemplateRoot
 python (Join-Path $TemplateRoot "scripts\shared\ensure_stage1_beads.py") $RepoPath
 Write-Host "Bootstrap complete."

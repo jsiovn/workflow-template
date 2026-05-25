@@ -9,15 +9,16 @@ Use this guide when starting a downstream repo from scratch or when a repo is st
    - `dolt`
    - Python
 2. Bootstrap the repo from this template:
-   - macOS/Linux: `bash ./scripts/posix/bootstrap-new-repo.sh /path/to/repo <prefix>`
-   - Windows: `pwsh -File .\scripts\windows\bootstrap-new-repo.ps1 -RepoPath D:\path\to\repo -Prefix <prefix>`
+   - macOS/Linux: `bash ./scripts/posix/bootstrap-new-repo.sh [--with-screenshots] /path/to/repo <prefix>`
+   - Windows: `pwsh -File .\scripts\windows\bootstrap-new-repo.ps1 -RepoPath D:\path\to\repo -Prefix <prefix> [-WithScreenshots]`
+   - Pass `--with-screenshots` / `-WithScreenshots` only for web/UI projects that want the `attach-web-screenshots` skill plus its companion `.github/workflows/cleanup-screenshots.yml`. Omit for backend, CLI, or library repos.
 3. The bootstrap script:
    - initializes git if the target path is not already a repo
    - runs `bd init -p <prefix> --server --skip-agents --skip-hooks`
    - runs `bd setup codex`
    - scaffolds the shared workflow docs, skills, and helper scripts
    - installs the managed root `.gitignore` block for local-only workflow assets
-   - creates standalone stage-2 beads for specializing `build-and-test` and `attach-web-screenshots`
+   - creates a standalone stage-2 bead for specializing `build-and-test`, plus a matching bead for `attach-web-screenshots` only when that opt-in skill was installed
 4. Verify the repo is ready:
    - `bd where`
    - `bd ready --json`
@@ -36,7 +37,7 @@ You do not need project-specific skills yet.
 2. Let the first planning pass define the runtime shape, likely files, verification needs, and the persisted inputs later beads should rely on.
 3. Make sure the bead contract includes `Read:`, `Inputs:`, `Files:`, and `Verify:` so a fresh executor session can execute without replaying planner chat.
 4. Make sure early execution plans include a precise `## Verification` section with exact commands and expected evidence. The stage-1 `build-and-test` skill depends on that section and will not guess.
-5. Keep the bootstrap-created `Specialize build-and-test for this repo` and `Specialize attach-web-screenshots for this repo` beads independent. Do not make them children of the first feature epic.
+5. Keep the bootstrap-created `Specialize build-and-test for this repo` bead independent (and `Specialize attach-web-screenshots for this repo` if you opted into screenshots). Do not make them children of the first feature epic.
 
 ## Stage 2: Project-Specific Customization
 
@@ -46,7 +47,7 @@ Typical stage-2 changes:
 
 - specialize `.codex/skills/build-and-test/SKILL.md`
 - mirror the same specialization to `.claude/skills/build-and-test/SKILL.md`
-- specialize `.codex/skills/attach-web-screenshots/SKILL.md` and the `.claude/` mirror
+- (if installed) specialize `.codex/skills/attach-web-screenshots/SKILL.md` and the `.claude/` mirror
 - add runtime-specific setup or operational notes
 - add repo-specific guidance outside the managed blocks in `AGENTS.md` or `CLAUDE.md`
 - rely on `sync-workflow-backup` / `finishing-a-development-branch` to publish updated workflow docs and skills through the backup repo, not the downstream project remote

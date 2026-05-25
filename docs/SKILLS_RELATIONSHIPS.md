@@ -83,7 +83,7 @@ flowchart LR
 | `sync-workflow-backup`           | maintenance                     | Push managed workflow files into the backup mirror | user                                                                      | `scripts/{posix,windows}/sync-workflow-backup.{sh,ps1}`                            |
 | `restore-workflow-backup`        | maintenance                     | Copy managed workflow files back from backup mirror | user                                                                     | `scripts/{posix,windows}/restore-workflow-backup.{sh,ps1}`                         |
 
-> Note: `build-and-test` is **not** in `skills/` — it lives under `templates/.codex/skills/build-and-test/` and `templates/.claude/skills/build-and-test/` because it is the one skill the downstream repo specializes (stage 2). Treat it as the implicit verification step in every executor chain.
+> Note: `build-and-test` is **not** in `skills/` — it lives under `templates/skills/build-and-test/` because it is the one skill the downstream repo specializes (stage 2). The single source is copied into both `<downstream>/.codex/skills/build-and-test/` and `<downstream>/.claude/skills/build-and-test/`. Treat it as the implicit verification step in every executor chain.
 
 ---
 

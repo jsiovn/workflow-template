@@ -1,6 +1,7 @@
 param(
     [Parameter(Mandatory = $true)][string]$RepoPath,
     [string]$Prefix,
+    [switch]$WithScreenshots,
     [string]$TemplateRoot = (Split-Path (Split-Path $PSScriptRoot -Parent) -Parent)
 )
 
@@ -8,6 +9,13 @@ $ErrorActionPreference = "Stop"
 
 if (-not (Test-Path $RepoPath)) {
     throw "RepoPath does not exist: $RepoPath"
+}
+
+# Auto-detect existing screenshot install so update-skills can refresh without
+# requiring the switch every time.
+if ((Test-Path (Join-Path $RepoPath ".codex\skills\attach-web-screenshots")) -or
+    (Test-Path (Join-Path $RepoPath ".claude\skills\attach-web-screenshots"))) {
+    $WithScreenshots = $true
 }
 
 function Get-PythonCommand {
@@ -23,7 +31,7 @@ function Get-PythonCommand {
 $pythonCmd = Get-PythonCommand
 $workflowSource = Join-Path $TemplateRoot "templates\BEADS_WORKFLOW.md"
 $troubleshootingSource = Join-Path $TemplateRoot "docs\TROUBLESHOOTING.md"
-$codexBuildSkillSource = Join-Path $TemplateRoot "templates\.codex\skills\build-and-test"
+$sharedBuildSkillSource = Join-Path $TemplateRoot "templates\skills\build-and-test"
 $skillsSource = Join-Path $TemplateRoot "skills"
 $agentsSnippet = Join-Path $TemplateRoot "templates\AGENTS.snippet.md"
 $claudeSnippet = Join-Path $TemplateRoot "templates\CLAUDE.snippet.md"
@@ -43,17 +51,19 @@ Write-Host "Copied .beads/README.md"
 
 New-Item -ItemType Directory -Force -Path (Join-Path $RepoPath ".codex\skills") | Out-Null
 if (-not (Test-Path (Join-Path $RepoPath ".codex\skills\build-and-test"))) {
-    Copy-Item -Recurse -Force $codexBuildSkillSource (Join-Path $RepoPath ".codex\skills\build-and-test")
+    Copy-Item -Recurse -Force $sharedBuildSkillSource (Join-Path $RepoPath ".codex\skills\build-and-test")
     Write-Host "Copied Codex build-and-test skill"
 } else {
     Write-Host "Preserved existing Codex build-and-test skill"
 }
-$codexAttachSkillSource = Join-Path $TemplateRoot "templates\.codex\skills\attach-web-screenshots"
-if (-not (Test-Path (Join-Path $RepoPath ".codex\skills\attach-web-screenshots"))) {
-    Copy-Item -Recurse -Force $codexAttachSkillSource (Join-Path $RepoPath ".codex\skills\attach-web-screenshots")
-    Write-Host "Copied Codex attach-web-screenshots skill"
-} else {
-    Write-Host "Preserved existing Codex attach-web-screenshots skill"
+$sharedAttachSkillSource = Join-Path $TemplateRoot "templates\skills\attach-web-screenshots"
+if ($WithScreenshots) {
+    if (-not (Test-Path (Join-Path $RepoPath ".codex\skills\attach-web-screenshots"))) {
+        Copy-Item -Recurse -Force $sharedAttachSkillSource (Join-Path $RepoPath ".codex\skills\attach-web-screenshots")
+        Write-Host "Copied Codex attach-web-screenshots skill"
+    } else {
+        Write-Host "Preserved existing Codex attach-web-screenshots skill"
+    }
 }
 
 Get-ChildItem $skillsSource -Directory | ForEach-Object {
@@ -74,27 +84,21 @@ Remove-Item -Recurse -Force (Join-Path $RepoPath ".codex\skills\swarm-epic") -Er
 Remove-Item -Recurse -Force (Join-Path $RepoPath ".codex\skills\review-epic") -ErrorAction SilentlyContinue
 Remove-Item -Recurse -Force (Join-Path $RepoPath ".codex\skills\execute-bead-worker") -ErrorAction SilentlyContinue
 Remove-Item -Recurse -Force (Join-Path $RepoPath ".codex\skills\test-on-android-device") -ErrorAction SilentlyContinue
-Get-ChildItem (Join-Path $TemplateRoot "templates\.codex\skills") -Directory -ErrorAction SilentlyContinue | ForEach-Object {
-    if ($_.Name -ne "build-and-test" -and $_.Name -ne "attach-web-screenshots") {
-        $destination = Join-Path $RepoPath ".codex\skills\$($_.Name)"
-        Remove-Item -Recurse -Force $destination -ErrorAction SilentlyContinue
-        Copy-Item -Recurse -Force $_.FullName $destination
-        Write-Host "Copied Codex provider skill: $($_.Name)"
-    }
-}
 
 New-Item -ItemType Directory -Force -Path (Join-Path $RepoPath ".claude\skills") | Out-Null
 if (-not (Test-Path (Join-Path $RepoPath ".claude\skills\build-and-test"))) {
-    Copy-Item -Recurse -Force $codexBuildSkillSource (Join-Path $RepoPath ".claude\skills\build-and-test")
+    Copy-Item -Recurse -Force $sharedBuildSkillSource (Join-Path $RepoPath ".claude\skills\build-and-test")
     Write-Host "Copied Claude build-and-test skill"
 } else {
     Write-Host "Preserved existing Claude build-and-test skill"
 }
-if (-not (Test-Path (Join-Path $RepoPath ".claude\skills\attach-web-screenshots"))) {
-    Copy-Item -Recurse -Force $codexAttachSkillSource (Join-Path $RepoPath ".claude\skills\attach-web-screenshots")
-    Write-Host "Copied Claude attach-web-screenshots skill"
-} else {
-    Write-Host "Preserved existing Claude attach-web-screenshots skill"
+if ($WithScreenshots) {
+    if (-not (Test-Path (Join-Path $RepoPath ".claude\skills\attach-web-screenshots"))) {
+        Copy-Item -Recurse -Force $sharedAttachSkillSource (Join-Path $RepoPath ".claude\skills\attach-web-screenshots")
+        Write-Host "Copied Claude attach-web-screenshots skill"
+    } else {
+        Write-Host "Preserved existing Claude attach-web-screenshots skill"
+    }
 }
 
 Get-ChildItem $skillsSource -Directory | ForEach-Object {
@@ -115,14 +119,6 @@ Remove-Item -Recurse -Force (Join-Path $RepoPath ".claude\skills\swarm-epic") -E
 Remove-Item -Recurse -Force (Join-Path $RepoPath ".claude\skills\review-epic") -ErrorAction SilentlyContinue
 Remove-Item -Recurse -Force (Join-Path $RepoPath ".claude\skills\execute-bead-worker") -ErrorAction SilentlyContinue
 Remove-Item -Recurse -Force (Join-Path $RepoPath ".claude\skills\test-on-android-device") -ErrorAction SilentlyContinue
-Get-ChildItem (Join-Path $TemplateRoot "templates\.claude\skills") -Directory -ErrorAction SilentlyContinue | ForEach-Object {
-    if ($_.Name -ne "build-and-test") {
-        $destination = Join-Path $RepoPath ".claude\skills\$($_.Name)"
-        Remove-Item -Recurse -Force $destination -ErrorAction SilentlyContinue
-        Copy-Item -Recurse -Force $_.FullName $destination
-        Write-Host "Copied Claude provider skill: $($_.Name)"
-    }
-}
 
 # Shared agents — copied to both providers (same pattern as skills/).
 $sharedAgentsSource = Join-Path $TemplateRoot "agents"
@@ -195,9 +191,11 @@ New-Item -ItemType Directory -Force -Path (Join-Path $RepoPath "docs") | Out-Nul
 Copy-Item -Force $troubleshootingSource (Join-Path $RepoPath "docs\TROUBLESHOOTING.md")
 Write-Host "Copied docs/TROUBLESHOOTING.md"
 
-New-Item -ItemType Directory -Force -Path (Join-Path $RepoPath ".github\workflows") | Out-Null
-Copy-Item -Force (Join-Path $TemplateRoot "templates\.github\workflows\cleanup-screenshots.yml") (Join-Path $RepoPath ".github\workflows\cleanup-screenshots.yml")
-Write-Host "Copied .github/workflows/cleanup-screenshots.yml"
+if ($WithScreenshots) {
+    New-Item -ItemType Directory -Force -Path (Join-Path $RepoPath ".github\workflows") | Out-Null
+    Copy-Item -Force (Join-Path $TemplateRoot "templates\.github\workflows\cleanup-screenshots.yml") (Join-Path $RepoPath ".github\workflows\cleanup-screenshots.yml")
+    Write-Host "Copied .github/workflows/cleanup-screenshots.yml"
+}
 
 if ($pythonCmd -eq "py") {
     & py -3 (Join-Path $TemplateRoot "scripts\shared\sync_workflow_backup.py") ensure-ignore --repo $RepoPath

@@ -58,6 +58,8 @@ pwsh -File "$HOME\www\workflow-template\scripts\windows\bootstrap-new-repo.ps1" 
 
 `myprefix` is the short tag Beads uses for issue IDs in that repo (e.g. `acme` → `acme-1`, `acme-2`). The bootstrap script initializes git if needed, runs `bd init` and `bd setup codex`, and copies the shared skills, agents, and helper scripts into the project.
 
+For web/UI projects, add `--with-screenshots` (POSIX) or `-WithScreenshots` (PowerShell) to also install the `attach-web-screenshots` skill and its companion `.github/workflows/cleanup-screenshots.yml`. Omit for backend, CLI, or library repos. The flag is also accepted by `update-skills` if you adopt screenshots later.
+
 ### 3. Refresh later
 
 When this template gets updates, refresh any downstream repo with:
@@ -181,7 +183,7 @@ Other useful skills you'll reach for:
 | `attach-web-screenshots`         | Takes screenshots of a running web app and attaches them to the open PR               | After implementing a UI feature, before or alongside review                  |
 | `finishing-a-development-branch` | Pushes the branch and opens a PR; runs `sync-workflow-backup` first                   | When all work on a feature branch is done and verified                       |
 
-> `attach-web-screenshots` ships a companion CI workflow (`.github/workflows/cleanup-screenshots.yml`) that prunes stale screenshot folders for merged branches. Re-run `update-skills` if you adopt it later.
+> `attach-web-screenshots` is opt-in — pass `--with-screenshots` to `bootstrap-new-repo` (or `update-skills` to adopt later). It ships a companion CI workflow (`.github/workflows/cleanup-screenshots.yml`) that prunes stale screenshot folders for merged branches.
 
 </details>
 
