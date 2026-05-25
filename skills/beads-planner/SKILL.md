@@ -34,6 +34,15 @@ Turn planning output into a Beads structure that another agent or engineer can e
    - `Risk:` `low`, `medium`, or `high`
    - `Parallel:` whether the bead can run in parallel and what it must not overlap with
    - `Escalate:` what to do if blocked, underspecified, or forced out of scope
+8. Before creating beads, audit every `Read:` reference for portability across machines:
+   - A `Read:` path is portable only if it is relative to the repo root or an absolute path inside the current working directory.
+   - Paths under `$HOME`, `~/.claude/`, `/tmp/`, or any location outside the repo (e.g. `/home/<user>/.claude/plans/...`) are per-machine and unreachable for teammates. Treat these as **non-portable** and rewrite them before bead creation.
+   - For each non-portable plan or spec file:
+     1. Copy it into the repo at `docs/plans/<slug>.md` (preserve the original basename when sensible; sluggify if needed). Create the directory if missing.
+     2. Read the file's full content and embed it into the bead so it travels via Dolt sync. Either pass it at creation time (`bd create ... --notes "$(cat docs/plans/<slug>.md)"` or `--body-file docs/plans/<slug>.md` when the plan IS the description) or append after creation with `bd note <bead-id> --file docs/plans/<slug>.md`.
+     3. Replace the external path in the bead's `Read:` section with the new in-repo path `docs/plans/<slug>.md` and add a short pointer like "(also inlined in bead notes)".
+   - If the same plan file is referenced by many beads in the epic, copy it once and have every bead reference the same `docs/plans/<slug>.md` path; inline it once into the epic's notes rather than duplicating across every child bead.
+   - Note: `docs/plans/` is local-only in the downstream repo (workflow scaffold area). The bead-notes copy is what guarantees cross-machine availability via Dolt; the `docs/plans/` copy is for in-repo browsing and survives if the bead is later deleted.
 
 ## Planning Rules
 
