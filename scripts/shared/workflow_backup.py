@@ -66,6 +66,7 @@ MANAGED_SKILLS = (
     "build-and-test",
     "executor-epic-task",
     "executor-epic-task-worktree",
+    "cleanup-worktree",
     "executor-rework-in-place",
     "executor-task",
     "executor-task-worktree",
