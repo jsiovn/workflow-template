@@ -1,13 +1,13 @@
 ---
 name: executor-epic-task-worktree
-description: "Run a full executor cycle for one bead in a fresh git worktree off its parent epic branch (epic/<epic-bead-id>): leaves the main working tree completely untouched, creates a sibling worktree at ../<repo>-feat-<bead-id>, executes the bead end-to-end, pushes, opens a PR targeting the epic branch, then removes the worktree. Use when an epic has its own integration branch and the main tree has active work that must not be disturbed."
+description: "Run a full executor cycle for one bead in a fresh git worktree off its parent epic branch (epic/<epic-bead-id>): leaves the main working tree completely untouched, creates a sibling worktree at ../<repo>-feat-<bead-id>, executes the bead end-to-end, pushes, opens a PR targeting the epic branch, and leaves the worktree in place for follow-up work (review comments, screenshots, CI fixes). Use when an epic has its own integration branch and the main tree has active work that must not be disturbed. Use the `cleanup-worktree` skill to remove the worktree once follow-up work is done."
 ---
 
 # Executor Epic Task Worktree
 
 Run exactly one full executor cycle for one bead, isolated in a fresh git worktree cut from the latest epic branch (`epic/<epic-bead-id>`), and deliver it as a PR that targets that epic branch.
 
-This is the preferred path when an epic has its own long-lived integration branch (so the epic can land in main as one merge), each child bead should ship as its own PR into that epic branch, **and** the main working tree has in-flight changes that must not be touched. No WIP commit, no branch switch in the main tree — all bead work happens in a sibling worktree that is created and removed automatically.
+This is the preferred path when an epic has its own long-lived integration branch (so the epic can land in main as one merge), each child bead should ship as its own PR into that epic branch, **and** the main working tree has in-flight changes that must not be touched. No WIP commit, no branch switch in the main tree — all bead work happens in a sibling worktree that is created automatically and left in place after the PR opens, so the user can return to it for review comments, screenshots, or CI fixes. Removal is a separate manual step via the `cleanup-worktree` skill.
 
 ## Steps
 
@@ -93,11 +93,7 @@ This is the preferred path when an epic has its own long-lived integration branc
 
 12. If separate work is discovered, create follow-up beads during execution or before close. Keep this worktree scoped to `<BEAD_ID>` only.
 
-13. If a blocker appears, update the current bead, summarize the blocker, and stop — **do not remove the worktree**. Report the worktree path so the user can return to it or clean it up manually:
-    ```
-    git worktree remove <WORKTREE_PATH>   # to discard
-    git worktree prune
-    ```
+13. If a blocker appears, update the current bead, summarize the blocker, and stop. Report the worktree path so the user can return to it. The worktree is never removed automatically — use the `cleanup-worktree` skill when ready to discard it.
 
 14. If build/test fails and the fix is still in scope, return to implementation and retry.
 
@@ -108,15 +104,7 @@ This is the preferred path when an epic has its own long-lived integration branc
     - `gh pr create --base <EPIC_BRANCH> --title "<conventional-commit title>" --body "..."` — the PR body must include both an `Epic: <EPIC_BEAD_ID>` line and a `Bead: <BEAD_ID>` reference line (e.g. `Bead: lexify-a8m`). The title follows conventional commits format (`type(scope): description`) with no bead id prefix.
     - report the PR URL
 
-16. **Web screenshots** — if the bead touched any UI component or page, run the `attach-web-screenshots` skill from within `<WORKTREE_PATH>` to capture browser screenshots at all Tailwind breakpoints and attach them to the open PR. Skip only when the change is purely non-visual (e.g. utility functions, API handlers, types, tests).
-
-17. **Remove the worktree on success** (after the PR URL is confirmed and screenshots are attached if applicable):
-    ```
-    git worktree remove <WORKTREE_PATH>
-    git worktree prune
-    ```
-
-18. Stop with a concise summary: bead id, epic id, `<EPIC_BRANCH>` (PR base), `<BRANCH_NAME>`, PR URL. The main working tree was never touched. Note if the epic branch was created by this run.
+16. Stop with a concise summary: bead id, epic id, `<EPIC_BRANCH>` (PR base), `<BRANCH_NAME>`, PR URL, and the worktree path (so the user can `cd` back in for follow-up work). The main working tree was never touched. Note if the epic branch was created by this run. The worktree is left in place — use the `cleanup-worktree` skill to remove it once review comments, screenshots, and CI fixes are done.
 
 ## Checkout Discipline
 
@@ -134,5 +122,5 @@ This is the preferred path when an epic has its own long-lived integration branc
 - Do not silently skip verification or code review.
 - Do not continue into another bead after the PR is opened.
 - If `gh` is unavailable, push the branch and report the branch name plus the intended `--base <EPIC_BRANCH>` for manual PR creation rather than failing the whole flow.
-- Remove the worktree only after the PR URL is confirmed and screenshots are attached; keep it on blocker so the user can resume.
+- Never remove the worktree automatically — it stays in place after success or blocker so the user can address PR comments, capture screenshots, or fix CI. Removal is a deliberate user action via the `cleanup-worktree` skill.
 - **No pausing between sub-skill invocations.** After each sub-skill (`beads-claim`, `writing-plans`, `build-and-test`, `verification-before-completion`, `requesting-code-review`, `beads-close`) completes, invoke the next one immediately without asking the user for confirmation. Only stop mid-flow for a genuine blocker (build failure, merge conflict, ambiguous bead choice).
