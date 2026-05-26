@@ -35,6 +35,7 @@ Catch planning defects before execution starts coding. This is a planner-side va
    - every bead is fresh-session-safe: an executor can run it from the bead contract plus local inspection without replaying prior chat context
    - `Inputs:` references persisted state only, not conversational memory
    - beads marked as parallel do not obviously overlap the same file scope
+   - every `Read:` path is portable across machines: relative to the repo root or an absolute path inside the current working directory. Paths under `$HOME`, `~/.claude/`, `/tmp/`, or anywhere outside the repo are blocking — the planner must copy the file into `docs/plans/<slug>.md` AND inline its content into the bead notes (so it syncs via Dolt), then rewrite the `Read:` reference to the in-repo path.
 5. Classify findings:
    - blocking: missing execution contract, duplicate work, broken dependency shape, oversized bead, or chat-context-dependent bead
    - non-blocking: wording cleanup, minor note improvements

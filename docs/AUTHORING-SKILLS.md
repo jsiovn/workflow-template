@@ -15,8 +15,10 @@ seam instead of creating a parallel one.
       or an edit to one that already owns this seam? Prefer editing.
 - [ ] **Pick the mode.** Planner or executor (see `SKILLS_RELATIONSHIPS.md` §1).
       A skill belongs to exactly one. If it would touch both, it's two skills.
-- [ ] **Decide the surface.** Shared (`skills/<name>/`, both providers) or
-      provider-specific (`templates/.codex/skills/`, `templates/.claude/skills/`)?
+- [ ] **Decide the surface.** Shared (`skills/<name>/`, copied to both providers
+      on every run), or stage-1 / bootstrap-only (`templates/skills/<name>/`,
+      copied once and preserved — used today for `build-and-test` and the
+      opt-in `attach-web-screenshots`)?
 - [ ] **Pick the type.** Technique (concrete steps), Pattern (way of thinking),
       or Reference (lookup). Don't blend — a Technique with no steps is a Pattern
       mislabeled.

@@ -10,10 +10,9 @@ import sys
 from pathlib import Path
 
 
-BEADS = [
-    {
-        "title": "Specialize attach-web-screenshots for this repo",
-        "description": """Stage-1 bootstrap installed the generic attach-web-screenshots skill.
+SCREENSHOTS_BEAD = {
+    "title": "Specialize attach-web-screenshots for this repo",
+    "description": """Stage-1 bootstrap installed the generic attach-web-screenshots skill.
 
 Create the repo-specific stage-2 specialization as a standalone bead:
 
@@ -34,10 +33,11 @@ Create the repo-specific stage-2 specialization as a standalone bead:
 - keep this bead independent; do not nest it under a feature epic
 - do not hard-code credentials or secrets — the fetch mock only needs a valid shape, not real values
 """,
-    },
-    {
-        "title": "Specialize build-and-test for this repo",
-        "description": """Stage-1 bootstrap installed the generic build-and-test skill.
+}
+
+BUILD_AND_TEST_BEAD = {
+    "title": "Specialize build-and-test for this repo",
+    "description": """Stage-1 bootstrap installed the generic build-and-test skill.
 
 Create the repo-specific stage-2 specialization as a standalone bead:
 
@@ -54,8 +54,7 @@ Create the repo-specific stage-2 specialization as a standalone bead:
 - keep this bead independent; do not nest it under the first feature epic
 - later epics may depend on this if stronger verification is needed
 """,
-    },
-]
+}
 
 
 def run(repo: Path, *args: str) -> subprocess.CompletedProcess[str]:
@@ -74,6 +73,15 @@ def main() -> int:
     args = parser.parse_args()
 
     repo = Path(args.repo).resolve()
+
+    beads = [BUILD_AND_TEST_BEAD]
+    # Only create the screenshot specialization bead if the screenshot skill
+    # was opted into during bootstrap (scaffold installs it under either
+    # provider dir). This keeps the stage-2 backlog scoped to what's actually
+    # installed.
+    if (repo / ".codex" / "skills" / "attach-web-screenshots").exists() or \
+            (repo / ".claude" / "skills" / "attach-web-screenshots").exists():
+        beads.insert(0, SCREENSHOTS_BEAD)
 
     # Include closed beads AND override the default --limit=50 so a completed
     # stage-1 bead does not get re-created as a duplicate on every update-skills
@@ -97,7 +105,7 @@ def main() -> int:
     }
 
     created_any = False
-    for bead in BEADS:
+    for bead in beads:
         title = bead["title"]
         if title in existing_titles:
             print(f"Stage-1 follow-up bead already exists: {existing_titles[title]}")

@@ -50,28 +50,82 @@ SCRIPT_FILES = (
 
 OPTIONAL_DIRS = ()
 
-IGNORE_ENTRIES = (
-    ".beads/PRIME.md",
-    ".beads/.gitignore",
-    ".beads/README.md",
-    ".codex/skills/",
-    ".codex/agents/",
-    ".claude/skills/",
-    ".claude/agents/",
-    "AGENTS.md",
-    "BEADS_WORKFLOW.md",
-    "CLAUDE.md",
-    "docs/plans/",
-    "docs/TROUBLESHOOTING.md",
-    "scripts/posix/restore-workflow-backup.sh",
-    "scripts/posix/sync-workflow-backup.sh",
-    "scripts/shared/manage_instructions.py",
-    "scripts/shared/sync_workflow_backup.py",
-    "scripts/shared/workflow_backup.py",
-    "scripts/shared/__pycache__/",
-    "scripts/windows/restore-workflow-backup.ps1",
-    "scripts/windows/sync-workflow-backup.ps1",
+# Template-managed skills shipped to BOTH .codex/skills/ and .claude/skills/.
+# Keep in sync with sources under skills/ and the provider-shared list in
+# scripts/posix/scaffold-repo-files.sh (and the .ps1 twin). Listing each
+# entry explicitly — rather than ignoring the parent dir — lets downstream
+# repos add their own skills alongside the managed ones.
+MANAGED_SKILLS = (
+    "address-pr-comments",
+    "attach-web-screenshots",
+    "audit-backlog-rules",
+    "beads-claim",
+    "beads-close",
+    "beads-planner",
+    "brainstorming",
+    "build-and-test",
+    "executor-epic-task",
+    "executor-epic-task-worktree",
+    "executor-rework-in-place",
+    "executor-task",
+    "executor-task-worktree",
+    "finishing-a-development-branch",
+    "plan-beads",
+    "planner-research",
+    "prepare-android-chrome",
+    "project-auditor",
+    "prune-local-branches",
+    "requesting-code-review",
+    "restore-workflow-backup",
+    "sync-workflow-backup",
+    "systematic-debugging",
+    "validate-beads",
+    "verification-before-completion",
+    "writing-plans",
 )
+
+# Template-managed agents shipped to both .codex/agents/ and .claude/agents/.
+# Keep in sync with sources under agents/.
+MANAGED_AGENTS = (
+    "backend-architect",
+    "code-reviewer",
+    "engineering-manager",
+    "frontend-architect",
+    "junior-engineer",
+    "pr-comment-fixer",
+    "product-manager",
+    "project-auditor",
+    "solution-design",
+    "testing-strategist",
+)
+
+
+def _build_ignore_entries() -> tuple[str, ...]:
+    entries: list[str] = [
+        ".beads/PRIME.md",
+        ".beads/.gitignore",
+        ".beads/README.md",
+        "BEADS_WORKFLOW.md",
+        "docs/plans/",
+        "docs/TROUBLESHOOTING.md",
+        "scripts/posix/restore-workflow-backup.sh",
+        "scripts/posix/sync-workflow-backup.sh",
+        "scripts/shared/manage_instructions.py",
+        "scripts/shared/sync_workflow_backup.py",
+        "scripts/shared/workflow_backup.py",
+        "scripts/shared/__pycache__/",
+        "scripts/windows/restore-workflow-backup.ps1",
+        "scripts/windows/sync-workflow-backup.ps1",
+    ]
+    for provider in (".codex", ".claude"):
+        for skill in MANAGED_SKILLS:
+            entries.append(f"{provider}/skills/{skill}/")
+        for agent in MANAGED_AGENTS:
+            entries.append(f"{provider}/agents/{agent}.md")
+    return tuple(sorted(set(entries)))
+
+
+IGNORE_ENTRIES = _build_ignore_entries()
 
 
 @dataclass

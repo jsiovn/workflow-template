@@ -1,8 +1,18 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+with_screenshots=0
+positional=()
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --with-screenshots) with_screenshots=1; shift;;
+    *) positional+=("$1"); shift;;
+  esac
+done
+set -- ${positional[@]+"${positional[@]}"}
+
 if [[ $# -lt 1 ]]; then
-  printf 'usage: %s <repo-path> [prefix]\n' "$0" >&2
+  printf 'usage: %s [--with-screenshots] <repo-path> [prefix]\n' "$0" >&2
   exit 1
 fi
 
@@ -10,6 +20,12 @@ repo_path="$1"
 prefix="${2:-}"
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 template_root="$(cd "${script_dir}/../.." && pwd)"
+
+# Auto-detect existing screenshot install so update-skills can refresh without
+# requiring the flag every time.
+if [[ -d "${repo_path}/.codex/skills/attach-web-screenshots" || -d "${repo_path}/.claude/skills/attach-web-screenshots" ]]; then
+  with_screenshots=1
+fi
 
 python_cmd=""
 if command -v python3 >/dev/null 2>&1; then
@@ -36,16 +52,18 @@ printf 'Copied .beads/README.md\n'
 
 mkdir -p "${repo_path}/.codex/skills"
 if [[ ! -d "${repo_path}/.codex/skills/build-and-test" ]]; then
-  cp -R "${template_root}/templates/.codex/skills/build-and-test" "${repo_path}/.codex/skills/build-and-test"
+  cp -R "${template_root}/templates/skills/build-and-test" "${repo_path}/.codex/skills/build-and-test"
   printf 'Copied Codex build-and-test skill\n'
 else
   printf 'Preserved existing Codex build-and-test skill\n'
 fi
-if [[ ! -d "${repo_path}/.codex/skills/attach-web-screenshots" ]]; then
-  cp -R "${template_root}/templates/.codex/skills/attach-web-screenshots" "${repo_path}/.codex/skills/attach-web-screenshots"
-  printf 'Copied Codex attach-web-screenshots skill\n'
-else
-  printf 'Preserved existing Codex attach-web-screenshots skill\n'
+if [[ "${with_screenshots}" == "1" ]]; then
+  if [[ ! -d "${repo_path}/.codex/skills/attach-web-screenshots" ]]; then
+    cp -R "${template_root}/templates/skills/attach-web-screenshots" "${repo_path}/.codex/skills/attach-web-screenshots"
+    printf 'Copied Codex attach-web-screenshots skill\n'
+  else
+    printf 'Preserved existing Codex attach-web-screenshots skill\n'
+  fi
 fi
 
 find "${template_root}/skills" -mindepth 1 -maxdepth 1 -type d | while read -r src; do
@@ -55,43 +73,21 @@ find "${template_root}/skills" -mindepth 1 -maxdepth 1 -type d | while read -r s
   cp -R "${src}" "${dst}"
   printf 'Copied Codex skill: %s\n' "${name}"
 done
-rm -rf "${repo_path}/.codex/skills/plan-debate"
-rm -rf "${repo_path}/.codex/skills/plan-critic"
-rm -rf "${repo_path}/.codex/skills/start-epic-worktree"
-rm -rf "${repo_path}/.codex/skills/game-action-harness"
-rm -rf "${repo_path}/.codex/skills/target-runtime-exec"
-rm -rf "${repo_path}/.codex/skills/executor-once"
-rm -rf "${repo_path}/.codex/skills/executor-loop"
-rm -rf "${repo_path}/.codex/skills/executor-loop-epic"
-rm -rf "${repo_path}/.codex/skills/swarm-epic"
-rm -rf "${repo_path}/.codex/skills/review-epic"
-rm -rf "${repo_path}/.codex/skills/execute-bead-worker"
-rm -rf "${repo_path}/.codex/skills/test-on-android-device"
-if [[ -d "${template_root}/templates/.codex/skills" ]]; then
-  find "${template_root}/templates/.codex/skills" -mindepth 1 -maxdepth 1 -type d | while read -r src; do
-    name="$(basename "${src}")"
-    if [[ "${name}" == "build-and-test" || "${name}" == "attach-web-screenshots" ]]; then
-      continue
-    fi
-    dst="${repo_path}/.codex/skills/${name}"
-    rm -rf "${dst}"
-    cp -R "${src}" "${dst}"
-    printf 'Copied Codex provider skill: %s\n' "${name}"
-  done
-fi
 
 mkdir -p "${repo_path}/.claude/skills"
 if [[ ! -d "${repo_path}/.claude/skills/build-and-test" ]]; then
-  cp -R "${template_root}/templates/.codex/skills/build-and-test" "${repo_path}/.claude/skills/build-and-test"
+  cp -R "${template_root}/templates/skills/build-and-test" "${repo_path}/.claude/skills/build-and-test"
   printf 'Copied Claude build-and-test skill\n'
 else
   printf 'Preserved existing Claude build-and-test skill\n'
 fi
-if [[ ! -d "${repo_path}/.claude/skills/attach-web-screenshots" ]]; then
-  cp -R "${template_root}/templates/.codex/skills/attach-web-screenshots" "${repo_path}/.claude/skills/attach-web-screenshots"
-  printf 'Copied Claude attach-web-screenshots skill\n'
-else
-  printf 'Preserved existing Claude attach-web-screenshots skill\n'
+if [[ "${with_screenshots}" == "1" ]]; then
+  if [[ ! -d "${repo_path}/.claude/skills/attach-web-screenshots" ]]; then
+    cp -R "${template_root}/templates/skills/attach-web-screenshots" "${repo_path}/.claude/skills/attach-web-screenshots"
+    printf 'Copied Claude attach-web-screenshots skill\n'
+  else
+    printf 'Preserved existing Claude attach-web-screenshots skill\n'
+  fi
 fi
 
 find "${template_root}/skills" -mindepth 1 -maxdepth 1 -type d | while read -r src; do
@@ -101,30 +97,29 @@ find "${template_root}/skills" -mindepth 1 -maxdepth 1 -type d | while read -r s
   cp -R "${src}" "${dst}"
   printf 'Copied Claude skill: %s\n' "${name}"
 done
-rm -rf "${repo_path}/.claude/skills/plan-debate"
-rm -rf "${repo_path}/.claude/skills/plan-critic"
-rm -rf "${repo_path}/.claude/skills/start-epic-worktree"
-rm -rf "${repo_path}/.claude/skills/game-action-harness"
-rm -rf "${repo_path}/.claude/skills/target-runtime-exec"
-rm -rf "${repo_path}/.claude/skills/executor-once"
-rm -rf "${repo_path}/.claude/skills/executor-loop"
-rm -rf "${repo_path}/.claude/skills/executor-loop-epic"
-rm -rf "${repo_path}/.claude/skills/swarm-epic"
-rm -rf "${repo_path}/.claude/skills/review-epic"
-rm -rf "${repo_path}/.claude/skills/execute-bead-worker"
-rm -rf "${repo_path}/.claude/skills/test-on-android-device"
-if [[ -d "${template_root}/templates/.claude/skills" ]]; then
-  find "${template_root}/templates/.claude/skills" -mindepth 1 -maxdepth 1 -type d | while read -r src; do
-    name="$(basename "${src}")"
-    if [[ "${name}" == "build-and-test" ]]; then
-      continue
-    fi
-    dst="${repo_path}/.claude/skills/${name}"
-    rm -rf "${dst}"
-    cp -R "${src}" "${dst}"
-    printf 'Copied Claude provider skill: %s\n' "${name}"
+
+# Prune legacy skills that previous versions of this template scaffolded.
+# Removing a name here also removes it from existing downstreams on next
+# update-skills run. Keep in lockstep with scripts/windows/scaffold-repo-files.ps1.
+legacy_skills=(
+  plan-debate
+  plan-critic
+  start-epic-worktree
+  game-action-harness
+  target-runtime-exec
+  executor-once
+  executor-loop
+  executor-loop-epic
+  swarm-epic
+  review-epic
+  execute-bead-worker
+  test-on-android-device
+)
+for provider in .codex .claude; do
+  for legacy in "${legacy_skills[@]}"; do
+    rm -rf "${repo_path}/${provider}/skills/${legacy}"
   done
-fi
+done
 
 # Shared agents — copied to both providers (same pattern as skills/).
 if [[ -d "${template_root}/agents" ]]; then
@@ -191,9 +186,11 @@ mkdir -p "${repo_path}/docs"
 cp "${template_root}/docs/TROUBLESHOOTING.md" "${repo_path}/docs/TROUBLESHOOTING.md"
 printf 'Copied docs/TROUBLESHOOTING.md\n'
 
-mkdir -p "${repo_path}/.github/workflows"
-cp "${template_root}/templates/.github/workflows/cleanup-screenshots.yml" "${repo_path}/.github/workflows/cleanup-screenshots.yml"
-printf 'Copied .github/workflows/cleanup-screenshots.yml\n'
+if [[ "${with_screenshots}" == "1" ]]; then
+  mkdir -p "${repo_path}/.github/workflows"
+  cp "${template_root}/templates/.github/workflows/cleanup-screenshots.yml" "${repo_path}/.github/workflows/cleanup-screenshots.yml"
+  printf 'Copied .github/workflows/cleanup-screenshots.yml\n'
+fi
 
 "${python_cmd}" "${template_root}/scripts/shared/sync_workflow_backup.py" ensure-ignore --repo "${repo_path}"
 printf 'Updated .gitignore managed workflow block\n'

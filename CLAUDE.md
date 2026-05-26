@@ -14,7 +14,7 @@ Three surfaces get written into every downstream repo:
 
 1. **Shared workflow skills** — one source in `skills/<name>/`, copied into both `<downstream>/.codex/skills/<name>/` and `<downstream>/.claude/skills/<name>/`.
 2. **Shared agents** — one source in `agents/<name>.md`, copied into both `<downstream>/.codex/agents/<name>.md` and `<downstream>/.claude/agents/<name>.md`. Provider-specific overrides can be placed in `templates/.codex/agents/` or `templates/.claude/agents/` and are applied on top.
-3. **Provider-specific skills** — sources in `templates/.codex/skills/<name>/` (and `templates/.claude/skills/<name>/` if present), copied only into the matching provider dir. The generic stage-1 `build-and-test` skill lives here and is the one file `update-skills` _preserves_ in the downstream if it already exists (downstream specialization).
+3. **Bootstrap-only / stage-1 skills** — sources in `templates/skills/<name>/`, copied into both `<downstream>/.codex/skills/<name>/` and `<downstream>/.claude/skills/<name>/`. The generic stage-1 `build-and-test` skill lives here and is the one file `update-skills` _preserves_ in the downstream if it already exists (downstream specialization). `attach-web-screenshots` also lives here but is opt-in — only installed when `bootstrap-new-repo` / `update-skills` is invoked with `--with-screenshots`, or when the skill already exists in the downstream.
 4. **Repo-root scaffolding** — `templates/BEADS_WORKFLOW.md`, `templates/PRIME.md`, `templates/.beads/*`, the managed snippets `templates/AGENTS.snippet.md` and `templates/CLAUDE.snippet.md` (merged into the downstream's `AGENTS.md` / `CLAUDE.md` between `<!-- BEGIN/END TEMPLATE BD WORKFLOW -->` markers by `scripts/shared/manage_instructions.py`), plus helper scripts under `scripts/posix/`, `scripts/windows/`, and `scripts/shared/`.
 
 `scripts/posix/scaffold-repo-files.sh` and its `.ps1` twin are the authority on exactly what gets copied and what gets deleted (e.g. removed legacy skills like `plan-debate`, `start-epic-worktree`, `swarm-epic`, `executor-once`). Read that script before adding or renaming anything that ships downstream.
@@ -35,7 +35,7 @@ All user-facing operations are invoked through these scripts (POSIX `.sh` and Wi
 | Restore backup mirror → downstream               | `scripts/posix/restore-workflow-backup.sh`                      | `scripts/windows/restore-workflow-backup.ps1`               |
 | Prereq check                                     | `scripts/posix/check-prereqs.sh`                                | `scripts/windows/check-prereqs.ps1`                         |
 
-`bootstrap-new-repo` delegates to `scaffold-repo-files` + `scripts/shared/ensure_stage1_beads.py` (which creates the standalone stage-2 follow-up beads: specialize `build-and-test` and `attach-web-screenshots`). `update-skills` re-runs scaffold on an existing repo.
+`bootstrap-new-repo` delegates to `scaffold-repo-files` + `scripts/shared/ensure_stage1_beads.py` (which creates the standalone stage-2 follow-up bead to specialize `build-and-test`, plus a matching bead for `attach-web-screenshots` only when that opt-in skill is installed). `update-skills` re-runs scaffold on an existing repo. Both accept `--with-screenshots` (PowerShell: `-WithScreenshots`) to install the `attach-web-screenshots` skill and its companion `cleanup-screenshots.yml` CI workflow.
 
 ### Local shell aliases (this machine)
 
