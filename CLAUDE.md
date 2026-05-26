@@ -78,3 +78,4 @@ To recover workflow files into a fresh clone of a downstream, run `restore-workf
 - `.beads/` is git-ignored here as well — this template repo is not itself managed by `bd`.
 - Beads is local-only: never add workflow to publish or sync live `.beads/` state across clones.
 - When removing a skill from the template, also add explicit `rm -rf`/`Remove-Item` lines for its downstream path in `scaffold-repo-files.{sh,ps1}` so existing downstreams get cleaned up on their next `update-skills`.
+- When adding a new skill under `skills/`, also add its name to `MANAGED_SKILLS` in `scripts/shared/workflow_backup.py` so the downstream `.gitignore` managed block covers it. The scaffold scripts pick up new skills automatically via `find`, but the gitignore entries are generated from `MANAGED_SKILLS` explicitly.
