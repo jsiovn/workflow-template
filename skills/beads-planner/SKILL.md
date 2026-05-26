@@ -18,7 +18,7 @@ Turn planning output into a Beads structure that another agent or engineer can e
    - small executable `task` beads for implementation work
    - `bug` beads for concrete broken behavior
    - `chore` beads for tooling, cleanup, or maintenance work
-   - parent all child beads under the epic: `bd dep add <child-id> <epic-id>`
+   - parent all child beads under the epic with `--type parent-child`: `bd dep add <child-id> <epic-id> --type parent-child`. The default `blocks` dependency type is rejected when the target is an epic (`Error: tasks can only block other tasks, not epics`). For task-to-task ordering inside the epic, the default `blocks` type is correct — use it for those edges.
 4. Add dependencies explicitly instead of relying on ordering in prose.
 5. Include validation work as its own bead when it is meaningful:
    - tests
@@ -35,14 +35,35 @@ Turn planning output into a Beads structure that another agent or engineer can e
    - `Parallel:` whether the bead can run in parallel and what it must not overlap with
    - `Escalate:` what to do if blocked, underspecified, or forced out of scope
 8. Before creating beads, audit every `Read:` reference for portability across machines:
-   - A `Read:` path is portable only if it is relative to the repo root or an absolute path inside the current working directory.
-   - Paths under `$HOME`, `~/.claude/`, `/tmp/`, or any location outside the repo (e.g. `/home/<user>/.claude/plans/...`) are per-machine and unreachable for teammates. Treat these as **non-portable** and rewrite them before bead creation.
+   - A `Read:` path is portable only if it is committed to git in the current repo. Anything else — `$HOME`, `~/.claude/`, `/tmp/`, paths outside the working tree, OR in-repo paths under a git-ignored directory — is **non-portable** and unreachable for teammates who sync via Dolt only.
+   - **Check `docs/plans/` portability before relying on it.** Run `git check-ignore -v docs/plans/` once. If it is git-ignored (common in repos where `docs/plans/` is workflow-scaffold), then `docs/plans/<slug>.md` is NOT a portable `Read:` target — the file won't reach teammates and the reference will mislead a fresh executor on another machine. The Dolt-synced bead `notes` field is the only cross-machine source of truth.
    - For each non-portable plan or spec file:
-     1. Copy it into the repo at `docs/plans/<slug>.md` (preserve the original basename when sensible; sluggify if needed). Create the directory if missing.
-     2. Read the file's full content and embed it into the bead so it travels via Dolt sync. Either pass it at creation time (`bd create ... --notes "$(cat docs/plans/<slug>.md)"` or `--body-file docs/plans/<slug>.md` when the plan IS the description) or append after creation with `bd note <bead-id> --file docs/plans/<slug>.md`.
-     3. Replace the external path in the bead's `Read:` section with the new in-repo path `docs/plans/<slug>.md` and add a short pointer like "(also inlined in bead notes)".
-   - If the same plan file is referenced by many beads in the epic, copy it once and have every bead reference the same `docs/plans/<slug>.md` path; inline it once into the epic's notes rather than duplicating across every child bead.
-   - Note: `docs/plans/` is local-only in the downstream repo (workflow scaffold area). The bead-notes copy is what guarantees cross-machine availability via Dolt; the `docs/plans/` copy is for in-repo browsing and survives if the bead is later deleted.
+     1. **Always inline the plan content into the bead's `notes` field via `bd update --append-notes`** (see step 9 — the create-time flags are not reliable).
+     2. Optionally copy the file into the repo at `docs/plans/<slug>.md` for in-repo browsing convenience. Create the directory if missing. **Do NOT cite this path in the bead's `Read:` section if `docs/plans/` is git-ignored** — point fresh executors at the bead's `notes` field instead, e.g. `- This bead's `notes`field (view with`bd show <bead-id>`) — full settled plan.`
+     3. If `docs/plans/` is committed to git in this repo, you may cite `docs/plans/<slug>.md` directly in `Read:` and skip the inlined-notes pointer.
+   - If the same plan file is referenced by many beads in the epic, inline it once per bead anyway — every bead must be fresh-session-safe on its own. (A reader pulling one bead from Dolt won't have the epic's notes loaded.)
+
+9. **Inlining plan content into bead notes — use the verified pattern.** `bd create`'s `--notes` / `--append-notes` flags have been observed to silently drop the content at creation time. The reliable two-step pattern:
+
+   ```bash
+   # 1) Create the bead with --body-file for the description only
+   bd create "title" --type task --priority 2 --body-file /tmp/bead-X.md --json
+
+   # 2) Then attach the long-form plan to notes
+   bd update <new-bead-id> --append-notes "$(cat docs/plans/<slug>.md)"
+   ```
+
+   After all beads are created and notes attached, verify in one command:
+
+   ```bash
+   for b in <id1> <id2> ...; do
+     bd show "$b" --json | python3 -c "import json,sys; d=json.load(sys.stdin)[0]; print(f'{d[\"id\"]}: notes={len(d.get(\"notes\") or \"\")}ch')"
+   done
+   ```
+
+   Every bead expected to carry the plan must show non-zero `notes` length. If any is 0, re-run the `bd update --append-notes` for that bead. Do NOT report bead creation as complete until this verification passes.
+
+10. **Push the Dolt remote after wiring is final.** Beads only reach teammates after `bd dolt push`. Run it once at the end of the planner session, after creation + dependency wiring + notes verification all pass.
 
 ## Planning Rules
 
@@ -81,5 +102,4 @@ Do:
 - report the created beads and their dependency structure
 - if this skill was invoked directly, tell the user: "Beads created. Run `validate-beads`, then claim one with `bd ready` in an executor session."
 - if `plan-beads` invoked this skill, immediately hand back to `plan-beads` so it can run `validate-beads` before ending the planner session
-</HARD-GATE>
-
+  </HARD-GATE>
