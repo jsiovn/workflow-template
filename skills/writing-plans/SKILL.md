@@ -54,7 +54,7 @@ This structure informs the task decomposition. Each task should produce self-con
 ```markdown
 # [Feature Name] Implementation Plan
 
-> **For agentic workers:** Use Codex subagents when appropriate to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** Use subagents when appropriate to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** [One sentence describing what this builds]
 
@@ -127,22 +127,22 @@ That means:
 - include URLs, ports, endpoints, paths, and process names when relevant
 - name the expected output, status code, DOM text, screenshot cue, or log line
 - say when manual browser inspection is required and what to look for
-- state whether a missing optional dependency such as a live device should fail the bead or downgrade the check to a skipped optional smoke test
+- state whether a missing optional dependency such as a seeded database, a running service, or a live external API should fail the bead or downgrade the check to a skipped optional smoke test
 
 Example:
 ````markdown
 ## Verification
 
-**Build:** `cd native-lib && bash build.sh x64`
-**Deploy:** `python inject.py --device emulator-5564 --launch`
-**Smoke test:** `curl http://localhost:32164/ping` -> `{"status": "ok"}`
+**Build:** `npm run build`
+**Deploy:** `npm run preview -- --port 4173` (serve the production build)
+**Smoke test:** `curl http://localhost:4173/api/health` -> `{"status": "ok"}`
 
 **Functional tests:**
-1. Start campaign: `curl -X POST http://localhost:8787/campaign/start -d 'stage=1'` -> 200
-2. Check state: `curl http://localhost:8787/status` -> expected state payload
-3. Observe: bot performs the expected in-game behavior
+1. Create a record: `curl -X POST http://localhost:4173/api/todos -H 'Content-Type: application/json' -d '{"title":"buy milk"}'` -> 201 with a JSON body containing an `id`
+2. List records: `curl http://localhost:4173/api/todos` -> 200, array includes the new todo
+3. Observe in browser: open http://localhost:4173, confirm the new todo renders in the list
 
-**Success criteria:** All functional tests pass, no crashes in `adb logcat -s tgunmod:V`
+**Success criteria:** All functional tests pass, no errors in the server log or the browser console
 ````
 
 Without this section, `build-and-test` will not know what to verify. Make it specific to the bead.
@@ -179,6 +179,6 @@ After saving the plan:
 - If this skill was invoked by `/executor-task` or `/executor-task-worktree`, proceed to implementation automatically — do not wait for confirmation.
 - Otherwise, wait for user confirmation before proceeding.
 
-**When proceeding:** Use Codex subagents when they help, with code review (`requesting-code-review`) after each major task.
+**When proceeding:** Use subagents when they help, with code review (`requesting-code-review`) after each major task.
 
 **After implementation is complete:** Invoke `build-and-test` (read the repo-local skill — `.claude/skills/build-and-test/SKILL.md` for Claude or `.codex/skills/build-and-test/SKILL.md` for Codex — and follow it). The skill executes the verification contract from the plan and may be generic or repo-specific depending on the repo's maturity. If `build-and-test` fails, fix the implementation or tighten the plan and re-run it before moving to verification. Do NOT skip this step.

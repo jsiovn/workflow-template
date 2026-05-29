@@ -72,7 +72,7 @@ flowchart LR
 | `beads-close`                    | executor                        | Close bead + create follow-ups + commit            | `executor-task` orchestrators, user                                       | —                                                                                  |
 | `executor-task`                  | executor (orchestrator)         | One bead delivered as its own PR off a fresh branch from main | user                                                                      | `beads-claim` → `writing-plans` → impl → `build-and-test` → verify → `beads-close` → `finishing-a-development-branch` |
 | `executor-task-worktree`         | executor (orchestrator)         | Same as `executor-task`, but in an isolated git worktree (parallel-safe) | user                                                                      | same chain as `executor-task`                                                      |
-| `executor-epic-task`             | executor (orchestrator)         | Same as `executor-task` but branches off (and PRs into) the bead's parent epic branch `epic/<epic-id>-<slug>`; auto-creates the epic branch from the default branch if missing | user                                                                      | same chain as `executor-task`                                                      |
+| `executor-epic-task`             | executor (orchestrator)         | Same as `executor-task` but branches off (and PRs into) the bead's parent epic branch `epic/<epic-bead-id>` (bead id only, no slug); auto-creates the epic branch from the default branch if missing | user                                                                      | same chain as `executor-task`                                                      |
 | `executor-epic-task-worktree`    | executor (orchestrator)         | Same as `executor-epic-task`, but in an isolated git worktree (parallel-safe; never touches the main checkout) | user                                                                      | same chain as `executor-task`                                                      |
 | `executor-rework-in-place`       | executor (orchestrator)         | Re-execute a reopened bead on the **current** feature branch and push into its **existing** open PR (no new branch, no new PR) | user                                                                      | `beads-claim` → `writing-plans` (regenerate) → impl → `build-and-test` → verify → `requesting-code-review` → `beads-close` → push + fixup PR comment |
 | `finishing-a-development-branch` | executor                        | Sync backup mirror, push, create PR                | `executor-task`, `executor-task-worktree`, `executor-epic-task`, `executor-epic-task-worktree`, `executor-rework-in-place`, user | —                                                                                  |
@@ -127,7 +127,7 @@ This is the canonical 8-step chain. All four orchestrators run the same chain �
 | **PR base = main**       | `executor-task`               | `executor-task-worktree`             |
 | **PR base = epic branch**| `executor-epic-task`          | `executor-epic-task-worktree`        |
 
-The `epic-*` variants resolve the parent epic from `bd show <BEAD_ID>` (or take an explicit epic id), branch off `epic/<epic-bead-id>-<slug>`, and target that same branch with `gh pr create --base`. If the epic branch does not exist, they create it from the latest default branch (the worktree variant uses `git branch` so the main tree stays untouched) and push it before cutting the feature branch.
+The `epic-*` variants resolve the parent epic from `bd show <BEAD_ID>` (or take an explicit epic id), branch off `epic/<epic-bead-id>` (bead id only, no slug — prevents duplicate epic branches from differing slugs), and target that same branch with `gh pr create --base`. If the epic branch does not exist, they create it from the latest default branch (the worktree variant uses `git branch` so the main tree stays untouched) and push it before cutting the feature branch.
 
 ```mermaid
 flowchart TD
@@ -171,7 +171,7 @@ flowchart LR
         ETWA[Create worktree<br/>off main] --> ETWB[Run chain in worktree] --> ETWC[Cleanup worktree] --> ETWD([Stop])
     end
     subgraph EET[executor-epic-task]
-        EETA[Resolve parent epic<br/>→ epic/&lt;epic-id&gt;-&lt;slug&gt;<br/>create if missing] --> EETB[Branch off epic:<br/>feat/&lt;bead-id&gt;] --> EETC[Run chain in current checkout] --> EETD[PR --base epic/...] --> EETE([Stop])
+        EETA[Resolve parent epic<br/>→ epic/&lt;epic-bead-id&gt;<br/>create if missing] --> EETB[Branch off epic:<br/>feat/&lt;bead-id&gt;] --> EETC[Run chain in current checkout] --> EETD[PR --base epic/...] --> EETE([Stop])
     end
     subgraph EETW[executor-epic-task-worktree]
         EETWA[Resolve parent epic<br/>create if missing<br/>without touching main tree] --> EETWB[Create worktree<br/>off epic branch] --> EETWC[Run chain in worktree] --> EETWD[PR --base epic/...] --> EETWE[Cleanup worktree] --> EETWF([Stop])

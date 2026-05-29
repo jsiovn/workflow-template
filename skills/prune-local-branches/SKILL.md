@@ -37,7 +37,7 @@ For each branch in the list (extract just the branch name — the first word of 
 git branch -D <branch>
 ```
 
-Always use `-D` (force-delete). Branches in this list already had their upstream deleted on origin, so "not fully merged" warnings are expected — they arise from squash or rebase merges on the remote where the commit SHAs differ even though the code is in master.
+Always use `-D` (force-delete). Branches in this list already had their upstream deleted on origin, so "not fully merged" warnings are expected — they arise from squash or rebase merges on the remote where the commit SHAs differ even though the code is already on the default branch (e.g. `main`).
 
 ### 5. Report results
 
