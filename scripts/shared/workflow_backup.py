@@ -77,6 +77,7 @@ MANAGED_SKILLS = (
     "project-auditor",
     "prune-local-branches",
     "requesting-code-review",
+    "responsive-layout-testing",
     "restore-workflow-backup",
     "sync-workflow-backup",
     "systematic-debugging",
