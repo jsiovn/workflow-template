@@ -46,7 +46,7 @@ Do **not** use this for:
    - bead id and title
    - the specific rule it drifts from (quote the rule line)
    - the offending excerpt from the bead
-   - a concrete suggested fix as a `bd update <id> --description ...` or `bd note add <id> ...` command the user can run
+   - a concrete suggested fix as a `bd update <id> --description ...` or `bd note <id> ...` command the user can run
 7. End with a one-line summary: counts of blocking / stale / clean, and a recommendation:
    - if any blocking → "Fix blocking beads before the next `bd ready` claim."
    - if only stale → "Safe to keep working; clean up stale beads opportunistically."

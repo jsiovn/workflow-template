@@ -35,7 +35,7 @@ Catch planning defects before execution starts coding. This is a planner-side va
    - every bead is fresh-session-safe: an executor can run it from the bead contract plus local inspection without replaying prior chat context
    - `Inputs:` references persisted state only, not conversational memory
    - beads marked as parallel do not obviously overlap the same file scope
-   - every `Read:` path is portable across machines: relative to the repo root or an absolute path inside the current working directory. Paths under `$HOME`, `~/.claude/`, `/tmp/`, or anywhere outside the repo are blocking — the planner must copy the file into `docs/plans/<slug>.md` AND inline its content into the bead notes (so it syncs via Dolt), then rewrite the `Read:` reference to the in-repo path.
+   - every `Read:` path is portable across machines: a path is portable only if it is committed to git in the current repo. Paths under `$HOME`, `~/.claude/`, `/tmp/`, anywhere outside the repo, OR in-repo paths under a git-ignored directory (verify with `git check-ignore -v <path>`) are blocking. For each, the planner must inline the file's content into the bead notes (so it syncs via Dolt). Only rewrite the `Read:` reference to an in-repo path if that path is actually git-committed; if `docs/plans/` is git-ignored, point executors at the bead's `notes` field instead (`bd show <id>`).
 5. Classify findings:
    - blocking: missing execution contract, duplicate work, broken dependency shape, oversized bead, or chat-context-dependent bead
    - non-blocking: wording cleanup, minor note improvements
@@ -46,7 +46,7 @@ Catch planning defects before execution starts coding. This is a planner-side va
 7. If the epic passes:
    - report that the epic is validated
    - identify the first ready descendants or likely first wave
-   - recommend claiming a bead via `executor-task` or `executor-task-worktree`
+   - recommend claiming a bead via an `executor-*` orchestrator skill (use an `executor-epic-task` variant for epic-scoped plans)
 
 ## Hard Rules
 

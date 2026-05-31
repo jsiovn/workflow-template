@@ -37,7 +37,7 @@ Do not invoke this skill when:
    ```
 5. Confirm or auto-claim:
    - present the bead title and description first
-   - if this skill was invoked by `executor-task` or `executor-task-worktree` and the bead choice is unambiguous, proceed without an extra confirmation turn
+   - if this skill was invoked by one of the `executor-*` orchestrator skills and the bead choice is unambiguous, proceed without an extra confirmation turn
    - if the choice is ambiguous, ask the user before claiming
 6. Claim it:
    ```bash
@@ -50,6 +50,6 @@ Do not invoke this skill when:
 - Only claim one bead per executor session.
 - If no beads are ready, report that and suggest running a planner session first.
 - If the user already specified a bead id, skip the selection step but still show details before claiming.
-- When `executor-task` or `executor-task-worktree` is driving the flow, it is valid to claim without confirmation when bead choice is unambiguous.
+- When an `executor-*` orchestrator skill is driving the flow, it is valid to claim without confirmation when bead choice is unambiguous.
 - Do not start coding before claiming. The bead must be `in_progress` before any implementation.
 

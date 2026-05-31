@@ -86,26 +86,26 @@ You MUST complete each phase before proceeding to the next.
    THEN investigate that specific component
    ```
 
-   **Example (multi-layer system):**
+   **Example (multi-layer web request):**
    ```bash
-   # Layer 1: Workflow
-   echo "=== Secrets available in workflow: ==="
-   echo "IDENTITY: ${IDENTITY:+SET}${IDENTITY:-UNSET}"
+   # Layer 1: Reverse proxy — is the auth header forwarded upstream?
+   echo "=== Headers reaching the app: ==="
+   curl -s http://localhost:8080/api/debug/headers | grep -i authorization || echo "Authorization header missing"
 
-   # Layer 2: Build script
-   echo "=== Env vars in build script: ==="
-   env | grep IDENTITY || echo "IDENTITY not in environment"
+   # Layer 2: App server — is the config/env present?
+   echo "=== App server env: ==="
+   env | grep DATABASE_URL || echo "DATABASE_URL not in environment"
 
-   # Layer 3: Signing script
-   echo "=== Keychain state: ==="
-   security list-keychains
-   security find-identity -v
+   # Layer 3: API handler — what payload does it receive?
+   echo "=== Incoming request (app log): ==="
+   tail -n 20 logs/app.log | grep "incoming request"
 
-   # Layer 4: Actual signing
-   codesign --sign "$IDENTITY" --verbose=4 "$APP"
+   # Layer 4: Database — did the write actually land?
+   echo "=== Latest row: ==="
+   psql "$DATABASE_URL" -c "SELECT id, status FROM orders ORDER BY created_at DESC LIMIT 1;"
    ```
 
-   **This reveals:** Which layer fails (secrets → workflow ✓, workflow → build ✗)
+   **This reveals:** Which layer fails (header present at proxy ✓, missing at app server ✗)
 
 5. **Trace Data Flow**
 
@@ -176,7 +176,7 @@ You MUST complete each phase before proceeding to the next.
    - Automated test if possible
    - One-off test script if no framework
    - MUST have before fixing
-   - Use the `superpowers:test-driven-development` skill for writing proper failing tests
+   - Write the test first and watch it fail, so the fix is proven (red-green). `writing-plans` embeds this step structure for executor work.
 
 2. **Implement Single Fix**
    - Address the root cause identified
@@ -284,8 +284,8 @@ These techniques are part of systematic debugging and available in this director
 - **`condition-based-waiting.md`** - Replace arbitrary timeouts with condition polling
 
 **Related skills:**
-- **superpowers:test-driven-development** - For creating failing test case (Phase 4, Step 1)
-- **superpowers:verification-before-completion** - Verify fix worked before claiming success
+- **`writing-plans`** - Embeds the red-green TDD step structure for the failing test case (Phase 4, Step 1)
+- **`verification-before-completion`** - Verify fix worked before claiming success
 
 ## Real-World Impact
 

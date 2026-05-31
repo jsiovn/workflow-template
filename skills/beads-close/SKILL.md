@@ -51,7 +51,7 @@ Do not invoke this skill:
   ```bash
   bd update <id> --notes "Blocked: <reason>"
   ```
-- When `executor-task` or `executor-task-worktree` is driving the workflow, hand control back to it after the current bead is closed and the local commit is complete.
+- When an `executor-*` orchestrator skill is driving the workflow, hand control back to it after the current bead is closed and the local commit is complete.
 - Work happens on feature branches. Merging to `main` is done via PR, not local merge.
 - Live `.beads` state is local runtime. Do not treat it as something to publish through Git during normal closeout.
 - Keep the closeout note concise but concrete. It should tell a fresh downstream session what changed, where the result lives, and what is now safe to assume.
