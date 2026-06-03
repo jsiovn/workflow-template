@@ -17,7 +17,7 @@ Use this guide when starting a downstream repo from scratch or when a repo is st
    - runs `bd init -p <prefix> --server --skip-agents --skip-hooks`
    - runs `bd setup codex`
    - scaffolds the shared workflow docs, skills, and helper scripts
-   - installs the managed root `.gitignore` block for local-only workflow assets
+   - installs the managed root `.gitignore` block for local runtime artifacts (Beads/Dolt state, `*.db`, `__pycache__`, etc.)
    - creates a standalone stage-2 bead for specializing `build-and-test`, plus a matching bead for `attach-web-screenshots` only when that opt-in skill was installed
 4. Verify the repo is ready:
    - `bd where`
@@ -50,7 +50,7 @@ Typical stage-2 changes:
 - (if installed) specialize `.codex/skills/attach-web-screenshots/SKILL.md` and the `.claude/` mirror
 - add runtime-specific setup or operational notes
 - add repo-specific guidance outside the managed blocks in `AGENTS.md` or `CLAUDE.md`
-- rely on `sync-workflow-backup` / `finishing-a-development-branch` to publish updated workflow docs and skills through the backup repo, not the downstream project remote
+- run `update-skills` to refresh shared workflow docs and skills from the template — they are committed to the downstream's own git and travel with feature branches
 
 Examples:
 
@@ -61,6 +61,6 @@ Examples:
 ## Ongoing Maintenance
 
 - edit shared workflow skills in this template repo, then run `update-skills` for downstream repos
-- keep scaffolded workflow docs, skills, and helper scripts local-only in the downstream repo and sync them to `agentic-workflows/<project>/`
+- the scaffolded workflow docs, skills, and helper scripts are committed to the downstream repo's own git (no backup mirror)
 - keep repo-specific `build-and-test` customizations local to the downstream repo
 - if template changes should not overwrite a downstream specialization, rely on the existing scaffold behavior that preserves `build-and-test`

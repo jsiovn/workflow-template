@@ -80,8 +80,8 @@ A change isn't done until it survives the full propagation cycle:
 - [ ] `update-skills` against a scratch downstream repo.
 - [ ] Inspect what landed — `.codex/skills/`, `.claude/skills/`, and confirm the
       two provider copies are identical.
-- [ ] `/sync-workflow-backup` in that downstream — confirm the backup-mirror
-      round-trip.
+- [ ] Confirm the refreshed files appear as ordinary tracked files in
+      `git status` (committed, not gitignored).
 - [ ] If you removed a skill, confirm its old path is *gone* downstream.
 
 Only then commit.

@@ -126,7 +126,7 @@ executor-rework-in-place <bead-id>   # bead was reopened, amend the existing PR
 Other useful skills you'll reach for:
 
 - `address-pr-comments` — when a reviewer left comments on your PR
-- `finishing-a-development-branch` — push and open the PR (handles workflow-file backup automatically)
+- `finishing-a-development-branch` — push and open the PR
 - `audit-backlog-rules` — re-check the backlog after editing project rules
 - `requesting-code-review` — get a review of the current change before merging
 
@@ -181,7 +181,7 @@ Other useful skills you'll reach for:
 | `requesting-code-review`         | Dispatches the `code-reviewer` subagent against the current change                    | After implementing a major task, before merging                              |
 | `address-pr-comments`            | Pulls unresolved PR threads → fixes via `pr-comment-fixer` → verifies → push → reply  | When new review comments arrive on the current PR                            |
 | `attach-web-screenshots`         | Takes screenshots of a running web app and attaches them to the open PR               | After implementing a UI feature, before or alongside review                  |
-| `finishing-a-development-branch` | Pushes the branch and opens a PR; runs `sync-workflow-backup` first                   | When all work on a feature branch is done and verified                       |
+| `finishing-a-development-branch` | Pushes the branch and opens a PR                                                      | When all work on a feature branch is done and verified                       |
 
 > `attach-web-screenshots` is opt-in — pass `--with-screenshots` to `bootstrap-new-repo` (or `update-skills` to adopt later). It ships a companion CI workflow (`.github/workflows/cleanup-screenshots.yml`) that prunes stale screenshot folders for merged branches.
 
@@ -194,8 +194,6 @@ Other useful skills you'll reach for:
 | -------------------------- | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
 | `project-auditor`          | Full-repo audit: naming, folder layout, tech-stack consistency, light architecture    | Project health check (not per-PR — use `requesting-code-review` for diffs)   |
 | `prune-local-branches`     | Removes stale local branches whose PRs are merged or closed                           | Periodic cleanup                                                             |
-| `sync-workflow-backup`     | Pushes the downstream's workflow files to the backup mirror                           | Before pushing a PR (also runs automatically inside `finishing-…`)           |
-| `restore-workflow-backup`  | Pulls workflow files from the backup mirror back into the downstream                  | Fresh clone of an existing downstream repo                                   |
 
 </details>
 
@@ -249,8 +247,6 @@ Then run `bdtui` from inside any bootstrapped repo.
 | ------------------------------------------------ | --------------------------------------------------------------- | ----------------------------------------------------------- |
 | Bootstrap a new downstream repo                  | `scripts/posix/bootstrap-new-repo.sh <repo> <prefix>`           | `scripts/windows/bootstrap-new-repo.ps1`                    |
 | Refresh shared workflow surface                  | `scripts/posix/update-skills.sh <repo>`                         | `scripts/windows/update-skills.ps1`                         |
-| Sync downstream → backup mirror                  | `scripts/posix/sync-workflow-backup.sh`                         | `scripts/windows/sync-workflow-backup.ps1`                  |
-| Restore backup mirror → downstream               | `scripts/posix/restore-workflow-backup.sh`                      | `scripts/windows/restore-workflow-backup.ps1`               |
 | Prerequisite check                               | `scripts/posix/check-prereqs.sh`                                | `scripts/windows/check-prereqs.ps1`                         |
 
 ---

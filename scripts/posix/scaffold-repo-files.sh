@@ -114,6 +114,8 @@ legacy_skills=(
   review-epic
   execute-bead-worker
   test-on-android-device
+  sync-workflow-backup
+  restore-workflow-backup
 )
 for provider in .codex .claude; do
   for legacy in "${legacy_skills[@]}"; do
@@ -150,27 +152,24 @@ if [[ -d "${template_root}/templates/.claude/agents" ]]; then
 fi
 
 mkdir -p "${repo_path}/scripts/windows" "${repo_path}/scripts/posix" "${repo_path}/scripts/shared"
-cp "${template_root}/scripts/windows/restore-workflow-backup.ps1" "${repo_path}/scripts/windows/restore-workflow-backup.ps1"
-cp "${template_root}/scripts/windows/sync-workflow-backup.ps1" "${repo_path}/scripts/windows/sync-workflow-backup.ps1"
 rm -f "${repo_path}/scripts/windows/shared-beads.ps1"
 rm -f "${repo_path}/scripts/windows/start-epic-worktree.ps1"
 rm -f "${repo_path}/scripts/windows/workflow-status.ps1"
 rm -f "${repo_path}/scripts/windows/agent-mail.ps1"
 rm -f "${repo_path}/scripts/windows/migrate-downstream-to-bd.ps1"
 rm -f "${repo_path}/scripts/windows/migrate-downstream-to-workflow-backup.ps1"
-cp "${template_root}/scripts/posix/restore-workflow-backup.sh" "${repo_path}/scripts/posix/restore-workflow-backup.sh"
-cp "${template_root}/scripts/posix/sync-workflow-backup.sh" "${repo_path}/scripts/posix/sync-workflow-backup.sh"
+rm -f "${repo_path}/scripts/windows/restore-workflow-backup.ps1"
+rm -f "${repo_path}/scripts/windows/sync-workflow-backup.ps1"
 rm -f "${repo_path}/scripts/posix/shared-beads.sh"
 rm -f "${repo_path}/scripts/posix/start-epic-worktree.sh"
 rm -f "${repo_path}/scripts/posix/workflow-status.sh"
 rm -f "${repo_path}/scripts/posix/agent-mail.sh"
 rm -f "${repo_path}/scripts/posix/migrate-downstream-to-bd.sh"
 rm -f "${repo_path}/scripts/posix/migrate-downstream-to-workflow-backup.sh"
-chmod +x "${repo_path}/scripts/posix/restore-workflow-backup.sh" "${repo_path}/scripts/posix/sync-workflow-backup.sh"
+rm -f "${repo_path}/scripts/posix/restore-workflow-backup.sh"
+rm -f "${repo_path}/scripts/posix/sync-workflow-backup.sh"
 cp "${template_root}/scripts/shared/manage_instructions.py" "${repo_path}/scripts/shared/manage_instructions.py"
 rm -f "${repo_path}/scripts/shared/run_plan_critic.py"
-cp "${template_root}/scripts/shared/sync_workflow_backup.py" "${repo_path}/scripts/shared/sync_workflow_backup.py"
-cp "${template_root}/scripts/shared/workflow_backup.py" "${repo_path}/scripts/shared/workflow_backup.py"
 rm -f "${repo_path}/scripts/shared/shared_beads.py"
 rm -f "${repo_path}/scripts/shared/start_epic_worktree.py"
 rm -f "${repo_path}/scripts/shared/harness.py"
@@ -179,6 +178,8 @@ rm -f "${repo_path}/scripts/shared/target_runtime.py"
 rm -f "${repo_path}/scripts/shared/agent_mail.py"
 rm -f "${repo_path}/scripts/shared/migrate_br_to_bd.py"
 rm -f "${repo_path}/scripts/shared/migrate_downstream_to_workflow_backup.py"
+rm -f "${repo_path}/scripts/shared/sync_workflow_backup.py"
+rm -f "${repo_path}/scripts/shared/workflow_backup.py"
 rm -rf "${repo_path}/.beads/workflow"
 printf 'Copied script helpers\n'
 
@@ -192,7 +193,7 @@ if [[ "${with_screenshots}" == "1" ]]; then
   printf 'Copied .github/workflows/cleanup-screenshots.yml\n'
 fi
 
-"${python_cmd}" "${template_root}/scripts/shared/sync_workflow_backup.py" ensure-ignore --repo "${repo_path}"
+"${python_cmd}" "${template_root}/scripts/shared/manage_gitignore.py" ensure-ignore --repo "${repo_path}"
 printf 'Updated .gitignore managed workflow block\n'
 
 "${python_cmd}" "${template_root}/scripts/shared/manage_instructions.py" "${repo_path}/AGENTS.md" "${template_root}/templates/AGENTS.snippet.md"

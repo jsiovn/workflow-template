@@ -41,8 +41,6 @@ flowchart LR
         PA[project-auditor]
         ABR[audit-backlog-rules]
         PLB[prune-local-branches]
-        SWB[sync-workflow-backup]
-        RWB[restore-workflow-backup]
     end
 
     PLAN -->|hands off bead| EXEC
@@ -76,13 +74,11 @@ flowchart LR
 | `executor-epic-task`             | executor (orchestrator)         | Same as `executor-task` but branches off (and PRs into) the bead's parent epic branch `epic/<epic-bead-id>` (bead id only, no slug); auto-creates the epic branch from the default branch if missing | user                                                                      | same chain as `executor-task`                                                      |
 | `executor-epic-task-worktree`    | executor (orchestrator)         | Same as `executor-epic-task`, but in an isolated git worktree (parallel-safe; never touches the main checkout) | user                                                                      | same chain as `executor-task`                                                      |
 | `executor-rework-in-place`       | executor (orchestrator)         | Re-execute a reopened bead on the **current** feature branch and push into its **existing** open PR (no new branch, no new PR) | user                                                                      | `beads-claim` → `writing-plans` (regenerate) → impl → `build-and-test` → verify → `requesting-code-review` → `beads-close` → push + fixup PR comment |
-| `finishing-a-development-branch` | executor                        | Sync backup mirror, push, create PR                | `executor-task`, `executor-task-worktree`, `executor-epic-task`, `executor-epic-task-worktree`, `executor-rework-in-place`, user | —                                                                                  |
+| `finishing-a-development-branch` | executor                        | Push the branch and create a PR                    | `executor-task`, `executor-task-worktree`, `executor-epic-task`, `executor-epic-task-worktree`, `executor-rework-in-place`, user | —                                                                                  |
 | `address-pr-comments`            | maintenance                     | Iterative PR review-comment loop                   | user                                                                      | `pr-comment-fixer` subagent                                                        |
 | `project-auditor`                | maintenance                     | Full-repo audit (naming, structure, light arch)    | user                                                                      | `project-auditor` subagent                                                         |
 | `audit-backlog-rules`            | maintenance                     | Audit ready/blocked beads against current rules    | user                                                                      | —                                                                                  |
 | `prune-local-branches`           | maintenance                     | Clean up merged/stale local branches               | user                                                                      | —                                                                                  |
-| `sync-workflow-backup`           | maintenance                     | Push managed workflow files into the backup mirror | user                                                                      | `scripts/{posix,windows}/sync-workflow-backup.{sh,ps1}`                            |
-| `restore-workflow-backup`        | maintenance                     | Copy managed workflow files back from backup mirror | user                                                                     | `scripts/{posix,windows}/restore-workflow-backup.{sh,ps1}`                         |
 
 > Note: `build-and-test` is **not** in `skills/` — it lives under `templates/skills/build-and-test/` because it is the one skill the downstream repo specializes (stage 2). The single source is copied into both `<downstream>/.codex/skills/build-and-test/` and `<downstream>/.claude/skills/build-and-test/`. Treat it as the implicit verification step in every executor chain.
 
@@ -232,8 +228,6 @@ flowchart TD
     USER --> PA[project-auditor]
     USER --> ABR[audit-backlog-rules]
     USER --> PLB[prune-local-branches]
-    USER --> SWB[sync-workflow-backup]
-    USER --> RWB[restore-workflow-backup]
 
     PB --> BS[brainstorming]
     PB -.-> PR[planner-research]

@@ -111,7 +111,9 @@ $legacySkills = @(
     "swarm-epic",
     "review-epic",
     "execute-bead-worker",
-    "test-on-android-device"
+    "test-on-android-device",
+    "sync-workflow-backup",
+    "restore-workflow-backup"
 )
 foreach ($provider in @(".codex", ".claude")) {
     foreach ($legacy in $legacySkills) {
@@ -149,32 +151,32 @@ if (Test-Path $claudeAgentsSource) {
 }
 
 New-Item -ItemType Directory -Force -Path (Join-Path $RepoPath "scripts\windows") | Out-Null
-Copy-Item -Force (Join-Path $TemplateRoot "scripts\windows\restore-workflow-backup.ps1") (Join-Path $RepoPath "scripts\windows\restore-workflow-backup.ps1")
-Copy-Item -Force (Join-Path $TemplateRoot "scripts\windows\sync-workflow-backup.ps1") (Join-Path $RepoPath "scripts\windows\sync-workflow-backup.ps1")
 Remove-Item -Force (Join-Path $RepoPath "scripts\windows\shared-beads.ps1") -ErrorAction SilentlyContinue
 Remove-Item -Force (Join-Path $RepoPath "scripts\windows\start-epic-worktree.ps1") -ErrorAction SilentlyContinue
 Remove-Item -Force (Join-Path $RepoPath "scripts\windows\workflow-status.ps1") -ErrorAction SilentlyContinue
 Remove-Item -Force (Join-Path $RepoPath "scripts\windows\agent-mail.ps1") -ErrorAction SilentlyContinue
 Remove-Item -Force (Join-Path $RepoPath "scripts\windows\migrate-downstream-to-bd.ps1") -ErrorAction SilentlyContinue
 Remove-Item -Force (Join-Path $RepoPath "scripts\windows\migrate-downstream-to-workflow-backup.ps1") -ErrorAction SilentlyContinue
+Remove-Item -Force (Join-Path $RepoPath "scripts\windows\restore-workflow-backup.ps1") -ErrorAction SilentlyContinue
+Remove-Item -Force (Join-Path $RepoPath "scripts\windows\sync-workflow-backup.ps1") -ErrorAction SilentlyContinue
 Write-Host "Copied scripts/windows/*"
 
 New-Item -ItemType Directory -Force -Path (Join-Path $RepoPath "scripts\posix") | Out-Null
-Copy-Item -Force (Join-Path $TemplateRoot "scripts\posix\restore-workflow-backup.sh") (Join-Path $RepoPath "scripts\posix\restore-workflow-backup.sh")
-Copy-Item -Force (Join-Path $TemplateRoot "scripts\posix\sync-workflow-backup.sh") (Join-Path $RepoPath "scripts\posix\sync-workflow-backup.sh")
 Remove-Item -Force (Join-Path $RepoPath "scripts\posix\shared-beads.sh") -ErrorAction SilentlyContinue
 Remove-Item -Force (Join-Path $RepoPath "scripts\posix\start-epic-worktree.sh") -ErrorAction SilentlyContinue
 Remove-Item -Force (Join-Path $RepoPath "scripts\posix\workflow-status.sh") -ErrorAction SilentlyContinue
 Remove-Item -Force (Join-Path $RepoPath "scripts\posix\agent-mail.sh") -ErrorAction SilentlyContinue
 Remove-Item -Force (Join-Path $RepoPath "scripts\posix\migrate-downstream-to-bd.sh") -ErrorAction SilentlyContinue
 Remove-Item -Force (Join-Path $RepoPath "scripts\posix\migrate-downstream-to-workflow-backup.sh") -ErrorAction SilentlyContinue
+Remove-Item -Force (Join-Path $RepoPath "scripts\posix\restore-workflow-backup.sh") -ErrorAction SilentlyContinue
+Remove-Item -Force (Join-Path $RepoPath "scripts\posix\sync-workflow-backup.sh") -ErrorAction SilentlyContinue
 Write-Host "Copied scripts/posix/*"
 
 New-Item -ItemType Directory -Force -Path (Join-Path $RepoPath "scripts\shared") | Out-Null
 Copy-Item -Force $sharedManageInstructionsScript (Join-Path $RepoPath "scripts\shared\manage_instructions.py")
 Remove-Item -Force (Join-Path $RepoPath "scripts\shared\run_plan_critic.py") -ErrorAction SilentlyContinue
-Copy-Item -Force (Join-Path $TemplateRoot "scripts\shared\sync_workflow_backup.py") (Join-Path $RepoPath "scripts\shared\sync_workflow_backup.py")
-Copy-Item -Force (Join-Path $TemplateRoot "scripts\shared\workflow_backup.py") (Join-Path $RepoPath "scripts\shared\workflow_backup.py")
+Remove-Item -Force (Join-Path $RepoPath "scripts\shared\sync_workflow_backup.py") -ErrorAction SilentlyContinue
+Remove-Item -Force (Join-Path $RepoPath "scripts\shared\workflow_backup.py") -ErrorAction SilentlyContinue
 Remove-Item -Force (Join-Path $RepoPath "scripts\shared\shared_beads.py") -ErrorAction SilentlyContinue
 Remove-Item -Force (Join-Path $RepoPath "scripts\shared\start_epic_worktree.py") -ErrorAction SilentlyContinue
 Remove-Item -Force (Join-Path $RepoPath "scripts\shared\harness.py") -ErrorAction SilentlyContinue
@@ -197,9 +199,9 @@ if ($WithScreenshots) {
 }
 
 if ($pythonCmd -eq "py") {
-    & py -3 (Join-Path $TemplateRoot "scripts\shared\sync_workflow_backup.py") ensure-ignore --repo $RepoPath
+    & py -3 (Join-Path $TemplateRoot "scripts\shared\manage_gitignore.py") ensure-ignore --repo $RepoPath
 } else {
-    & $pythonCmd (Join-Path $TemplateRoot "scripts\shared\sync_workflow_backup.py") ensure-ignore --repo $RepoPath
+    & $pythonCmd (Join-Path $TemplateRoot "scripts\shared\manage_gitignore.py") ensure-ignore --repo $RepoPath
 }
 Write-Host "Updated .gitignore managed workflow block"
 

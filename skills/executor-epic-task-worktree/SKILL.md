@@ -99,7 +99,6 @@ This is the preferred path when an epic has its own long-lived integration branc
 
 15. After successful close, finalize the branch from within `<WORKTREE_PATH>` following the **`finishing-a-development-branch`** skill:
     - verify clean tree and commits ahead of `<EPIC_BRANCH>` (not main)
-    - run the workflow-backup sync if the repo uses the local-only workflow mirror model
     - `git push -u origin HEAD`
     - `gh pr create --base <EPIC_BRANCH> --title "<conventional-commit title>" --body "..."` — the PR body must include both an `Epic: <EPIC_BEAD_ID>` line and a `Bead: <BEAD_ID>` reference line (e.g. `Bead: lexify-a8m`). The title follows conventional commits format (`type(scope): description`) with no bead id prefix.
     - report the PR URL

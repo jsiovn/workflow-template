@@ -16,7 +16,7 @@ Preferred workflow entry points are `plan-beads`, `executor-task`, and `executor
 
 Each bead must be fresh-session-safe: a new executor session should be able to execute from the bead contract, persisted inputs, and local code inspection without replaying prior chat.
 
-Workflow scaffold files such as `AGENTS.md`, `CLAUDE.md`, `BEADS_WORKFLOW.md`, `docs/plans/`, repo-local skills under `.codex/skills/` and `.claude/skills/`, and repo-local subagents under `.codex/agents/` and `.claude/agents/` stay local-only in downstream Git. Mirror them to the backup repo with `scripts/windows/sync-workflow-backup.ps1` or `scripts/posix/sync-workflow-backup.sh` before opening a PR.
+Workflow scaffold files such as `AGENTS.md`, `CLAUDE.md`, `BEADS_WORKFLOW.md`, `docs/plans/`, repo-local skills under `.codex/skills/` and `.claude/skills/`, and repo-local subagents under `.codex/agents/` and `.claude/agents/` are committed to this repo's git, so they travel with feature branches and `git worktree` checkouts. Refresh them from the template with `update-skills`.
 
 Keep repo exploration local. Verify the actual environment before running build, test, run, deploy, or migration commands; do not assume local execution.
 

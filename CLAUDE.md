@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a **template/scaffold repo**, not a deployed application. It produces and updates workflow files _in other (downstream) repos_. There is no build, no test suite, and no runtime service here — the "output" is files copied into downstream checkouts by the scripts in `scripts/`.
 
-Concretely: editing a file under `skills/`, `agents/`, or `templates/` only takes effect after running `update-skills` (or `bootstrap-new-repo` for a fresh repo) against a downstream repo and then syncing that repo's backup mirror. Nothing in this repo runs on its own.
+Concretely: editing a file under `skills/`, `agents/`, or `templates/` only takes effect after running `update-skills` (or `bootstrap-new-repo` for a fresh repo) against a downstream repo and committing the refreshed files there. Nothing in this repo runs on its own.
 
 ## Mental Model: How Changes Propagate
 
@@ -19,9 +19,9 @@ Three surfaces get written into every downstream repo:
 
 `scripts/posix/scaffold-repo-files.sh` and its `.ps1` twin are the authority on exactly what gets copied and what gets deleted (e.g. removed legacy skills like `plan-debate`, `start-epic-worktree`, `swarm-epic`, `executor-once`). Read that script before adding or renaming anything that ships downstream.
 
-### Downstream Git is local-only for the workflow surface
+### Downstream Git tracks the workflow surface
 
-The scaffolded workflow files (`AGENTS.md`, `CLAUDE.md`, `BEADS_WORKFLOW.md`, `docs/plans/`, `.codex/`, `.claude/`, scaffolded scripts) are added to the downstream's `.gitignore` managed block by `scripts/shared/workflow_backup.py`. The remote history for those files lives in a sibling backup repo `agentic-workflows/<project>/` (override via `AGENTIC_WORKFLOWS_REPO`). `scripts/shared/sync_workflow_backup.py` pushes the current downstream surface into that mirror. Any change you make here must survive that round-trip: edit here → `update-skills` in the downstream → `sync-workflow-backup` in the downstream → backup repo commit.
+The scaffolded workflow files (`AGENTS.md`, `CLAUDE.md`, `BEADS_WORKFLOW.md`, `docs/plans/`, `.codex/`, `.claude/`, scaffolded scripts) are **committed to each downstream repo's own git**, so they travel with feature branches and `git worktree` checkouts (the worktree executor flows depend on this). The downstream's `.gitignore` managed block — written by `scripts/shared/manage_gitignore.py` between the `# BEGIN/END TEMPLATE AGENT WORKFLOW LOCAL-ONLY` markers — now lists only genuinely machine-local runtime artifacts (`.beads-credential-key`, `.beads/interactions.jsonl`, `.bv/`, `.dolt/`, `*.db`, `scripts/shared/__pycache__/`). Any change you make here propagates in one round-trip: edit here → `update-skills` in the downstream → commit the refreshed files there. (There is no longer a sibling backup-mirror repo; that machinery has been retired.)
 
 ## Primary Entry Points
 
@@ -31,8 +31,6 @@ All user-facing operations are invoked through these scripts (POSIX `.sh` and Wi
 | ------------------------------------------------ | --------------------------------------------------------------- | ----------------------------------------------------------- |
 | New downstream repo                              | `scripts/posix/bootstrap-new-repo.sh <repo> <prefix>`           | `scripts/windows/bootstrap-new-repo.ps1`                    |
 | Refresh shared workflow surface                  | `scripts/posix/update-skills.sh <repo>`                         | `scripts/windows/update-skills.ps1`                         |
-| Sync downstream → backup mirror                  | `scripts/posix/sync-workflow-backup.sh`                         | `scripts/windows/sync-workflow-backup.ps1`                  |
-| Restore backup mirror → downstream               | `scripts/posix/restore-workflow-backup.sh`                      | `scripts/windows/restore-workflow-backup.ps1`               |
 | Prereq check                                     | `scripts/posix/check-prereqs.sh`                                | `scripts/windows/check-prereqs.ps1`                         |
 
 `bootstrap-new-repo` delegates to `scaffold-repo-files` + `scripts/shared/ensure_stage1_beads.py` (which creates the standalone stage-2 follow-up bead to specialize `build-and-test`, plus a matching bead for `attach-web-screenshots` only when that opt-in skill is installed). `update-skills` re-runs scaffold on an existing repo. Both accept `--with-screenshots` (PowerShell: `-WithScreenshots`) to install the `attach-web-screenshots` skill and its companion `cleanup-screenshots.yml` CI workflow.
@@ -47,8 +45,6 @@ alias w-update='bash /home/paolo/www/workflow-template/scripts/posix/update-skil
 ```
 
 Usage: `w-bootstrap <repo-path> <prefix>`, `w-update <repo-path>`.
-
-In downstream repos, use the `/sync-workflow-backup` and `/restore-workflow-backup` skills — no need to invoke the scripts directly.
 
 ## Two-Stage Adoption
 
@@ -66,16 +62,16 @@ When adding or editing a skill, follow `docs/AUTHORING-SKILLS.md` — it covers 
 There is no test suite. To verify a change:
 
 1. Run the relevant script (`bootstrap-new-repo.sh` or `update-skills.sh`) against a scratch downstream repo.
-2. Inspect what landed in the downstream (especially `.codex/skills/`, `.claude/skills/`, `AGENTS.md` managed block, `.gitignore` managed block).
-3. Run `/sync-workflow-backup` in that downstream to confirm the backup-mirror round-trip.
+2. Inspect what landed in the downstream (especially `.codex/skills/`, `.claude/skills/`, `AGENTS.md` managed block, `.gitignore` managed block — it should list only the runtime artifacts, not the skill/agent paths).
+3. Confirm the refreshed workflow files show up as ordinary tracked files in `git status` (they are committed, not gitignored).
 4. If the change touches a shared skill, also verify the `.codex/` and `.claude/` copies stayed identical.
 
-To recover workflow files into a fresh clone of a downstream, run `restore-workflow-backup.sh` (or `/restore-workflow-backup` skill) — it copies from the backup mirror back into the repo without touching the main git history.
+Because the workflow surface is committed to the downstream's own git, a fresh clone already carries it; run `update-skills` against the clone to pull the latest template versions.
 
 ## Conventions
 
 - POSIX/Windows script parity: edits to any `scripts/posix/*.sh` almost always require the twin change in `scripts/windows/*.ps1` (and vice versa).
 - `.beads/` is git-ignored here as well — this template repo is not itself managed by `bd`.
 - Beads is local-only: never add workflow to publish or sync live `.beads/` state across clones.
-- When removing a skill from the template, also add explicit `rm -rf`/`Remove-Item` lines for its downstream path in `scaffold-repo-files.{sh,ps1}` so existing downstreams get cleaned up on their next `update-skills`.
-- When adding a new skill under `skills/`, also add its name to `MANAGED_SKILLS` in `scripts/shared/workflow_backup.py` so the downstream `.gitignore` managed block covers it. The scaffold scripts pick up new skills automatically via `find`, but the gitignore entries are generated from `MANAGED_SKILLS` explicitly.
+- When removing a skill from the template, also add its name to the `legacy_skills`/`$legacySkills` prune list in `scaffold-repo-files.{sh,ps1}` (or an explicit `rm -rf`/`Remove-Item` line) so existing downstreams get it deleted on their next `update-skills` — the copy loop only iterates skills that still exist in the template, so a deleted source is never cleaned up otherwise.
+- When adding a new skill under `skills/`, the scaffold scripts pick it up automatically via `find` and copy it into both `.codex/skills/` and `.claude/skills/`. No `.gitignore` bookkeeping is needed: the workflow surface is committed downstream, and `scripts/shared/manage_gitignore.py` only ignores machine-local runtime artifacts.

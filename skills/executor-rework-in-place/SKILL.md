@@ -61,7 +61,7 @@ If you would otherwise create a fresh branch, use `executor-task` (in-place tree
 
 10. If build/test fails and the fix is still in scope, return to implementation and retry.
 
-11. **Push into the existing PR.** After successful close, follow the `finishing-a-development-branch` skill's pre-push checks (clean tree, commits ahead of `<DEFAULT_BRANCH>`, workflow-backup sync if the repo uses the local-only workflow mirror model), then:
+11. **Push into the existing PR.** After successful close, follow the `finishing-a-development-branch` skill's pre-push checks (clean tree, commits ahead of `<DEFAULT_BRANCH>`), then:
     ```bash
     git push
     ```
