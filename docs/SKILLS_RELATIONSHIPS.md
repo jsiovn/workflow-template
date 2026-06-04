@@ -33,6 +33,7 @@ flowchart LR
         EET[executor-epic-task<br/>orchestrator<br/>PR-per-bead → epic branch]
         EETW[executor-epic-task-worktree<br/>orchestrator<br/>parallel-safe → epic branch]
         ERIP[executor-rework-in-place<br/>orchestrator<br/>amend existing PR in current tree]
+        EES[executor-epic-sequential<br/>orchestrator<br/>whole epic → one branch + one PR<br/>fresh headless session per bead]
         FDB[finishing-a-development-branch]
     end
 
@@ -75,7 +76,8 @@ flowchart LR
 | `executor-epic-task`             | executor (orchestrator)         | Same as `executor-task` but branches off (and PRs into) the bead's parent epic branch `epic/<epic-bead-id>` (bead id only, no slug); auto-creates the epic branch from the default branch if missing | user                                                                      | same chain as `executor-task`                                                      |
 | `executor-epic-task-worktree`    | executor (orchestrator)         | Same as `executor-epic-task`, but in an isolated git worktree (parallel-safe; never touches the main checkout) | user                                                                      | same chain as `executor-task`                                                      |
 | `executor-rework-in-place`       | executor (orchestrator)         | Re-execute a reopened bead on the **current** feature branch and push into its **existing** open PR (no new branch, no new PR) | user                                                                      | `beads-claim` → `writing-plans` (regenerate) → impl → `build-and-test` → verify → `requesting-code-review` → `beads-close` → push + fixup PR comment |
-| `finishing-a-development-branch` | executor                        | Push the branch and create a PR                    | `executor-task`, `executor-task-worktree`, `executor-epic-task`, `executor-epic-task-worktree`, `executor-rework-in-place`, user | —                                                                                  |
+| `executor-epic-sequential`       | executor (orchestrator)         | Run **all** ready beads of one epic sequentially on a single `epic/<epic-bead-id>` branch — each bead in a **fresh headless `claude -p` session** (clean context per task); failures are blocked + skipped; ends with one PR epic → default branch | user                                                                      | a fresh headless executor cycle **per bead** (`beads-claim` → `writing-plans` → impl → `build-and-test` → verify → `requesting-code-review` → `beads-close`) → `finishing-a-development-branch` (once) |
+| `finishing-a-development-branch` | executor                        | Push the branch and create a PR                    | `executor-task`, `executor-task-worktree`, `executor-epic-task`, `executor-epic-task-worktree`, `executor-rework-in-place`, `executor-epic-sequential`, user | —                                                                                  |
 | `address-pr-comments`            | maintenance                     | Iterative PR review-comment loop                   | user                                                                      | `pr-comment-fixer` subagent                                                        |
 | `project-auditor`                | maintenance                     | Full-repo audit (naming, structure, light arch)    | user                                                                      | `project-auditor` subagent                                                         |
 | `audit-backlog-rules`            | maintenance                     | Audit ready/blocked beads against current rules    | user                                                                      | —                                                                                  |
@@ -183,6 +185,14 @@ Use `executor-task` for the standard one-bead-per-PR rhythm into main. Use `exec
 
 When a bead has already been executed end-to-end, the PR is open, and reviewer or product feedback shows the task itself was wrong (mis-scoped, wrong approach), the user reopens the bead (`bd reopen <id>`), edits its requirements, and invokes `executor-rework-in-place` with the bead id. Unlike the four orchestrators above, this skill **stays on the current feature branch** in the **current main worktree** — no branch is created, no `git checkout <main>` happens, no new PR is opened. The chain re-runs `beads-claim` → `writing-plans` (regenerated against the updated bead text) → impl → `build-and-test` → verify → `requesting-code-review` → `beads-close`, then pushes additional commits into the existing PR and posts a fixup summary comment naming the bead id and the new tip SHA. Hard prereqs: `bead_id` is required, the working tree must be clean, the current branch must not be the default branch, and the branch must have an open PR. Used after, not instead of, `executor-task` / `executor-task-worktree`.
 
+### Whole-epic variant (`executor-epic-sequential`)
+
+The four `executor-*-task` orchestrators each deliver **one** bead. `executor-epic-sequential` delivers a **whole epic** unattended: it creates the `epic/<epic-bead-id>` branch once, then loops over `bd ready --parent <epic-id>`, executing each ready bead in turn and committing it directly onto that single branch, until no ready beads remain. It ends with **one** PR (`epic/<epic-bead-id>` → default branch) — not one PR per bead.
+
+Its distinguishing mechanic is **context isolation per task**: the driver does not run the executor chain in its own session. Instead it spawns a **fresh headless `claude -p` process per bead**, each of which runs the full chain (including the `code-reviewer` subagent, which a normal subagent could not nest) and is then discarded. The driver's context only accumulates short per-bead summaries plus `git`/`bd` output, so a long epic does not bloat or pollute it. Because the model cannot `/clear` itself mid-run, spawning a fresh process is the only way to get a genuinely clean slate per task — so the driver must never "just do a bead inline" (enforced by `<HARD-GATE>`).
+
+Failure handling is **skip-and-continue**: a bead that fails or blocks is marked `blocked` (outcome read from `bd show`, not the worker's self-report) and skipped; its dependents stay out of `bd ready` and are skipped too; the run finishes and reports everything that was delivered vs. blocked. Hard prereqs: the bead must be an epic, the working tree must be clean (no auto-stash), and the `claude` CLI must be on `PATH` (the per-bead runner). This whole flow leans hard on **fresh-session-safe beads** — each headless worker sees only the bead contract and the code on the branch, never the planner chat.
+
 ---
 
 ## 5. Agents (subagents)
@@ -222,6 +232,7 @@ flowchart TD
     USER --> EET[executor-epic-task]
     USER --> EETW[executor-epic-task-worktree]
     USER --> ERIP[executor-rework-in-place]
+    USER --> EES[executor-epic-sequential]
     USER --> VB[validate-beads]
     USER --> BC[beads-claim]
     USER --> BCL[beads-close]
@@ -282,6 +293,9 @@ flowchart TD
     ERIP --> RCR
     ERIP --> BCL
 
+    EES -.->|fresh claude -p per bead| HW([headless worker:<br/>per-bead executor cycle])
+    EES --> FDB
+
     RB --> VBC
 
     RCR --> AGCR([agent: code-reviewer])
@@ -294,9 +308,9 @@ flowchart TD
     classDef agent fill:#fffde1,stroke:#9e9d24
 
     class PB,BS,PR,BP,VB planner
-    class ET,ETW,EET,EETW,ERIP,BC,WP,SD,BAT,VBC,RCR,BCL,FDB executor
+    class ET,ETW,EET,EETW,ERIP,EES,BC,WP,SD,BAT,VBC,RCR,BCL,FDB executor
     class APC,PA,ABR,PLB,RB,SWB,RWB maint
-    class AGCR,AGPF,AGPA agent
+    class AGCR,AGPF,AGPA,HW agent
 ```
 
 ---
@@ -341,5 +355,6 @@ If you're trying to learn the system from scratch, read the SKILL.md files in th
 6. `verification-before-completion` — why "tests pass" requires evidence
 7. `executor-task-worktree` — the parallel-safe variant
 8. `executor-epic-task` and `executor-epic-task-worktree` — same chain, but base/target the bead's parent epic branch instead of main
+9. `executor-epic-sequential` — the same epic branch, but driving the *whole* epic: one fresh headless session per bead, skip-and-continue, one final PR
 
 Then re-read this document. The graph should make more sense.

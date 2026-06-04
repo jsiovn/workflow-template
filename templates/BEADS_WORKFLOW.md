@@ -17,6 +17,7 @@ Claude Code (and Codex, when set up) can enter the workflow through repo-local s
 - `executor-task-worktree`
 - `executor-epic-task`
 - `executor-epic-task-worktree`
+- `executor-epic-sequential`
 - `executor-rework-in-place`
 
 When an executor skill stops on a blocker, continue in normal chat by telling the agent to resume the blocked bead.
@@ -56,10 +57,16 @@ Pick the executor variant by base branch and isolation:
 
 - **PR base = main, current checkout:** `executor-task`
 - **PR base = main, isolated worktree (parallel-safe):** `executor-task-worktree`
-- **PR base = the bead's parent epic branch (`epic/<epic-bead-id>-<slug>`), current checkout:** `executor-epic-task`
+- **PR base = the bead's parent epic branch (`epic/<epic-bead-id>`), current checkout:** `executor-epic-task`
 - **PR base = epic branch, isolated worktree:** `executor-epic-task-worktree`
 
 Use the `epic-*` variants when the whole epic should land in main as one merge and each child bead ships as its own PR into that epic branch. The epic variants resolve `<epic-bead-id>` from the task bead's parent epic; if the epic branch doesn't exist yet, they create it from the latest default branch.
+
+To run an **entire epic unattended** on a single branch instead of one bead at a time:
+
+- **Whole epic, one branch, one PR:** `executor-epic-sequential`
+
+It creates `epic/<epic-bead-id>` once, then executes every ready child bead in turn — each in a **fresh headless `claude -p` session**, so context never carries between tasks — committing each directly onto that branch, and finishes with a single PR (`epic/<epic-bead-id>` → default branch). A bead that fails or blocks is marked blocked and skipped (its dependents are skipped too) and the run continues. Prereqs: the target must be an epic, the working tree must be clean (no auto-stash), and the `claude` CLI must be on `PATH`. The flow relies on fresh-session-safe beads, so run `validate-beads` on the epic first. Unattended runs use `--dangerously-skip-permissions` by default (auto-approves the workers' tool calls); each worker is separate token usage.
 
 When a bead was already executed but the task itself turned out to be wrong:
 
