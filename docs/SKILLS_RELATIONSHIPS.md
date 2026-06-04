@@ -169,13 +169,13 @@ flowchart LR
         ETA[Branch off main:<br/>feat/&lt;bead-id&gt;] --> ETB[Run chain in current checkout] --> ETC([Stop])
     end
     subgraph ETW[executor-task-worktree]
-        ETWA[Create worktree<br/>off main] --> ETWB[Run chain in worktree] --> ETWC[Cleanup worktree] --> ETWD([Stop])
+        ETWA[Create worktree<br/>off main] --> ETWA2[Seed git-ignored<br/>.env* from main] --> ETWB[Run chain in worktree] --> ETWC[Cleanup worktree] --> ETWD([Stop])
     end
     subgraph EET[executor-epic-task]
         EETA[Resolve parent epic<br/>→ epic/&lt;epic-bead-id&gt;<br/>create if missing] --> EETB[Branch off epic:<br/>feat/&lt;bead-id&gt;] --> EETC[Run chain in current checkout] --> EETD[PR --base epic/...] --> EETE([Stop])
     end
     subgraph EETW[executor-epic-task-worktree]
-        EETWA[Resolve parent epic<br/>create if missing<br/>without touching main tree] --> EETWB[Create worktree<br/>off epic branch] --> EETWC[Run chain in worktree] --> EETWD[PR --base epic/...] --> EETWE[Cleanup worktree] --> EETWF([Stop])
+        EETWA[Resolve parent epic<br/>create if missing<br/>without touching main tree] --> EETWB[Create worktree<br/>off epic branch] --> EETWB2[Seed git-ignored<br/>.env* from main] --> EETWC[Run chain in worktree] --> EETWD[PR --base epic/...] --> EETWE[Cleanup worktree] --> EETWF([Stop])
     end
 ```
 

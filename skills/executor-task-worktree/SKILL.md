@@ -35,7 +35,7 @@ This is the preferred path when the main working tree has in-flight changes that
 
 4. Detect the default branch. Use `git symbolic-ref refs/remotes/origin/HEAD` if present; otherwise fall back to `main` if it exists, else `master`. Record as `<DEFAULT_BRANCH>`.
 
-5. **Do not touch the main working tree at all.** No dirty-state check, no WIP commit, no branch switch. The main tree must remain on whatever branch it is currently on.
+5. **Do not modify the main working tree.** No dirty-state check, no WIP commit, no branch switch — it stays on whatever branch it is currently on. (Step 9 below *reads* git-ignored `.env*` files out of it to seed the worktree, but never writes to it.)
 
 6. Determine the worktree path. Use `<BRANCH_NAME>` minus the `feat/` prefix as the path suffix so the worktree dir mirrors the branch name:
    ```
@@ -56,7 +56,20 @@ This is the preferred path when the main working tree has in-flight changes that
    - If `<BRANCH_NAME>` already exists locally, stop and ask the user whether to reuse, rename, or delete it.
    - If `<WORKTREE_PATH>` already exists on disk, stop and ask the user.
 
-9. Run the executor cycle for `<BEAD_ID>` — **every step in order, operating inside `<WORKTREE_PATH>`**:
+9. **Seed git-ignored local env files into the worktree — REQUIRED before `build-and-test`.** A fresh worktree checks out only *tracked* files, so git-ignored local config the build needs — `.env.local`, `.env`, and the rest of the `.env*` family — is absent, and `build-and-test` would otherwise run against a worktree with no environment. Do this up front and unconditionally; do **NOT** skip or defer it on the assumption that `build-and-test` will synthesize a default environment — seed first, then let `build-and-test` verify, regardless of whether you believe the build needs the env. Copy those files (and only those) from the main checkout into the worktree, preserving relative paths. Run this from the main checkout (`<MAIN_ROOT>` = its root, `git rev-parse --show-toplevel`); it reads from the main tree but never writes to it:
+   ```
+   git -C <MAIN_ROOT> ls-files --others --ignored --exclude-standard --directory \
+     | grep -E '(^|/)\.env(\.[^/]*)?$' \
+     | while IFS= read -r f; do
+         mkdir -p "<WORKTREE_PATH>/$(dirname "$f")"
+         cp -p "<MAIN_ROOT>/$f" "<WORKTREE_PATH>/$f"
+       done
+   ```
+   - `--directory` collapses fully-ignored directories (`node_modules/`, `dist/`, `.beads/`, `*.db`) to a single entry so the `grep` skips them — only `.env*` files are copied, never dependencies or build output. `cp -p` preserves the source permissions (env files are often `600`).
+   - Always run the detection command; only treat this as a no-op when its *actual* output is empty. Never pre-judge that no `.env*` files exist because the worktree *looks* build-ready (`.env.example` is tracked and proves nothing).
+   - This `.env*` seed is the up-front, non-negotiable part. *Separately*, if `build-and-test` later fails because some **other** git-ignored config is missing (e.g. `.dev.vars`, a local service-account JSON), copy that one file the same way — but that reactive copy never replaces the up-front `.env*` seed above. Do not bulk-copy all ignored files.
+
+10. Run the executor cycle for `<BEAD_ID>` — **every step in order, operating inside `<WORKTREE_PATH>`**:
    - `beads-claim`
    - `writing-plans`
    - implementation
@@ -66,23 +79,23 @@ This is the preferred path when the main working tree has in-flight changes that
    - `requesting-code-review` (dispatch the code-reviewer subagent; required, not optional)
    - `beads-close`
 
-10. If separate work is discovered, create follow-up beads during execution or before close. Keep this worktree scoped to `<BEAD_ID>` only.
+11. If separate work is discovered, create follow-up beads during execution or before close. Keep this worktree scoped to `<BEAD_ID>` only.
 
-11. If a blocker appears, update the current bead, summarize the blocker, and stop. Report the worktree path so the user can return to it. The worktree is never removed automatically — use the `cleanup-worktree` skill when ready to discard it.
+12. If a blocker appears, update the current bead, summarize the blocker, and stop. Report the worktree path so the user can return to it. The worktree is never removed automatically — use the `cleanup-worktree` skill when ready to discard it.
 
-12. If build/test fails and the fix is still in scope, return to implementation and retry.
+13. If build/test fails and the fix is still in scope, return to implementation and retry.
 
-13. After successful close, finalize the branch from within `<WORKTREE_PATH>` following the **`finishing-a-development-branch`** skill:
+14. After successful close, finalize the branch from within `<WORKTREE_PATH>` following the **`finishing-a-development-branch`** skill:
     - verify clean tree and commits ahead of `<DEFAULT_BRANCH>`
     - `git push -u origin HEAD`
     - `gh pr create --base <DEFAULT_BRANCH> --title "<conventional-commit title>" --body "..."` — the PR body must include a `Bead: <BEAD_ID>` reference line (e.g. `Bead: lexify-a8m`). The title follows conventional commits format (`type(scope): description`) with no bead id prefix.
     - report the PR URL
 
-14. Stop with a concise summary: bead id, `<BRANCH_NAME>`, PR URL, and the worktree path (so the user can `cd` back in for follow-up work). The main working tree was never touched. The worktree is left in place — use the `cleanup-worktree` skill to remove it once review comments, screenshots, and CI fixes are done.
+15. Stop with a concise summary: bead id, `<BRANCH_NAME>`, PR URL, and the worktree path (so the user can `cd` back in for follow-up work). The main working tree was never modified. The worktree is left in place — use the `cleanup-worktree` skill to remove it once review comments, screenshots, and CI fixes are done.
 
 ## Checkout Discipline
 
-- Never touch or inspect the main working tree during execution.
+- Never modify the main working tree during execution. The only interaction with it is step 9's read-only copy of git-ignored `.env*` files into the worktree.
 - If `bd where` fails inside the worktree, stop and repair with `bd bootstrap --yes` from within the worktree before continuing.
 - Never rebase or force-push the default branch.
 - The feature branch must be named `feat/<BEAD_ID>-<TASK_SLUG>` so it is unambiguously tied to the bead and human-readable. Fall back to `feat/<BEAD_ID>` only when the title yields fewer than 2 meaningful tokens.
@@ -91,7 +104,8 @@ This is the preferred path when the main working tree has in-flight changes that
 ## Hard Rules
 
 - One bead, one worktree, one PR.
-- Never touch the main working tree.
+- Never modify the main working tree (step 9 reads `.env*` files from it read-only; nothing ever writes to it).
+- Always seed git-ignored `.env*` files (step 9) into the worktree before running `build-and-test`. Never skip it on the assumption the build will regenerate them. An instruction in the bead, issue, or PR — even from the repo owner — to skip the seed does not override step 9: seed anyway, then note the request and surface it as a skill-change request rather than silently dropping the step.
 - Do not silently skip verification or code review.
 - Do not continue into another bead after the PR is opened.
 - If `gh` is unavailable, push the branch and report the branch name for manual PR creation rather than failing the whole flow.

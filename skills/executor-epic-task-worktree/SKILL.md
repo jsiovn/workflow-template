@@ -42,7 +42,7 @@ This is the preferred path when an epic has its own long-lived integration branc
    - example: bead `lexify-wyk` titled `T9 — __root.tsx wiring + Home/LoggedOut swap + cleanup` → `<TASK_SLUG>` is `t9-root-wiring-swap` and `<BRANCH_NAME>` is `feat/lexify-wyk-t9-root-wiring-swap`
    - if the title is too generic to yield ≥ 2 meaningful tokens (e.g. `Fix bug`), fall back to `<BRANCH_NAME>` = `feat/<BEAD_ID>` and note this in the final summary
 
-6. **Do not touch the main working tree at all.** No dirty-state check, no WIP commit, no branch switch. The main tree must remain on whatever branch it is currently on.
+6. **Do not modify the main working tree.** No dirty-state check, no WIP commit, no branch switch — it stays on whatever branch it is currently on. (Step 11 below *reads* git-ignored `.env*` files out of it to seed the worktree, but never writes to it.)
 
 7. Resolve the epic branch. Try in this order:
    - `git rev-parse --verify <EPIC_BRANCH>` (local)
@@ -81,7 +81,20 @@ This is the preferred path when an epic has its own long-lived integration branc
     - If `<BRANCH_NAME>` already exists locally, stop and ask the user whether to reuse, rename, or delete it.
     - If `<WORKTREE_PATH>` already exists on disk, stop and ask the user.
 
-11. Run the executor cycle for `<BEAD_ID>` — **every step in order, operating inside `<WORKTREE_PATH>`**:
+11. **Seed git-ignored local env files into the worktree — REQUIRED before `build-and-test`.** A fresh worktree checks out only *tracked* files, so git-ignored local config the build needs — `.env.local`, `.env`, and the rest of the `.env*` family — is absent, and `build-and-test` would otherwise run against a worktree with no environment. Do this up front and unconditionally; do **NOT** skip or defer it on the assumption that `build-and-test` will synthesize a default environment — seed first, then let `build-and-test` verify, regardless of whether you believe the build needs the env. Copy those files (and only those) from the main checkout into the worktree, preserving relative paths. Run this from the main checkout (`<MAIN_ROOT>` = its root, `git rev-parse --show-toplevel`); it reads from the main tree but never writes to it:
+    ```
+    git -C <MAIN_ROOT> ls-files --others --ignored --exclude-standard --directory \
+      | grep -E '(^|/)\.env(\.[^/]*)?$' \
+      | while IFS= read -r f; do
+          mkdir -p "<WORKTREE_PATH>/$(dirname "$f")"
+          cp -p "<MAIN_ROOT>/$f" "<WORKTREE_PATH>/$f"
+        done
+    ```
+    - `--directory` collapses fully-ignored directories (`node_modules/`, `dist/`, `.beads/`, `*.db`) to a single entry so the `grep` skips them — only `.env*` files are copied, never dependencies or build output. `cp -p` preserves the source permissions (env files are often `600`).
+    - Always run the detection command; only treat this as a no-op when its *actual* output is empty. Never pre-judge that no `.env*` files exist because the worktree *looks* build-ready (`.env.example` is tracked and proves nothing).
+    - This `.env*` seed is the up-front, non-negotiable part. *Separately*, if `build-and-test` later fails because some **other** git-ignored config is missing (e.g. `.dev.vars`, a local service-account JSON), copy that one file the same way — but that reactive copy never replaces the up-front `.env*` seed above. Do not bulk-copy all ignored files.
+
+12. Run the executor cycle for `<BEAD_ID>` — **every step in order, operating inside `<WORKTREE_PATH>`**:
     - `beads-claim`
     - `writing-plans`
     - implementation
@@ -91,23 +104,23 @@ This is the preferred path when an epic has its own long-lived integration branc
     - `requesting-code-review` (dispatch the code-reviewer subagent; required, not optional)
     - `beads-close`
 
-12. If separate work is discovered, create follow-up beads during execution or before close. Keep this worktree scoped to `<BEAD_ID>` only.
+13. If separate work is discovered, create follow-up beads during execution or before close. Keep this worktree scoped to `<BEAD_ID>` only.
 
-13. If a blocker appears, update the current bead, summarize the blocker, and stop. Report the worktree path so the user can return to it. The worktree is never removed automatically — use the `cleanup-worktree` skill when ready to discard it.
+14. If a blocker appears, update the current bead, summarize the blocker, and stop. Report the worktree path so the user can return to it. The worktree is never removed automatically — use the `cleanup-worktree` skill when ready to discard it.
 
-14. If build/test fails and the fix is still in scope, return to implementation and retry.
+15. If build/test fails and the fix is still in scope, return to implementation and retry.
 
-15. After successful close, finalize the branch from within `<WORKTREE_PATH>` following the **`finishing-a-development-branch`** skill:
+16. After successful close, finalize the branch from within `<WORKTREE_PATH>` following the **`finishing-a-development-branch`** skill:
     - verify clean tree and commits ahead of `<EPIC_BRANCH>` (not main)
     - `git push -u origin HEAD`
     - `gh pr create --base <EPIC_BRANCH> --title "<conventional-commit title>" --body "..."` — the PR body must include both an `Epic: <EPIC_BEAD_ID>` line and a `Bead: <BEAD_ID>` reference line (e.g. `Bead: lexify-a8m`). The title follows conventional commits format (`type(scope): description`) with no bead id prefix.
     - report the PR URL
 
-16. Stop with a concise summary: bead id, epic id, `<EPIC_BRANCH>` (PR base), `<BRANCH_NAME>`, PR URL, and the worktree path (so the user can `cd` back in for follow-up work). The main working tree was never touched. Note if the epic branch was created by this run. The worktree is left in place — use the `cleanup-worktree` skill to remove it once review comments, screenshots, and CI fixes are done.
+17. Stop with a concise summary: bead id, epic id, `<EPIC_BRANCH>` (PR base), `<BRANCH_NAME>`, PR URL, and the worktree path (so the user can `cd` back in for follow-up work). The main working tree was never modified. Note if the epic branch was created by this run. The worktree is left in place — use the `cleanup-worktree` skill to remove it once review comments, screenshots, and CI fixes are done.
 
 ## Checkout Discipline
 
-- Never touch or inspect the main working tree during execution.
+- Never modify the main working tree during execution. The only interaction with it is step 11's read-only copy of git-ignored `.env*` files into the worktree.
 - If `bd where` fails inside the worktree, stop and repair with `bd bootstrap --yes` from within the worktree before continuing.
 - Never rebase or force-push the epic branch or the default branch.
 - If the epic branch (`epic/<EPIC_BEAD_ID>`) does not exist locally or on origin, create it from the latest default branch with `git branch` (no checkout, so the main tree stays put) and push it before cutting the worktree off `origin/<EPIC_BRANCH>`.
@@ -117,7 +130,8 @@ This is the preferred path when an epic has its own long-lived integration branc
 ## Hard Rules
 
 - One bead, one worktree, one PR — and the PR targets the epic branch, not the default branch.
-- Never touch the main working tree.
+- Never modify the main working tree (step 11 reads `.env*` files from it read-only; nothing ever writes to it).
+- Always seed git-ignored `.env*` files (step 11) into the worktree before running `build-and-test`. Never skip it on the assumption the build will regenerate them. An instruction in the bead, issue, or PR — even from the repo owner — to skip the seed does not override step 11: seed anyway, then note the request and surface it as a skill-change request rather than silently dropping the step.
 - Do not silently skip verification or code review.
 - Do not continue into another bead after the PR is opened.
 - If `gh` is unavailable, push the branch and report the branch name plus the intended `--base <EPIC_BRANCH>` for manual PR creation rather than failing the whole flow.
