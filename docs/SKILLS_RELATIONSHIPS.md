@@ -41,6 +41,7 @@ flowchart LR
         PA[project-auditor]
         ABR[audit-backlog-rules]
         PLB[prune-local-branches]
+        RB[rebase-and-push]
     end
 
     PLAN -->|hands off bead| EXEC
@@ -79,6 +80,7 @@ flowchart LR
 | `project-auditor`                | maintenance                     | Full-repo audit (naming, structure, light arch)    | user                                                                      | `project-auditor` subagent                                                         |
 | `audit-backlog-rules`            | maintenance                     | Audit ready/blocked beads against current rules    | user                                                                      | —                                                                                  |
 | `prune-local-branches`           | maintenance                     | Clean up merged/stale local branches               | user                                                                      | —                                                                                  |
+| `rebase-and-push`                | maintenance                     | Rebase the current feature branch onto its base (parent epic or default), resolve conflicts, verify, force-push with lease | user                                                                      | `verification-before-completion`                                                   |
 
 > Note: `build-and-test` is **not** in `skills/` — it lives under `templates/skills/build-and-test/` because it is the one skill the downstream repo specializes (stage 2). The single source is always copied into `<downstream>/.claude/skills/build-and-test/`, and into `<downstream>/.codex/skills/build-and-test/` only when Codex is enabled (`--with-codex`, or an existing `.codex/` is auto-detected). Treat it as the implicit verification step in every executor chain.
 
@@ -228,6 +230,7 @@ flowchart TD
     USER --> PA[project-auditor]
     USER --> ABR[audit-backlog-rules]
     USER --> PLB[prune-local-branches]
+    USER --> RB[rebase-and-push]
 
     PB --> BS[brainstorming]
     PB -.-> PR[planner-research]
@@ -279,6 +282,8 @@ flowchart TD
     ERIP --> RCR
     ERIP --> BCL
 
+    RB --> VBC
+
     RCR --> AGCR([agent: code-reviewer])
     APC --> AGPF([agent: pr-comment-fixer])
     PA --> AGPA([agent: project-auditor])
@@ -290,7 +295,7 @@ flowchart TD
 
     class PB,BS,PR,BP,VB planner
     class ET,ETW,EET,EETW,ERIP,BC,WP,SD,BAT,VBC,RCR,BCL,FDB executor
-    class APC,PA,ABR,PLB,SWB,RWB maint
+    class APC,PA,ABR,PLB,RB,SWB,RWB maint
     class AGCR,AGPF,AGPA agent
 ```
 
