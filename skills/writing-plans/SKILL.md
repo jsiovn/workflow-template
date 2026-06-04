@@ -20,7 +20,8 @@ This is an **executor skill**. It should only be invoked in a session where a be
 </HARD-GATE>
 
 **Save plans to:** `docs/plans/YYYY-MM-DD-<feature-name>.md`
-- In downstream repos using the workflow backup mirror, `docs/plans/` stays local-only in the project repo and is mirrored later by `sync-workflow-backup`
+- `docs/plans/` is git-ignored local scratch: the plan is written fresh for this session (a worktree session writes it inside its own worktree) and is **not** committed or pushed. Do not rely on it traveling with the branch or reaching another machine.
+- If a teammate or a fresh executor on another machine must read this plan, inline its content into the bead's `notes` (`bd update <id> --append-notes "$(cat docs/plans/<slug>.md)"`) so it syncs via Dolt — do not cite the `docs/plans/` path as a portable `Read:` target.
 - (User preferences for plan location override this default)
 
 ## Scope Check
@@ -181,4 +182,4 @@ After saving the plan:
 
 **When proceeding:** Use subagents when they help, with code review (`requesting-code-review`) after each major task.
 
-**After implementation is complete:** Invoke `build-and-test` (read the repo-local skill — `.claude/skills/build-and-test/SKILL.md` for Claude or `.codex/skills/build-and-test/SKILL.md` for Codex — and follow it). The skill executes the verification contract from the plan and may be generic or repo-specific depending on the repo's maturity. If `build-and-test` fails, fix the implementation or tighten the plan and re-run it before moving to verification. Do NOT skip this step.
+**After implementation is complete:** Invoke `build-and-test` (read the repo-local skill — `.claude/skills/build-and-test/SKILL.md` for Claude; `.codex/skills/build-and-test/SKILL.md` when running under Codex — and follow it). The skill executes the verification contract from the plan and may be generic or repo-specific depending on the repo's maturity. If `build-and-test` fails, fix the implementation or tighten the plan and re-run it before moving to verification. Do NOT skip this step.

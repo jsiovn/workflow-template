@@ -7,7 +7,7 @@ description: "Use after all work on a feature branch is complete and verified. P
 
 **Workflow position:** Final step after all beads are closed and build-and-test passes. See BEADS_WORKFLOW.md.
 
-**Announce at start:** "I'm using the finishing-a-development-branch skill to sync workflow backup, push, and create a PR."
+**Announce at start:** "I'm using the finishing-a-development-branch skill to push and create a PR."
 
 ## Prerequisites
 
@@ -16,7 +16,6 @@ Before invoking this skill, ensure:
 - All beads for this work are closed
 - `build-and-test` passes
 - All changes are committed on the feature branch
-- the local backup repo clone exists (default: sibling `../agentic-workflows`, override with `AGENTIC_WORKFLOWS_REPO`)
 
 ## Steps
 
@@ -33,25 +32,7 @@ git log --oneline main..HEAD
 - `bd where` must succeed in the current checkout
 - If dirty, stop and ask the user to commit or stash
 
-### 2. Sync the workflow backup mirror
-
-macOS/Linux:
-
-```bash
-bash ./scripts/posix/sync-workflow-backup.sh
-```
-
-Windows:
-
-```powershell
-pwsh -File .\scripts\windows\sync-workflow-backup.ps1
-```
-
-- This syncs the repo-local workflow surface into `agentic-workflows/<project>/`
-- The backup repo must already be a clean checkout before running this command
-- If the sync or backup push fails, stop before pushing the development branch
-
-### 3. Push the branch
+### 2. Push the branch
 
 ```bash
 git push -u origin HEAD
@@ -59,7 +40,7 @@ git push -u origin HEAD
 
 If push fails (e.g., no remote, auth issues), report the error and stop.
 
-### 4. Create a pull request
+### 3. Create a pull request
 
 ```bash
 gh pr create --base main --fill
@@ -69,7 +50,7 @@ gh pr create --base main --fill
 - If the user has provided a PR title or description, use `--title` and `--body` instead
 - Report the PR URL to the user
 
-### 5. Report completion
+### 4. Report completion
 
 ```
 PR created: <url>
@@ -81,7 +62,6 @@ Branch: <branch-name>
 - Never force-push unless the user explicitly asks
 - Never delete the remote branch — let the PR merge process handle that
 - Never merge locally — the PR is the merge mechanism
-- Never skip the workflow-backup sync when the repo uses the local-only workflow mirror model
 - If `gh` is not available, push the branch and report the branch name for manual PR creation
 
 ## Quick Reference
@@ -90,8 +70,6 @@ Branch: <branch-name>
 |-----------|--------|
 | Uncommitted changes | Stop, ask user to commit |
 | No commits ahead of main | Stop, nothing to PR |
-| Backup repo dirty/missing | Stop, fix the backup checkout first |
-| Workflow backup sync fails | Report error, stop before branch push |
 | Push fails | Report error, stop |
 | `gh` not installed | Push branch, report for manual PR |
 | PR creation fails | Report error, branch is pushed |
@@ -99,7 +77,8 @@ Branch: <branch-name>
 ## Beads Runtime Discipline
 
 - Treat Beads as local runtime. Do not try to publish live `.beads` state through Git during normal branch completion.
-- Workflow scaffold files are local-only in downstream Git. Publish them through the workflow backup mirror instead of the downstream project remote.
+- Workflow scaffold files are committed to this repo's git and are pushed with the feature branch like any other tracked file.
+- Plan files under `docs/plans/` are the exception: they are git-ignored local scratch, written fresh per bead and never committed or pushed — don't expect a plan to appear in the PR or reach another machine. To carry a plan across machines, inline it into the bead's `notes` (Dolt-synced).
 - If `bd where` fails, stop and repair the checkout with `bd bootstrap --yes` before pushing or creating a PR.
 
 ## Integration

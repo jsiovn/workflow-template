@@ -2,17 +2,19 @@
 set -euo pipefail
 
 with_screenshots=0
+with_codex=0
 positional=()
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --with-screenshots) with_screenshots=1; shift;;
+    --with-codex) with_codex=1; shift;;
     *) positional+=("$1"); shift;;
   esac
 done
 set -- ${positional[@]+"${positional[@]}"}
 
 if [[ $# -lt 1 ]]; then
-  printf 'usage: %s [--with-screenshots] <repo-path>\n' "$0" >&2
+  printf 'usage: %s [--with-screenshots] [--with-codex] <repo-path>\n' "$0" >&2
   exit 1
 fi
 
@@ -22,6 +24,9 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 scaffold_args=()
 if [[ "${with_screenshots}" == "1" ]]; then
   scaffold_args+=(--with-screenshots)
+fi
+if [[ "${with_codex}" == "1" ]]; then
+  scaffold_args+=(--with-codex)
 fi
 
 bash "${script_dir}/check-prereqs.sh"

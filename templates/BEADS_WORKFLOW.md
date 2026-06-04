@@ -10,7 +10,7 @@ This repo uses **`bd`** for task state and selected execution-quality skills for
 
 ## Workflow Skills
 
-Codex and Claude Code can enter the workflow through repo-local skills installed under `.codex/skills/` and `.claude/skills/`:
+Claude Code (and Codex, when set up) can enter the workflow through repo-local skills installed under `.claude/skills/` (and `.codex/skills/` when Codex is set up):
 
 - `plan-beads`
 - `executor-task`
@@ -78,11 +78,12 @@ Use this after `bd reopen <bead-id>` and editing the bead's requirements. It sta
 - Do code work on feature branches.
 - Open pull requests instead of merging locally.
 - Beads state itself is local-only; code moves through Git, not Beads exports.
-- Workflow scaffold files stay local-only in downstream Git and are mirrored to the backup repo with `scripts/posix/sync-workflow-backup.sh` or `scripts/windows/sync-workflow-backup.ps1`.
-- `finishing-a-development-branch` handles workflow-backup sync, branch push, and PR creation.
+- Workflow scaffold files are committed to this repo's git and travel with feature branches and `git worktree` checkouts.
+- Plan files under `docs/plans/` are git-ignored local scratch — written fresh per bead, never committed or pushed. To carry a plan across machines, inline it into the bead's `notes` (Dolt-synced), not the `docs/plans/` path.
+- `finishing-a-development-branch` handles branch push and PR creation.
 
 ## Operational Notes
 
-- Run `scripts/windows/sync-workflow-backup.ps1` or `scripts/posix/sync-workflow-backup.sh` before a PR when you need to sync workflow docs, skills, or helper scripts outside the normal branch-finish flow.
+- Workflow docs and skills are committed and pushed as part of the normal git flow; refresh them from the template with `update-skills` when needed.
 - If `bd where` or `bd context` fails in the current checkout, repair the repo with `bd bootstrap --yes` before continuing.
 - Use `bd ready` before asking what to work on next.

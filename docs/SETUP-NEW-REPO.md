@@ -9,15 +9,16 @@ Use this guide when starting a downstream repo from scratch or when a repo is st
    - `dolt`
    - Python
 2. Bootstrap the repo from this template:
-   - macOS/Linux: `bash ./scripts/posix/bootstrap-new-repo.sh [--with-screenshots] /path/to/repo <prefix>`
-   - Windows: `pwsh -File .\scripts\windows\bootstrap-new-repo.ps1 -RepoPath D:\path\to\repo -Prefix <prefix> [-WithScreenshots]`
+   - macOS/Linux: `bash ./scripts/posix/bootstrap-new-repo.sh [--with-screenshots] [--with-codex] /path/to/repo <prefix>`
+   - Windows: `pwsh -File .\scripts\windows\bootstrap-new-repo.ps1 -RepoPath D:\path\to\repo -Prefix <prefix> [-WithScreenshots] [-WithCodex]`
    - Pass `--with-screenshots` / `-WithScreenshots` only for web/UI projects that want the `attach-web-screenshots` skill plus its companion `.github/workflows/cleanup-screenshots.yml`. Omit for backend, CLI, or library repos.
+   - Claude Code is the primary AI: the `.claude/` surface is always installed. Pass `--with-codex` / `-WithCodex` to also install the Codex (`.codex/`) surface and `AGENTS.md`. (Codex is auto-detected and kept current if the downstream already has a `.codex/` directory.)
 3. The bootstrap script:
    - initializes git if the target path is not already a repo
    - runs `bd init -p <prefix> --server --skip-agents --skip-hooks`
-   - runs `bd setup codex`
-   - scaffolds the shared workflow docs, skills, and helper scripts
-   - installs the managed root `.gitignore` block for local-only workflow assets
+   - runs `bd setup claude` (and `bd setup codex` only with `--with-codex`)
+   - scaffolds the shared workflow docs and skills (Claude `.claude/` always; Codex `.codex/` only with `--with-codex`)
+   - installs the managed root `.gitignore` block for local runtime artifacts (Beads/Dolt state, `*.db`, etc.) plus `docs/plans/` (per-session plan scratch that stays local — see `writing-plans`)
    - creates a standalone stage-2 bead for specializing `build-and-test`, plus a matching bead for `attach-web-screenshots` only when that opt-in skill was installed
 4. Verify the repo is ready:
    - `bd where`
@@ -45,12 +46,12 @@ Customize the repo only after the real workflow becomes obvious from the first p
 
 Typical stage-2 changes:
 
-- specialize `.codex/skills/build-and-test/SKILL.md`
-- mirror the same specialization to `.claude/skills/build-and-test/SKILL.md`
-- (if installed) specialize `.codex/skills/attach-web-screenshots/SKILL.md` and the `.claude/` mirror
+- specialize `.claude/skills/build-and-test/SKILL.md`
+- mirror the same specialization to `.codex/skills/build-and-test/SKILL.md` only when Codex was opted in (`--with-codex`)
+- (if installed) specialize `.claude/skills/attach-web-screenshots/SKILL.md` and the `.codex/` mirror when Codex is enabled
 - add runtime-specific setup or operational notes
-- add repo-specific guidance outside the managed blocks in `AGENTS.md` or `CLAUDE.md`
-- rely on `sync-workflow-backup` / `finishing-a-development-branch` to publish updated workflow docs and skills through the backup repo, not the downstream project remote
+- add repo-specific guidance outside the managed blocks in `CLAUDE.md` (and `AGENTS.md` when Codex is enabled)
+- run `update-skills` to refresh shared workflow docs and skills from the template — they are committed to the downstream's own git and travel with feature branches
 
 Examples:
 
@@ -61,6 +62,6 @@ Examples:
 ## Ongoing Maintenance
 
 - edit shared workflow skills in this template repo, then run `update-skills` for downstream repos
-- keep scaffolded workflow docs, skills, and helper scripts local-only in the downstream repo and sync them to `agentic-workflows/<project>/`
+- the scaffolded workflow docs and skills are committed to the downstream repo's own git (no backup mirror)
 - keep repo-specific `build-and-test` customizations local to the downstream repo
 - if template changes should not overwrite a downstream specialization, rely on the existing scaffold behavior that preserves `build-and-test`

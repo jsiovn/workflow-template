@@ -41,8 +41,7 @@ flowchart LR
         PA[project-auditor]
         ABR[audit-backlog-rules]
         PLB[prune-local-branches]
-        SWB[sync-workflow-backup]
-        RWB[restore-workflow-backup]
+        RB[rebase-and-push]
     end
 
     PLAN -->|hands off bead| EXEC
@@ -67,23 +66,23 @@ flowchart LR
 | `beads-claim`                    | executor                        | Find + claim one ready bead                        | `executor-task` orchestrators, user                                       | —                                                                                  |
 | `writing-plans`                  | executor                        | Write the implementation plan for the claimed bead | `executor-task` orchestrators, user                                       | `requesting-code-review` (for plan review during chunked drafting)                 |
 | `systematic-debugging`           | executor                        | Root-cause investigation when blocked              | implementation step                                                       | —                                                                                  |
+| `responsive-layout-testing`      | executor                        | Screenshot a page at 6 widths via Chrome DevTools MCP, fix overflow/layout breaks | implementation step, user                                  | `systematic-debugging`, `verification-before-completion` (defers completion claim) |
 | `verification-before-completion` | executor                        | Evidence-before-claims gate                        | `executor-task` orchestrators                                             | —                                                                                  |
-| `requesting-code-review`         | executor                        | Dispatch the local code-reviewer subagent (`.claude/agents/code-reviewer.md` / `.codex/agents/code-reviewer.md`) | `executor-task` orchestrators (required, not optional)                    | —                                                                                  |
+| `requesting-code-review`         | executor                        | Dispatch the local code-reviewer subagent (`.claude/agents/code-reviewer.md`, and `.codex/agents/code-reviewer.md` when Codex is enabled) | `executor-task` orchestrators (required, not optional)                    | —                                                                                  |
 | `beads-close`                    | executor                        | Close bead + create follow-ups + commit            | `executor-task` orchestrators, user                                       | —                                                                                  |
 | `executor-task`                  | executor (orchestrator)         | One bead delivered as its own PR off a fresh branch from main | user                                                                      | `beads-claim` → `writing-plans` → impl → `build-and-test` → verify → `beads-close` → `finishing-a-development-branch` |
 | `executor-task-worktree`         | executor (orchestrator)         | Same as `executor-task`, but in an isolated git worktree (parallel-safe) | user                                                                      | same chain as `executor-task`                                                      |
 | `executor-epic-task`             | executor (orchestrator)         | Same as `executor-task` but branches off (and PRs into) the bead's parent epic branch `epic/<epic-bead-id>` (bead id only, no slug); auto-creates the epic branch from the default branch if missing | user                                                                      | same chain as `executor-task`                                                      |
 | `executor-epic-task-worktree`    | executor (orchestrator)         | Same as `executor-epic-task`, but in an isolated git worktree (parallel-safe; never touches the main checkout) | user                                                                      | same chain as `executor-task`                                                      |
 | `executor-rework-in-place`       | executor (orchestrator)         | Re-execute a reopened bead on the **current** feature branch and push into its **existing** open PR (no new branch, no new PR) | user                                                                      | `beads-claim` → `writing-plans` (regenerate) → impl → `build-and-test` → verify → `requesting-code-review` → `beads-close` → push + fixup PR comment |
-| `finishing-a-development-branch` | executor                        | Sync backup mirror, push, create PR                | `executor-task`, `executor-task-worktree`, `executor-epic-task`, `executor-epic-task-worktree`, `executor-rework-in-place`, user | —                                                                                  |
+| `finishing-a-development-branch` | executor                        | Push the branch and create a PR                    | `executor-task`, `executor-task-worktree`, `executor-epic-task`, `executor-epic-task-worktree`, `executor-rework-in-place`, user | —                                                                                  |
 | `address-pr-comments`            | maintenance                     | Iterative PR review-comment loop                   | user                                                                      | `pr-comment-fixer` subagent                                                        |
 | `project-auditor`                | maintenance                     | Full-repo audit (naming, structure, light arch)    | user                                                                      | `project-auditor` subagent                                                         |
 | `audit-backlog-rules`            | maintenance                     | Audit ready/blocked beads against current rules    | user                                                                      | —                                                                                  |
 | `prune-local-branches`           | maintenance                     | Clean up merged/stale local branches               | user                                                                      | —                                                                                  |
-| `sync-workflow-backup`           | maintenance                     | Push managed workflow files into the backup mirror | user                                                                      | `scripts/{posix,windows}/sync-workflow-backup.{sh,ps1}`                            |
-| `restore-workflow-backup`        | maintenance                     | Copy managed workflow files back from backup mirror | user                                                                     | `scripts/{posix,windows}/restore-workflow-backup.{sh,ps1}`                         |
+| `rebase-and-push`                | maintenance                     | Rebase the current feature branch onto its base (parent epic or default), resolve conflicts, verify, force-push with lease | user                                                                      | `verification-before-completion`                                                   |
 
-> Note: `build-and-test` is **not** in `skills/` — it lives under `templates/skills/build-and-test/` because it is the one skill the downstream repo specializes (stage 2). The single source is copied into both `<downstream>/.codex/skills/build-and-test/` and `<downstream>/.claude/skills/build-and-test/`. Treat it as the implicit verification step in every executor chain.
+> Note: `build-and-test` is **not** in `skills/` — it lives under `templates/skills/build-and-test/` because it is the one skill the downstream repo specializes (stage 2). The single source is always copied into `<downstream>/.claude/skills/build-and-test/`, and into `<downstream>/.codex/skills/build-and-test/` only when Codex is enabled (`--with-codex`, or an existing `.codex/` is auto-detected). Treat it as the implicit verification step in every executor chain.
 
 ---
 
@@ -188,7 +187,7 @@ When a bead has already been executed end-to-end, the PR is open, and reviewer o
 
 ## 5. Agents (subagents)
 
-Agents live in `agents/` (shared, copied to both `.claude/agents/` and `.codex/agents/` downstream — see `scripts/posix/scaffold-repo-files.sh`). They are dispatched as fresh, sandboxed sessions that don't see the caller's chat history; the caller passes a self-contained brief.
+Agents live in `agents/` (shared, always copied to `.claude/agents/` downstream, and to `.codex/agents/` only when Codex is enabled via `--with-codex` — see `scripts/posix/scaffold-repo-files.sh`). They are dispatched as fresh, sandboxed sessions that don't see the caller's chat history; the caller passes a self-contained brief.
 
 | Agent                  | Caller                                                                | Role                                                                                  |
 | ---------------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
@@ -205,7 +204,7 @@ Agents live in `agents/` (shared, copied to both `.claude/agents/` and `.codex/a
 
 **Hard rule:** only `code-reviewer`, `pr-comment-fixer`, and `project-auditor` are skill-internal. The rest are direct user invocations — skills must not dispatch them. If a skill needs planner-style review, it goes through the planner skills, not these agents.
 
-**Provider overrides:** if a downstream needs to diverge per provider, drop the override in `templates/.claude/agents/<name>.md` or `templates/.codex/agents/<name>.md`. Scaffold copies shared `agents/` first, then overlays the provider-specific dir.
+**Provider overrides:** if a downstream needs to diverge per provider, drop the override in `templates/.claude/agents/<name>.md` or `templates/.codex/agents/<name>.md`. Scaffold copies shared `agents/` first, then overlays the provider-specific dir. The `.codex` overrides only apply when Codex is enabled (`--with-codex`, or an auto-detected `.codex/`).
 
 ---
 
@@ -231,8 +230,7 @@ flowchart TD
     USER --> PA[project-auditor]
     USER --> ABR[audit-backlog-rules]
     USER --> PLB[prune-local-branches]
-    USER --> SWB[sync-workflow-backup]
-    USER --> RWB[restore-workflow-backup]
+    USER --> RB[rebase-and-push]
 
     PB --> BS[brainstorming]
     PB -.-> PR[planner-research]
@@ -284,6 +282,8 @@ flowchart TD
     ERIP --> RCR
     ERIP --> BCL
 
+    RB --> VBC
+
     RCR --> AGCR([agent: code-reviewer])
     APC --> AGPF([agent: pr-comment-fixer])
     PA --> AGPA([agent: project-auditor])
@@ -295,7 +295,7 @@ flowchart TD
 
     class PB,BS,PR,BP,VB planner
     class ET,ETW,EET,EETW,ERIP,BC,WP,SD,BAT,VBC,RCR,BCL,FDB executor
-    class APC,PA,ABR,PLB,SWB,RWB maint
+    class APC,PA,ABR,PLB,RB,SWB,RWB maint
     class AGCR,AGPF,AGPA agent
 ```
 
@@ -306,10 +306,10 @@ flowchart TD
 When you add or rename a skill, three places need to stay consistent:
 
 1. **The SKILL.md** — frontmatter `name` + `description`, `<HARD-GATE>` if it must not run in the wrong mode, and explicit "invoked by / invokes" links to other skills.
-2. **`scripts/posix/scaffold-repo-files.sh` and `scripts/windows/scaffold-repo-files.ps1`** — these are the authority on what gets copied into downstream `.codex/skills/` and `.claude/skills/`. New skill ⇒ add the copy line. Removed skill ⇒ add a `rm -rf` / `Remove-Item` line so existing downstreams clean up on next `update-skills`.
+2. **`scripts/posix/scaffold-repo-files.sh` and `scripts/windows/scaffold-repo-files.ps1`** — these are the authority on what gets copied into downstream `.claude/skills/` (always) and `.codex/skills/` (only when Codex is enabled). New skill ⇒ add the copy line. Removed skill ⇒ add a `rm -rf` / `Remove-Item` line so existing downstreams clean up on next `update-skills`.
 3. **`templates/AGENTS.snippet.md` and `templates/CLAUDE.snippet.md`** — if the skill should appear in the managed instructions block downstream, mention it there. The block lives between `<!-- BEGIN/END TEMPLATE BD WORKFLOW -->` markers — never remove or rename those markers.
 
-**Adding an agent** is a parallel surface: drop the file in `agents/<name>.md` and scaffold copies it to both providers automatically. Provider-specific overrides go in `templates/.codex/agents/` or `templates/.claude/agents/`. When _removing_ an agent, add the explicit `rm -rf` / `Remove-Item` lines for both `.codex/agents/<name>.md` and `.claude/agents/<name>.md` in both scaffold scripts so existing downstreams clean up.
+**Adding an agent** is a parallel surface: drop the file in `agents/<name>.md` and scaffold copies it into `.claude/agents/` automatically (always), and into `.codex/agents/` when Codex is enabled (`--with-codex`). Provider-specific overrides go in `templates/.claude/agents/` or `templates/.codex/agents/`. When _removing_ an agent, add the explicit `rm -rf` / `Remove-Item` lines for both `.claude/agents/<name>.md` and `.codex/agents/<name>.md` in both scaffold scripts so existing downstreams clean up.
 
 **Where to slot a new skill — quick decisions:**
 

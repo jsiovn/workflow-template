@@ -83,7 +83,7 @@ This is the preferred manual path when an epic has its own long-lived integratio
     - `writing-plans`
     - implementation
     - `systematic-debugging` if blocked
-    - **`build-and-test`** — REQUIRED after implementation. Read the repo-local skill (`.claude/skills/build-and-test/SKILL.md` for Claude sessions or `.codex/skills/build-and-test/SKILL.md` for Codex sessions — both are kept in sync) and follow it. Do NOT skip this step.
+    - **`build-and-test`** — REQUIRED after implementation. Read the repo-local skill (`.claude/skills/build-and-test/SKILL.md` for Claude sessions; `.codex/skills/build-and-test/SKILL.md` when running under Codex) and follow it. Do NOT skip this step.
     - `verification-before-completion` (run the verification commands)
     - `requesting-code-review` (dispatch the code-reviewer subagent; required, not optional)
     - `beads-close`
@@ -96,7 +96,6 @@ This is the preferred manual path when an epic has its own long-lived integratio
 
 14. After successful close, finalize the branch by following the **`finishing-a-development-branch`** skill:
     - verify clean tree and commits ahead of `<EPIC_BRANCH>` (not main)
-    - run the workflow-backup sync if the repo uses the local-only workflow mirror model
     - `git push -u origin HEAD`
     - `gh pr create --base <EPIC_BRANCH> --title "<conventional-commit title>" --body "..."` — the PR body must include both an `Epic: <EPIC_BEAD_ID>` line and a `Bead: <BEAD_ID>` reference line (e.g. `Bead: lexify-a8m`). The title follows conventional commits format (`type(scope): description`) with no bead id prefix.
     - report the PR URL

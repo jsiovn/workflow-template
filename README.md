@@ -1,8 +1,8 @@
 # Agent Workflow Template
 
-A scaffold that drops a consistent **planner → executor** agent workflow into any repo you work on. It installs a shared set of skills, agents, helper scripts, and [Beads](https://github.com/steveyegge/beads)-backed task tracking so that **Claude Code** and **Codex** follow the same playbook in every project — you plan once, execute one bead per PR, and ship.
+A scaffold that installs a consistent **planner → executor** workflow for **AI coding agents** into any repo — a shared set of skills, subagents, and [Beads](https://github.com/steveyegge/beads)-backed task tracking so that **Claude Code** (the primary AI) follows the same playbook in every project, with **Codex** as an optional opt-in. You plan once, execute one bead per PR, and ship.
 
-This repo doesn't run anything itself. You install it once on your machine, then run one script per project to scaffold (or refresh) the workflow inside that project.
+This repo runs nothing itself — it's developer tooling for AI coding agents, not a CI/CD or GitHub Actions "workflow." You install it once on your machine, then run one script per project to scaffold (or refresh) the workflow inside that project.
 
 ---
 
@@ -14,7 +14,7 @@ You need three machine-wide tools before bootstrapping any project:
 | --------- | --------------------------------- | ----------------------- |
 | `bd`      | Beads CLI (issue tracking)        | `bd version`            |
 | `dolt`    | Storage backend used by `bd`      | `dolt version`          |
-| `python3` | Helper scripts in `scripts/`      | `python3 --version`     |
+| `python3` | Template's scaffold scripts (run from the template checkout, not downstream) | `python3 --version`     |
 
 Per-OS install instructions:
 
@@ -56,7 +56,9 @@ Windows:
 pwsh -File "$HOME\www\workflow-template\scripts\windows\bootstrap-new-repo.ps1" -RepoPath D:\path\to\repo -Prefix myprefix
 ```
 
-`myprefix` is the short tag Beads uses for issue IDs in that repo (e.g. `acme` → `acme-1`, `acme-2`). The bootstrap script initializes git if needed, runs `bd init` and `bd setup codex`, and copies the shared skills, agents, and helper scripts into the project.
+`myprefix` is the short tag Beads uses for issue IDs in that repo (e.g. `acme` → `acme-1`, `acme-2`). The bootstrap script initializes git if needed, runs `bd init` and `bd setup claude` (and `bd setup codex` only with `--with-codex`), and copies the shared skills and agents into the project — Claude Code's `.claude/` surface always, and Codex's `.codex/` surface only when you opt in via `--with-codex`.
+
+Claude Code is the default, primary AI. To **also** set up Codex, add `--with-codex` (POSIX) or `-WithCodex` (PowerShell), which scaffolds the `.codex/` skills+agents and the `AGENTS.md` instruction file alongside the Claude surface. The flag is accepted by both `bootstrap-new-repo` and `update-skills` (so you can adopt Codex later). If a `.codex/` directory already exists in the downstream, it is detected and refreshed automatically.
 
 For web/UI projects, add `--with-screenshots` (POSIX) or `-WithScreenshots` (PowerShell) to also install the `attach-web-screenshots` skill and its companion `.github/workflows/cleanup-screenshots.yml`. Omit for backend, CLI, or library repos. The flag is also accepted by `update-skills` if you adopt screenshots later.
 
@@ -101,7 +103,7 @@ w-update    /path/to/your-repo
 
 ## How to use skills and agents
 
-Once a repo is bootstrapped, your AI tool (Claude Code or Codex) sees two kinds of building blocks:
+Once a repo is bootstrapped, your AI tool — Claude Code by default, or Codex if you opted in with `--with-codex` — sees two kinds of building blocks:
 
 - **Skills** — runnable workflows. You invoke a skill by name (e.g. `plan-beads`, `executor-task`) and the model executes the whole workflow end-to-end.
 - **Agents** — focused single-purpose roles (PM, architect, reviewer, …). You invoke an agent when you want that specific perspective on the current work.
@@ -126,7 +128,7 @@ executor-rework-in-place <bead-id>   # bead was reopened, amend the existing PR
 Other useful skills you'll reach for:
 
 - `address-pr-comments` — when a reviewer left comments on your PR
-- `finishing-a-development-branch` — push and open the PR (handles workflow-file backup automatically)
+- `finishing-a-development-branch` — push and open the PR
 - `audit-backlog-rules` — re-check the backlog after editing project rules
 - `requesting-code-review` — get a review of the current change before merging
 
@@ -181,7 +183,7 @@ Other useful skills you'll reach for:
 | `requesting-code-review`         | Dispatches the `code-reviewer` subagent against the current change                    | After implementing a major task, before merging                              |
 | `address-pr-comments`            | Pulls unresolved PR threads → fixes via `pr-comment-fixer` → verifies → push → reply  | When new review comments arrive on the current PR                            |
 | `attach-web-screenshots`         | Takes screenshots of a running web app and attaches them to the open PR               | After implementing a UI feature, before or alongside review                  |
-| `finishing-a-development-branch` | Pushes the branch and opens a PR; runs `sync-workflow-backup` first                   | When all work on a feature branch is done and verified                       |
+| `finishing-a-development-branch` | Pushes the branch and opens a PR                                                      | When all work on a feature branch is done and verified                       |
 
 > `attach-web-screenshots` is opt-in — pass `--with-screenshots` to `bootstrap-new-repo` (or `update-skills` to adopt later). It ships a companion CI workflow (`.github/workflows/cleanup-screenshots.yml`) that prunes stale screenshot folders for merged branches.
 
@@ -194,8 +196,6 @@ Other useful skills you'll reach for:
 | -------------------------- | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
 | `project-auditor`          | Full-repo audit: naming, folder layout, tech-stack consistency, light architecture    | Project health check (not per-PR — use `requesting-code-review` for diffs)   |
 | `prune-local-branches`     | Removes stale local branches whose PRs are merged or closed                           | Periodic cleanup                                                             |
-| `sync-workflow-backup`     | Pushes the downstream's workflow files to the backup mirror                           | Before pushing a PR (also runs automatically inside `finishing-…`)           |
-| `restore-workflow-backup`  | Pulls workflow files from the backup mirror back into the downstream                  | Fresh clone of an existing downstream repo                                   |
 
 </details>
 
@@ -247,10 +247,8 @@ Then run `bdtui` from inside any bootstrapped repo.
 
 | Purpose                                          | POSIX                                                           | Windows                                                     |
 | ------------------------------------------------ | --------------------------------------------------------------- | ----------------------------------------------------------- |
-| Bootstrap a new downstream repo                  | `scripts/posix/bootstrap-new-repo.sh <repo> <prefix>`           | `scripts/windows/bootstrap-new-repo.ps1`                    |
-| Refresh shared workflow surface                  | `scripts/posix/update-skills.sh <repo>`                         | `scripts/windows/update-skills.ps1`                         |
-| Sync downstream → backup mirror                  | `scripts/posix/sync-workflow-backup.sh`                         | `scripts/windows/sync-workflow-backup.ps1`                  |
-| Restore backup mirror → downstream               | `scripts/posix/restore-workflow-backup.sh`                      | `scripts/windows/restore-workflow-backup.ps1`               |
+| Bootstrap a new downstream repo                  | `scripts/posix/bootstrap-new-repo.sh <repo> <prefix> [--with-codex]` | `scripts/windows/bootstrap-new-repo.ps1 [-WithCodex]`  |
+| Refresh shared workflow surface                  | `scripts/posix/update-skills.sh <repo> [--with-codex]`          | `scripts/windows/update-skills.ps1 [-WithCodex]`           |
 | Prerequisite check                               | `scripts/posix/check-prereqs.sh`                                | `scripts/windows/check-prereqs.ps1`                         |
 
 ---

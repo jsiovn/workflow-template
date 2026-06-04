@@ -50,7 +50,7 @@ If you would otherwise create a fresh branch, use `executor-task` (in-place tree
    - `writing-plans` — REQUIRED. The bead's requirements changed; the existing plan is presumed stale. When invoking writing-plans, explicitly note "the bead was reworked; regenerate or amend the existing plan against the updated bead text" so an existing plan file is overwritten or amended rather than blindly reused.
    - implementation
    - `systematic-debugging` if blocked
-   - **`build-and-test`** — REQUIRED after implementation. Read the repo-local skill (`.claude/skills/build-and-test/SKILL.md` for Claude sessions or `.codex/skills/build-and-test/SKILL.md` for Codex sessions — both are kept in sync) and follow it. Do NOT skip this step.
+   - **`build-and-test`** — REQUIRED after implementation. Read the repo-local skill (`.claude/skills/build-and-test/SKILL.md` for Claude sessions; `.codex/skills/build-and-test/SKILL.md` when running under Codex) and follow it. Do NOT skip this step.
    - `verification-before-completion` (run the verification commands)
    - `requesting-code-review` — REQUIRED. The PR is already open, but the rework introduces new code that needs a fresh local review pass before pushing.
    - `beads-close`
@@ -61,7 +61,7 @@ If you would otherwise create a fresh branch, use `executor-task` (in-place tree
 
 10. If build/test fails and the fix is still in scope, return to implementation and retry.
 
-11. **Push into the existing PR.** After successful close, follow the `finishing-a-development-branch` skill's pre-push checks (clean tree, commits ahead of `<DEFAULT_BRANCH>`, workflow-backup sync if the repo uses the local-only workflow mirror model), then:
+11. **Push into the existing PR.** After successful close, follow the `finishing-a-development-branch` skill's pre-push checks (clean tree, commits ahead of `<DEFAULT_BRANCH>`), then:
     ```bash
     git push
     ```

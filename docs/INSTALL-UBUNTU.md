@@ -33,9 +33,9 @@ python3 --version
 ## Per-Repo Setup
 
 ```bash
-bash ./scripts/posix/bootstrap-new-repo.sh /path/to/repo yourprefix
+bash ./scripts/posix/bootstrap-new-repo.sh [--with-codex] /path/to/repo yourprefix
 ```
 
-The bootstrap script initializes git if needed, runs `bd init -p yourprefix --server --skip-agents --skip-hooks`, installs Codex integration, and scaffolds the shared workflow files.
+The bootstrap script initializes git if needed, runs `bd init -p yourprefix --server --skip-agents --skip-hooks`, installs Claude integration (Codex only with `--with-codex`), and scaffolds the shared workflow files.
 
 For the full stage-1 then stage-2 adoption flow, see [SETUP-NEW-REPO.md](SETUP-NEW-REPO.md).

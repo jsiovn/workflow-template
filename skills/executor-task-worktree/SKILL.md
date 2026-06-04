@@ -61,7 +61,7 @@ This is the preferred path when the main working tree has in-flight changes that
    - `writing-plans`
    - implementation
    - `systematic-debugging` if blocked
-   - **`build-and-test`** — REQUIRED after implementation. Read the repo-local skill from the worktree (`.claude/skills/build-and-test/SKILL.md` for Claude sessions or `.codex/skills/build-and-test/SKILL.md` for Codex sessions) and follow it. Do NOT skip this step.
+   - **`build-and-test`** — REQUIRED after implementation. Read the repo-local skill from the worktree (`.claude/skills/build-and-test/SKILL.md` for Claude sessions; `.codex/skills/build-and-test/SKILL.md` when running under Codex) and follow it. Do NOT skip this step.
    - `verification-before-completion` (run the verification commands)
    - `requesting-code-review` (dispatch the code-reviewer subagent; required, not optional)
    - `beads-close`
@@ -74,7 +74,6 @@ This is the preferred path when the main working tree has in-flight changes that
 
 13. After successful close, finalize the branch from within `<WORKTREE_PATH>` following the **`finishing-a-development-branch`** skill:
     - verify clean tree and commits ahead of `<DEFAULT_BRANCH>`
-    - run the workflow-backup sync if the repo uses the local-only workflow mirror model
     - `git push -u origin HEAD`
     - `gh pr create --base <DEFAULT_BRANCH> --title "<conventional-commit title>" --body "..."` — the PR body must include a `Bead: <BEAD_ID>` reference line (e.g. `Bead: lexify-a8m`). The title follows conventional commits format (`type(scope): description`) with no bead id prefix.
     - report the PR URL

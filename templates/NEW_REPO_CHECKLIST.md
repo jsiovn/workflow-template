@@ -4,8 +4,9 @@
 
 1. Install `bd`, `dolt`, and Python on the machine.
 2. Bootstrap the repo with the template script. If the target path is empty, the script initializes git first.
-   - macOS/Linux: `bash ./scripts/posix/bootstrap-new-repo.sh /path/to/repo <prefix>`
-   - Windows: `pwsh -File .\scripts\windows\bootstrap-new-repo.ps1 -RepoPath D:\path\to\repo -Prefix <prefix>`
+   - macOS/Linux: `bash ./scripts/posix/bootstrap-new-repo.sh [--with-codex] /path/to/repo <prefix>`
+   - Windows: `pwsh -File .\scripts\windows\bootstrap-new-repo.ps1 -RepoPath D:\path\to\repo -Prefix <prefix> [-WithCodex]`
+   - Claude Code is the primary AI and `.claude/` is always installed; pass `--with-codex` / `-WithCodex` to also install the Codex (`.codex/`) surface and `AGENTS.md`.
 3. Verify:
    - `bd version`
    - `bd ready --json`
@@ -25,7 +26,7 @@
 
 ## Stage 2: Project-Specific Specialization
 
-1. Customize the repo-local `build-and-test` skill once the repeated verification flow is clear.
+1. Customize the repo-local `build-and-test` skill once the repeated verification flow is clear (start with `.claude/`; the `.codex/` mirror only exists when bootstrapped/updated with `--with-codex`).
 2. Customize the repo-local `attach-web-screenshots` skill with the project's preview command and auth shape.
 3. Add repo-specific setup docs only when there is stable runtime, build, serve, deploy, or smoke-test behavior worth documenting.
 4. Keep the general workflow skills synced from this template; only the repo-local specializations should diverge.

@@ -51,7 +51,6 @@ Fix:
 Symptoms:
 
 - `.beads/redirect` points to an old `*.shared/_beads` path
-- `scripts/windows/shared-beads.ps1` or `scripts/posix/shared-beads.sh` still exist
 - `br`-era files like `.br_history/` remain under `.beads`
 
 Fix:

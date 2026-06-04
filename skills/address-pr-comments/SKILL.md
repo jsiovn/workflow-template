@@ -17,9 +17,9 @@ Two sources of feedback are checked on every run:
 ## Where the subagent lives
 
 - `.claude/agents/pr-comment-fixer.md` (Claude)
-- `.codex/agents/pr-comment-fixer.md` (Codex)
+- `.codex/agents/pr-comment-fixer.md` (Codex, if Codex is set up)
 
-If neither exists, run `update-skills` against the repo to install them.
+If the Claude copy is missing, run `update-skills` against the repo to install it.
 
 ## Prerequisites
 
