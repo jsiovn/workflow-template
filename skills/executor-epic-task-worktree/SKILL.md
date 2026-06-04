@@ -1,6 +1,6 @@
 ---
 name: executor-epic-task-worktree
-description: "Run a full executor cycle for one bead in a fresh git worktree off its parent epic branch (epic/<epic-bead-id>): leaves the main working tree completely untouched, creates a sibling worktree at ../<repo>-feat-<bead-id>, executes the bead end-to-end, pushes, opens a PR targeting the epic branch, and leaves the worktree in place for follow-up work (review comments, screenshots, CI fixes). Use when an epic has its own integration branch and the main tree has active work that must not be disturbed. Use the `cleanup-worktree` skill to remove the worktree once follow-up work is done."
+description: 'Run a full executor cycle for one bead in a fresh git worktree off its parent epic branch (epic/<epic-bead-id>): leaves the main working tree completely untouched, creates a sibling worktree at ../<repo>-feat-<bead-id>, executes the bead end-to-end, pushes, opens a PR targeting the epic branch, and leaves the worktree in place for follow-up work (review comments, screenshots, CI fixes). Use when an epic has its own integration branch and the main tree has active work that must not be disturbed. Use the `cleanup-worktree` skill to remove the worktree once follow-up work is done.'
 ---
 
 # Executor Epic Task Worktree
@@ -42,7 +42,7 @@ This is the preferred path when an epic has its own long-lived integration branc
    - example: bead `lexify-wyk` titled `T9 — __root.tsx wiring + Home/LoggedOut swap + cleanup` → `<TASK_SLUG>` is `t9-root-wiring-swap` and `<BRANCH_NAME>` is `feat/lexify-wyk-t9-root-wiring-swap`
    - if the title is too generic to yield ≥ 2 meaningful tokens (e.g. `Fix bug`), fall back to `<BRANCH_NAME>` = `feat/<BEAD_ID>` and note this in the final summary
 
-6. **Do not modify the main working tree.** No dirty-state check, no WIP commit, no branch switch — it stays on whatever branch it is currently on. (Step 11 below *reads* git-ignored `.env*` files out of it to seed the worktree, but never writes to it.)
+6. **Do not modify the main working tree.** No dirty-state check, no WIP commit, no branch switch — it stays on whatever branch it is currently on. (Step 11 below _reads_ git-ignored `.env*` files out of it to seed the worktree, but never writes to it.)
 
 7. Resolve the epic branch. Try in this order:
    - `git rev-parse --verify <EPIC_BRANCH>` (local)
@@ -51,6 +51,7 @@ This is the preferred path when an epic has its own long-lived integration branc
    - if it exists nowhere, this skill will create it from the latest default branch in step 9. Detect the default branch first: use `git symbolic-ref refs/remotes/origin/HEAD` if present; otherwise fall back to `main` if it exists, else `master`. Record as `<DEFAULT_BRANCH>`. Note in the final summary that the epic branch was created.
 
 8. Determine the worktree path. Always use just the bead id as the path suffix (no task slug) so paths stay short and predictable:
+
    ```
    REPO_NAME=$(basename $(git rev-parse --show-toplevel))
    WORKTREE_PATH="../${REPO_NAME}-feat-${BEAD_ID}"
@@ -75,13 +76,16 @@ This is the preferred path when an epic has its own long-lived integration branc
      ```
 
 10. Create the worktree on a new branch off the freshly fetched epic branch:
+
     ```
     git worktree add <WORKTREE_PATH> -b <BRANCH_NAME> origin/<EPIC_BRANCH>
     ```
+
     - If `<BRANCH_NAME>` already exists locally, stop and ask the user whether to reuse, rename, or delete it.
     - If `<WORKTREE_PATH>` already exists on disk, stop and ask the user.
 
-11. **Seed git-ignored local env files into the worktree — REQUIRED before `build-and-test`.** A fresh worktree checks out only *tracked* files, so git-ignored local config the build needs — `.env.local`, `.env`, and the rest of the `.env*` family — is absent, and `build-and-test` would otherwise run against a worktree with no environment. Do this up front and unconditionally; do **NOT** skip or defer it on the assumption that `build-and-test` will synthesize a default environment — seed first, then let `build-and-test` verify, regardless of whether you believe the build needs the env. Copy those files (and only those) from the main checkout into the worktree, preserving relative paths. Run this from the main checkout (`<MAIN_ROOT>` = its root, `git rev-parse --show-toplevel`); it reads from the main tree but never writes to it:
+11. **Seed git-ignored local env files into the worktree — REQUIRED before `build-and-test`.** A fresh worktree checks out only _tracked_ files, so git-ignored local config the build needs — `.env.local`, `.env`, and the rest of the `.env*` family — is absent, and `build-and-test` would otherwise run against a worktree with no environment. Do this up front and unconditionally; do **NOT** skip or defer it on the assumption that `build-and-test` will synthesize a default environment — seed first, then let `build-and-test` verify, regardless of whether you believe the build needs the env. Copy those files (and only those) from the main checkout into the worktree, preserving relative paths. Run this from the main checkout (`<MAIN_ROOT>` = its root, `git rev-parse --show-toplevel`); it reads from the main tree but never writes to it:
+
     ```
     git -C <MAIN_ROOT> ls-files --others --ignored --exclude-standard --directory \
       | grep -E '(^|/)\.env(\.[^/]*)?$' \
@@ -90,9 +94,10 @@ This is the preferred path when an epic has its own long-lived integration branc
           cp -p "<MAIN_ROOT>/$f" "<WORKTREE_PATH>/$f"
         done
     ```
+
     - `--directory` collapses fully-ignored directories (`node_modules/`, `dist/`, `.beads/`, `*.db`) to a single entry so the `grep` skips them — only `.env*` files are copied, never dependencies or build output. `cp -p` preserves the source permissions (env files are often `600`).
-    - Always run the detection command; only treat this as a no-op when its *actual* output is empty. Never pre-judge that no `.env*` files exist because the worktree *looks* build-ready (`.env.example` is tracked and proves nothing).
-    - This `.env*` seed is the up-front, non-negotiable part. *Separately*, if `build-and-test` later fails because some **other** git-ignored config is missing (e.g. `.dev.vars`, a local service-account JSON), copy that one file the same way — but that reactive copy never replaces the up-front `.env*` seed above. Do not bulk-copy all ignored files.
+    - Always run the detection command; only treat this as a no-op when its _actual_ output is empty. Never pre-judge that no `.env*` files exist because the worktree _looks_ build-ready (`.env.example` is tracked and proves nothing).
+    - This `.env*` seed is the up-front, non-negotiable part. _Separately_, if `build-and-test` later fails because some **other** git-ignored config is missing (e.g. `.dev.vars`, a local service-account JSON), copy that one file the same way — but that reactive copy never replaces the up-front `.env*` seed above. Do not bulk-copy all ignored files.
 
 12. Run the executor cycle for `<BEAD_ID>` — **every step in order, operating inside `<WORKTREE_PATH>`**:
     - `beads-claim`

@@ -17,6 +17,7 @@ Output:
 7. **Mission Accomplished checklist** — the literal checkboxes that must all be ticked before we celebrate.
 
 Rules:
+
 - No technical solutioning. If you find yourself naming a library or table, stop.
 - Every criterion must be falsifiable: a tester could check it without asking you.
 - If a requirement is missing data (e.g. "fast" without a number), flag it as **NEEDS DECISION** rather than guessing.

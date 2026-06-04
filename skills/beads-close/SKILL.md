@@ -1,6 +1,6 @@
 ---
 name: beads-close
-description: "Use after implementation and verification are complete to close the bead, create follow-up beads, and commit the updated `.beads/` state. This is the final step of a manual executor session."
+description: 'Use after implementation and verification are complete to close the bead, create follow-up beads, and commit the updated `.beads/` state. This is the final step of a manual executor session.'
 ---
 
 # Beads Close
@@ -22,7 +22,7 @@ Do not invoke this skill:
 - in a planner session
 - before verification
 - to close beads you did not work on in this session
-</HARD-GATE>
+  </HARD-GATE>
 
 ## Steps
 
@@ -55,4 +55,3 @@ Do not invoke this skill:
 - Work happens on feature branches. Merging to `main` is done via PR, not local merge.
 - Live `.beads` state is local runtime. Do not treat it as something to publish through Git during normal closeout.
 - Keep the closeout note concise but concrete. It should tell a fresh downstream session what changed, where the result lives, and what is now safe to assume.
-

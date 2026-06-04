@@ -1,6 +1,6 @@
 ---
 name: planner-research
-description: "Planner-only research step for resolving factual unknowns after brainstorming and before Beads creation. Use only when unresolved technical or domain uncertainty would materially weaken the plan."
+description: 'Planner-only research step for resolving factual unknowns after brainstorming and before Beads creation. Use only when unresolved technical or domain uncertainty would materially weaken the plan.'
 ---
 
 # Planner Research

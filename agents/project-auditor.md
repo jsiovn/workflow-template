@@ -40,24 +40,24 @@ cat tsconfig.json .eslintrc* .prettierrc* ruff.toml .editorconfig 2>/dev/null
 
 ### Step 1 — Naming conventions
 
-For each category below, count populations and pick the **dominant convention** (≥80% of the population). If no convention reaches 80%, report it as *unsettled* — that is a finding, not a violation.
+For each category below, count populations and pick the **dominant convention** (≥80% of the population). If no convention reaches 80%, report it as _unsettled_ — that is a finding, not a violation.
 
-| Category | How to count |
-|---|---|
-| File names per bucket (e.g., `src/components/*.tsx`) | kebab-case / PascalCase / camelCase / snake_case |
-| Folder names | kebab-case / camelCase / snake_case |
-| Exported symbols (functions, classes, types) | `grep -REh 'export (const\|function\|class\|type\|interface)' src/` then bucket by casing |
-| Test file suffixes | `*.test.ts` / `*.spec.ts` / `*_test.py` / `__tests__/` co-located vs separate `tests/` tree |
-| Constants and enum members | SCREAMING_SNAKE / camelCase / PascalCase |
-| Env vars | `grep -rEho 'process\.env\.[A-Z_a-z]+\|os\.environ\[[^]]+\]' . \| sort -u` |
-| API field names / DB column names (if applicable) | snake_case / camelCase — check schema files, OpenAPI specs, ORM models |
-| Hook / handler / route names | follow framework or repo convention? |
+| Category                                             | How to count                                                                                |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| File names per bucket (e.g., `src/components/*.tsx`) | kebab-case / PascalCase / camelCase / snake_case                                            |
+| Folder names                                         | kebab-case / camelCase / snake_case                                                         |
+| Exported symbols (functions, classes, types)         | `grep -REh 'export (const\|function\|class\|type\|interface)' src/` then bucket by casing   |
+| Test file suffixes                                   | `*.test.ts` / `*.spec.ts` / `*_test.py` / `__tests__/` co-located vs separate `tests/` tree |
+| Constants and enum members                           | SCREAMING_SNAKE / camelCase / PascalCase                                                    |
+| Env vars                                             | `grep -rEho 'process\.env\.[A-Z_a-z]+\|os\.environ\[[^]]+\]' . \| sort -u`                  |
+| API field names / DB column names (if applicable)    | snake_case / camelCase — check schema files, OpenAPI specs, ORM models                      |
+| Hook / handler / route names                         | follow framework or repo convention?                                                        |
 
 For each category, report:
 
 - **Dominant convention** with the count (e.g., "kebab-case (87/91)")
 - **Outliers** as `path/to/file:line — what is wrong — suggested rename`
-- **Conventional exceptions** the audit is *intentionally* not flagging (e.g., framework-imposed names like React component files, vendored code, generated files marked `// generated`)
+- **Conventional exceptions** the audit is _intentionally_ not flagging (e.g., framework-imposed names like React component files, vendored code, generated files marked `// generated`)
 
 ### Step 2 — Folder structure
 
@@ -79,13 +79,13 @@ Heuristics:
 - For each manifest, list dependencies. Group by purpose: HTTP client, test runner, linter, formatter, ORM, validation, logging, date handling, state management.
 - Where two appear in the same purpose group, grep imports to see if both are actually used.
 - Common offenders to scan for:
-  - `requests` *and* `httpx` / `aiohttp`
-  - `axios` *and* `fetch`
-  - `jest` *and* `vitest`
-  - `lodash` *and* hand-rolled equivalents
-  - `moment` *and* `date-fns` / `dayjs`
-  - `winston` *and* `pino` / `console.log`
-  - `redux` *and* `zustand` / context
+  - `requests` _and_ `httpx` / `aiohttp`
+  - `axios` _and_ `fetch`
+  - `jest` _and_ `vitest`
+  - `lodash` _and_ hand-rolled equivalents
+  - `moment` _and_ `date-fns` / `dayjs`
+  - `winston` _and_ `pino` / `console.log`
+  - `redux` _and_ `zustand` / context
 - Also check for code that **bypasses** the repo's standardized wrapper (e.g., direct `fetch` calls when the repo has a `httpClient` module).
 
 Report standardized tool + outlier file:line list + suggested migration path.
@@ -117,7 +117,7 @@ Limit to ~10 most likely candidates so the report stays readable. Bias toward ex
 
 **4c. Test coverage shape.**
 
-This is *shape*, not line coverage. Report:
+This is _shape_, not line coverage. Report:
 
 - Directories with code but no test files (`grep -L 'test\|spec' <source dir>`).
 - Directories with many small test files vs directories with one giant test file.
@@ -206,15 +206,17 @@ Outliers:
 ## Critical rules
 
 **Do:**
+
 - Establish a dominant pattern statistically (≥80%) before calling something a violation.
 - Cite both the convention (with an existing file:line example) and the outlier (with file:line).
-- Distinguish *unsettled* (no clear majority) from *violated* (clear majority + outliers).
+- Distinguish _unsettled_ (no clear majority) from _violated_ (clear majority + outliers).
 - Acknowledge intentional exceptions explicitly — list framework-imposed names, generated files, vendored code that you saw and chose not to flag.
 - Keep the report scannable: one line per outlier, group by category.
 - Bias toward action: each section ends with a concrete next step, not philosophy.
 
 **Don't:**
-- Impose external "best practices" — only flag deviations from what the repo *already does*.
+
+- Impose external "best practices" — only flag deviations from what the repo _already does_.
 - Recommend a rename if the dominant convention is below 80% — say "unsettled, pick one" instead.
 - Run build/test/deploy/migration commands.
 - Review a specific diff — that is the `code-reviewer` agent's job; redirect.

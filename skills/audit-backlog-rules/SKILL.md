@@ -1,6 +1,6 @@
 ---
 name: audit-backlog-rules
-description: "Audit ready and blocked beads for drift against the current CLAUDE.md / AGENTS.md rules (folder structure, naming conventions, project rules). Use after editing CLAUDE.md or AGENTS.md to find beads whose Read/Files/Inputs/Verify sections still reference old conventions, paths, or rules."
+description: 'Audit ready and blocked beads for drift against the current CLAUDE.md / AGENTS.md rules (folder structure, naming conventions, project rules). Use after editing CLAUDE.md or AGENTS.md to find beads whose Read/Files/Inputs/Verify sections still reference old conventions, paths, or rules.'
 ---
 
 # Audit Backlog Against Rules
@@ -13,6 +13,7 @@ Re-read the current project rules and report which open beads in the backlog sti
 - The user explicitly asks to "re-check tasks against the new rules" or "audit the backlog after the CLAUDE.md change".
 
 Do **not** use this for:
+
 - Auditing the source code itself — that is `project-auditor`.
 - Validating a single epic for autonomous execution — that is `validate-beads`.
 - Reviewing in-progress or closed beads.
@@ -26,11 +27,11 @@ Do **not** use this for:
    - `BEADS_WORKFLOW.md`
    - `PRIME.md`
    - any `docs/conventions*.md`, `docs/architecture*.md`, or similar conventions files the user names
-   Extract the concrete rules: folder layout, naming conventions, file-placement rules, required commands, forbidden patterns.
+     Extract the concrete rules: folder layout, naming conventions, file-placement rules, required commands, forbidden patterns.
 3. List the audit set:
    - `bd ready --json` for ready beads
    - `bd list --status blocked --json` for blocked beads
-   Deduplicate. If the result is empty, report that and stop.
+     Deduplicate. If the result is empty, report that and stop.
 4. For each bead, fetch the full description and notes (`bd show <id> --json`) and compare against the rules collected in step 2. Look for:
    - `Files:` paths that no longer match the new folder structure
    - `Read:` references to renamed, moved, or deleted files

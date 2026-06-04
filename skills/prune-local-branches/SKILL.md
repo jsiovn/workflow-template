@@ -1,6 +1,6 @@
 ---
 name: prune-local-branches
-description: "Delete local git branches whose upstream has been removed from origin. Use when the user asks to clean up stale, pruned, or deleted remote branches locally."
+description: 'Delete local git branches whose upstream has been removed from origin. Use when the user asks to clean up stale, pruned, or deleted remote branches locally.'
 ---
 
 # Prune Local Branches

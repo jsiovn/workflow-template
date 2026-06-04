@@ -1,0 +1,12 @@
+node_modules/
+dist/
+build/
+coverage/
+.turbo/
+bun.lockb
+bun.lock
+apps/api/build/
+apps/web/src/routeTree.gen.ts
+packages/api-client/src/
+.beads/
+apps/api/**/*.{cpp,h,hpp,cc}

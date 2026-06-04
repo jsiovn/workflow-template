@@ -1,6 +1,6 @@
 ---
 name: executor-task-worktree
-description: "Run a full executor cycle for one bead in a fresh git worktree off main: leaves the main working tree completely untouched, creates a sibling worktree at ../<repo>-feat-<bead-id>-<short-slug>, executes the bead end-to-end, pushes, opens a PR, and leaves the worktree in place for follow-up work (review comments, screenshots, CI fixes). Use when the main tree has active work that must not be disturbed. Use the `cleanup-worktree` skill to remove the worktree once follow-up work is done."
+description: 'Run a full executor cycle for one bead in a fresh git worktree off main: leaves the main working tree completely untouched, creates a sibling worktree at ../<repo>-feat-<bead-id>-<short-slug>, executes the bead end-to-end, pushes, opens a PR, and leaves the worktree in place for follow-up work (review comments, screenshots, CI fixes). Use when the main tree has active work that must not be disturbed. Use the `cleanup-worktree` skill to remove the worktree once follow-up work is done.'
 ---
 
 # Executor Worktree
@@ -35,28 +35,34 @@ This is the preferred path when the main working tree has in-flight changes that
 
 4. Detect the default branch. Use `git symbolic-ref refs/remotes/origin/HEAD` if present; otherwise fall back to `main` if it exists, else `master`. Record as `<DEFAULT_BRANCH>`.
 
-5. **Do not modify the main working tree.** No dirty-state check, no WIP commit, no branch switch — it stays on whatever branch it is currently on. (Step 9 below *reads* git-ignored `.env*` files out of it to seed the worktree, but never writes to it.)
+5. **Do not modify the main working tree.** No dirty-state check, no WIP commit, no branch switch — it stays on whatever branch it is currently on. (Step 9 below _reads_ git-ignored `.env*` files out of it to seed the worktree, but never writes to it.)
 
 6. Determine the worktree path. Use `<BRANCH_NAME>` minus the `feat/` prefix as the path suffix so the worktree dir mirrors the branch name:
+
    ```
    REPO_NAME=$(basename $(git rev-parse --show-toplevel))
    WORKTREE_PATH="../${REPO_NAME}-feat-${BEAD_ID}-${TASK_SLUG}"
    ```
+
    (or `../${REPO_NAME}-feat-${BEAD_ID}` if you fell back to the bead-id-only branch name)
 
 7. Fetch the default branch ref so the worktree starts from the latest upstream state:
+
    ```
    git fetch origin <DEFAULT_BRANCH>
    ```
 
 8. Create the worktree on a new branch off the freshly fetched default:
+
    ```
    git worktree add <WORKTREE_PATH> -b <BRANCH_NAME> origin/<DEFAULT_BRANCH>
    ```
+
    - If `<BRANCH_NAME>` already exists locally, stop and ask the user whether to reuse, rename, or delete it.
    - If `<WORKTREE_PATH>` already exists on disk, stop and ask the user.
 
-9. **Seed git-ignored local env files into the worktree — REQUIRED before `build-and-test`.** A fresh worktree checks out only *tracked* files, so git-ignored local config the build needs — `.env.local`, `.env`, and the rest of the `.env*` family — is absent, and `build-and-test` would otherwise run against a worktree with no environment. Do this up front and unconditionally; do **NOT** skip or defer it on the assumption that `build-and-test` will synthesize a default environment — seed first, then let `build-and-test` verify, regardless of whether you believe the build needs the env. Copy those files (and only those) from the main checkout into the worktree, preserving relative paths. Run this from the main checkout (`<MAIN_ROOT>` = its root, `git rev-parse --show-toplevel`); it reads from the main tree but never writes to it:
+9. **Seed git-ignored local env files into the worktree — REQUIRED before `build-and-test`.** A fresh worktree checks out only _tracked_ files, so git-ignored local config the build needs — `.env.local`, `.env`, and the rest of the `.env*` family — is absent, and `build-and-test` would otherwise run against a worktree with no environment. Do this up front and unconditionally; do **NOT** skip or defer it on the assumption that `build-and-test` will synthesize a default environment — seed first, then let `build-and-test` verify, regardless of whether you believe the build needs the env. Copy those files (and only those) from the main checkout into the worktree, preserving relative paths. Run this from the main checkout (`<MAIN_ROOT>` = its root, `git rev-parse --show-toplevel`); it reads from the main tree but never writes to it:
+
    ```
    git -C <MAIN_ROOT> ls-files --others --ignored --exclude-standard --directory \
      | grep -E '(^|/)\.env(\.[^/]*)?$' \
@@ -65,19 +71,21 @@ This is the preferred path when the main working tree has in-flight changes that
          cp -p "<MAIN_ROOT>/$f" "<WORKTREE_PATH>/$f"
        done
    ```
+
    - `--directory` collapses fully-ignored directories (`node_modules/`, `dist/`, `.beads/`, `*.db`) to a single entry so the `grep` skips them — only `.env*` files are copied, never dependencies or build output. `cp -p` preserves the source permissions (env files are often `600`).
-   - Always run the detection command; only treat this as a no-op when its *actual* output is empty. Never pre-judge that no `.env*` files exist because the worktree *looks* build-ready (`.env.example` is tracked and proves nothing).
-   - This `.env*` seed is the up-front, non-negotiable part. *Separately*, if `build-and-test` later fails because some **other** git-ignored config is missing (e.g. `.dev.vars`, a local service-account JSON), copy that one file the same way — but that reactive copy never replaces the up-front `.env*` seed above. Do not bulk-copy all ignored files.
+   - Always run the detection command; only treat this as a no-op when its _actual_ output is empty. Never pre-judge that no `.env*` files exist because the worktree _looks_ build-ready (`.env.example` is tracked and proves nothing).
+   - This `.env*` seed is the up-front, non-negotiable part. _Separately_, if `build-and-test` later fails because some **other** git-ignored config is missing (e.g. `.dev.vars`, a local service-account JSON), copy that one file the same way — but that reactive copy never replaces the up-front `.env*` seed above. Do not bulk-copy all ignored files.
 
 10. Run the executor cycle for `<BEAD_ID>` — **every step in order, operating inside `<WORKTREE_PATH>`**:
-   - `beads-claim`
-   - `writing-plans`
-   - implementation
-   - `systematic-debugging` if blocked
-   - **`build-and-test`** — REQUIRED after implementation. Read the repo-local skill from the worktree (`.claude/skills/build-and-test/SKILL.md` for Claude sessions; `.codex/skills/build-and-test/SKILL.md` when running under Codex) and follow it. Do NOT skip this step.
-   - `verification-before-completion` (run the verification commands)
-   - `requesting-code-review` (dispatch the code-reviewer subagent; required, not optional)
-   - `beads-close`
+
+- `beads-claim`
+- `writing-plans`
+- implementation
+- `systematic-debugging` if blocked
+- **`build-and-test`** — REQUIRED after implementation. Read the repo-local skill from the worktree (`.claude/skills/build-and-test/SKILL.md` for Claude sessions; `.codex/skills/build-and-test/SKILL.md` when running under Codex) and follow it. Do NOT skip this step.
+- `verification-before-completion` (run the verification commands)
+- `requesting-code-review` (dispatch the code-reviewer subagent; required, not optional)
+- `beads-close`
 
 11. If separate work is discovered, create follow-up beads during execution or before close. Keep this worktree scoped to `<BEAD_ID>` only.
 

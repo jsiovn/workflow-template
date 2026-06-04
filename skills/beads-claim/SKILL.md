@@ -1,6 +1,6 @@
 ---
 name: beads-claim
-description: "Use at the start of an executor session to find and claim a ready bead. Do not invoke in planner sessions."
+description: 'Use at the start of an executor session to find and claim a ready bead. Do not invoke in planner sessions.'
 ---
 
 # Beads Claim
@@ -21,7 +21,7 @@ Do not invoke this skill when:
 
 - beads were just created in this session
 - you are in the middle of `brainstorming` or `beads-planner`
-</HARD-GATE>
+  </HARD-GATE>
 
 ## Steps
 
@@ -52,4 +52,3 @@ Do not invoke this skill when:
 - If the user already specified a bead id, skip the selection step but still show details before claiming.
 - When an `executor-*` orchestrator skill is driving the flow, it is valid to claim without confirmation when bead choice is unambiguous.
 - Do not start coding before claiming. The bead must be `in_progress` before any implementation.
-

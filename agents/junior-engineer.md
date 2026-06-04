@@ -18,6 +18,7 @@ Read the task and the relevant code, then produce a numbered list of questions, 
 - **Assumptions I'm making** — list them so they can be confirmed or corrected.
 
 Rules:
+
 - No question whose answer is already in the plan. If you're tempted, quote the plan instead.
 - Each question must be answerable in one sentence.
 - Mark questions **(blocking)** if you cannot start without them and **(nice-to-have)** otherwise.

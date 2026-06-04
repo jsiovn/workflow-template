@@ -1,6 +1,6 @@
 ---
 name: executor-rework-in-place
-description: "Re-execute one bead on the current feature branch in the current main worktree, after its requirements were updated and its PR is already open. Requires bead_id. Does NOT create a branch, switch to main, or open a new PR — just re-claims, re-plans, re-implements, verifies, re-reviews, closes the bead, then pushes into the existing PR with a fixup summary comment."
+description: 'Re-execute one bead on the current feature branch in the current main worktree, after its requirements were updated and its PR is already open. Requires bead_id. Does NOT create a branch, switch to main, or open a new PR — just re-claims, re-plans, re-implements, verifies, re-reviews, closes the bead, then pushes into the existing PR with a fixup summary comment.'
 ---
 
 # Executor Rework In Place
@@ -29,9 +29,11 @@ If you would otherwise create a fresh branch, use `executor-task` (in-place tree
    - If `<CURRENT_BRANCH>` does not contain `<BEAD_ID>` (case-insensitive substring), warn the user with both names and ask whether to proceed. (The substring check is forgiving: branches that fell back to `feat/<BEAD_ID>` with no slug still match.)
 
 4. **Confirm the PR exists and is open.** Run:
+
    ```bash
    gh pr view --json number,url,state,headRefName -q '{n:.number,url,state,branch:.headRefName}'
    ```
+
    - If no PR is associated with `<CURRENT_BRANCH>`, stop and tell the user to use `executor-task` instead — this skill is for amending an existing PR.
    - If `state != OPEN`, stop and ask the user (closed/merged PR means rework-in-place is the wrong tool).
    - Record `<PR_NUMBER>` and `<PR_URL>`.
@@ -39,10 +41,12 @@ If you would otherwise create a fresh branch, use `executor-task` (in-place tree
 5. **Working tree must be clean.** Run `git status --porcelain`. If non-empty, stop and ask the user how to proceed — do **not** auto-commit, do **not** stash. The user explicitly invoked rework-in-place; a dirty tree is unexpected.
 
 6. **Refresh the branch from origin** so the rework lands on top of any commits already pushed to the PR:
+
    ```bash
    git fetch origin <CURRENT_BRANCH>
    git merge --ff-only origin/<CURRENT_BRANCH>
    ```
+
    If `--ff-only` fails (local has commits the remote does not, or histories diverged), stop and ask. Do not auto-rebase, do not force-update.
 
 7. Run the executor cycle for `<BEAD_ID>` — **every step in order**:
@@ -62,20 +66,26 @@ If you would otherwise create a fresh branch, use `executor-task` (in-place tree
 10. If build/test fails and the fix is still in scope, return to implementation and retry.
 
 11. **Push into the existing PR.** After successful close, follow the `finishing-a-development-branch` skill's pre-push checks (clean tree, commits ahead of `<DEFAULT_BRANCH>`), then:
+
     ```bash
     git push
     ```
+
     No `-u` — the branch is already tracking. **Never force-push.** If push fails because the remote moved (someone else pushed), stop and ask the user.
 
 12. **Post a fixup summary comment on the PR.** Identify the repo:
+
     ```bash
     gh repo view --json owner,name -q '{owner:.owner.login,name:.name}'
     ```
+
     Then post a top-level comment summarizing the rework:
+
     ```bash
     SHORT_SHA=$(git rev-parse --short HEAD)
     gh api -X POST "repos/$OWNER/$REPO/issues/$PR_NUMBER/comments" -f body="$BODY"
     ```
+
     The body must:
     - Name the bead id (`Bead: <BEAD_ID>`).
     - State this is a **rework** of the previously reviewed work, with one sentence on why (the bead was reopened with updated requirements).

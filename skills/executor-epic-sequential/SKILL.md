@@ -1,6 +1,6 @@
 ---
 name: executor-epic-sequential
-description: "Run every ready child bead of one epic end-to-end, sequentially, on a single epic branch (epic/<epic-bead-id>). Each bead executes in a fresh headless `claude -p` session so context never carries between tasks; a failed bead is marked blocked and skipped (along with its dependents) and the run continues; finishes with one PR from the epic branch to the default branch. Use when the user wants to deliver a whole epic unattended as one branch and one PR instead of running one bead at a time."
+description: 'Run every ready child bead of one epic end-to-end, sequentially, on a single epic branch (epic/<epic-bead-id>). Each bead executes in a fresh headless `claude -p` session so context never carries between tasks; a failed bead is marked blocked and skipped (along with its dependents) and the run continues; finishes with one PR from the epic branch to the default branch. Use when the user wants to deliver a whole epic unattended as one branch and one PR instead of running one bead at a time.'
 ---
 
 # Executor Epic Sequential
@@ -13,7 +13,7 @@ This is the "run the whole epic" entry point. The four `executor-*-task` skills 
 
 **ONE epic branch. EVERY bead runs in its own fresh headless `claude -p` session. The driver NEVER implements bead work in its own context.**
 
-The entire point of this skill is to keep the driver session thin: only short per-task summaries and `git`/`bd` output land in the driver's context, while the heavy implement/test/review transcript for each bead lives in a disposable headless session that is thrown away when the bead finishes. The model cannot `/clear` itself mid-run, so the *only* way to get a clean slate per task is to spawn a fresh process per task. Doing a bead "inline" — even a one-line one — re-pollutes the driver context and defeats the skill.
+The entire point of this skill is to keep the driver session thin: only short per-task summaries and `git`/`bd` output land in the driver's context, while the heavy implement/test/review transcript for each bead lives in a disposable headless session that is thrown away when the bead finishes. The model cannot `/clear` itself mid-run, so the _only_ way to get a clean slate per task is to spawn a fresh process per task. Doing a bead "inline" — even a one-line one — re-pollutes the driver context and defeats the skill.
 
 ## Requires fresh-session-safe beads
 
@@ -31,7 +31,7 @@ Each headless worker starts with **zero memory** of the planner chat or of the b
 
 3. **Preflight (fail fast, stop on any failure):**
    - **The working tree must be clean.** Run `git status --porcelain`; if anything is dirty, stop and ask the user to commit or stash first. This skill runs unattended across many tasks and switches to the epic branch — it must not auto-`stash` or auto-WIP-commit and risk losing or mixing in unrelated work. (This intentionally diverges from `executor-task`, which auto-WIP-commits a single switch.)
-   - **The headless runner must exist.** Run `command -v claude`. If it is missing, stop and tell the user this skill needs the `claude` CLI on `PATH` to spawn per-task sessions. (Under Codex, see *Runtime note* below.)
+   - **The headless runner must exist.** Run `command -v claude`. If it is missing, stop and tell the user this skill needs the `claude` CLI on `PATH` to spawn per-task sessions. (Under Codex, see _Runtime note_ below.)
    - Record the starting branch (`git rev-parse --abbrev-ref HEAD`) as `<PREV_BRANCH>` so you can report where the user came from.
 
 4. **Create or resolve the epic branch ONCE** (reuse `executor-epic-task` logic):
@@ -54,7 +54,7 @@ Each headless worker starts with **zero memory** of the planner chat or of the b
    1. `bd ready --parent <EPIC_BEAD_ID> --json`; drop any bead already in `done` or `blocked`.
    2. If the remaining set is empty, **break** — the epic has no more ready work.
    3. Pick the next bead: lowest priority number first (highest priority), ties broken by id for determinism. Record it as `<BEAD_ID>` and add it to `attempted`.
-   4. **Execute `<BEAD_ID>` in a fresh headless session** — see *Per-task headless run* below. Run exactly one at a time.
+   4. **Execute `<BEAD_ID>` in a fresh headless session** — see _Per-task headless run_ below. Run exactly one at a time.
    5. **Determine the outcome from Beads, never from the worker's self-report:** `bd show <BEAD_ID> --json`.
       - status `closed` → add to `done`. Sanity-check that a new commit landed on `<EPIC_BRANCH>` (`git log --oneline <DEFAULT_BRANCH>..HEAD`); if nothing was committed, treat as blocked.
       - status `blocked` → add to `blocked`, record the bead's blocker note.
@@ -84,6 +84,7 @@ timeout 3600 claude -p "<TASK_PROMPT>" \
 > You are an executor in `<repo path>`, already checked out on branch `<EPIC_BRANCH>`. Deliver bead `<BEAD_ID>` and only that bead. Run, in order: `beads-claim` (claim `<BEAD_ID>` with `bd update <BEAD_ID> --status in_progress`), `writing-plans`, implementation, `systematic-debugging` if blocked, the repo-local `build-and-test` skill (required), `verification-before-completion`, `requesting-code-review` (dispatch the code-reviewer subagent — required), then `beads-close`. **Commit your work directly on the current branch `<EPIC_BRANCH>`.** Do NOT create or switch branches, do NOT open a PR, do NOT push, do NOT touch any other bead. If you hit a blocker you cannot resolve, do not force it: run `bd update <BEAD_ID> --status blocked` with a short note explaining why, then stop. End your final message with one line: `RESULT: closed|blocked — <short summary>`.
 
 Notes on the invocation:
+
 - **Model and effort are pinned**, not inherited: `--model claude-opus-4-8 --effort xhigh`. Each worker delivers a full bead (plan + implement + review), so it runs on the strongest model at high reasoning effort rather than whatever default the environment carries. `--effort` accepts `low|medium|high|xhigh|max`; `xhigh` is the "ultracode" level — raise to `max` if you want the ceiling, lower it only to economize on simple epics.
 - **Why headless and not a subagent:** a subagent cannot dispatch a further subagent, so it could not run `requesting-code-review`'s `code-reviewer` subagent. A headless `claude -p` run is a top-level session, so the full cycle — including code review — works unchanged.
 - **Outcome is read from `bd show`, not the `RESULT:` line.** The `RESULT:` line and the worker's `.result` text are for the human summary only; the bead's actual status is authoritative.
@@ -121,9 +122,11 @@ ONE branch, ONE PR. Never create a per-task feature branch, never open a per-tas
 ## Integration
 
 **Invoked by:**
+
 - **user** — the top-level "run this whole epic" entry point.
 
 **Invokes:**
+
 - a fresh headless `claude -p` **executor cycle per bead** (`beads-claim` → `writing-plans` → impl → `build-and-test` → `verification-before-completion` → `requesting-code-review` → `beads-close`, committing on the epic branch)
 - **`finishing-a-development-branch`** — once, at the end, to push and open the single epic → default-branch PR
 

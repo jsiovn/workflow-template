@@ -1,6 +1,6 @@
 ---
 name: writing-plans
-description: "Use when you have a spec or requirements for a multi-step task, before touching code. This is an executor skill - use only when a bead has been claimed and you are in an executor session, NOT in a planner session."
+description: 'Use when you have a spec or requirements for a multi-step task, before touching code. This is an executor skill - use only when a bead has been claimed and you are in an executor session, NOT in a planner session.'
 ---
 
 # Writing Plans
@@ -20,6 +20,7 @@ This is an **executor skill**. It should only be invoked in a session where a be
 </HARD-GATE>
 
 **Save plans to:** `docs/plans/YYYY-MM-DD-<feature-name>.md`
+
 - `docs/plans/` is git-ignored local scratch: the plan is written fresh for this session (a worktree session writes it inside its own worktree) and is **not** committed or pushed. Do not rely on it traveling with the branch or reaching another machine.
 - If a teammate or a fresh executor on another machine must read this plan, inline its content into the bead's `notes` (`bd update <id> --append-notes "$(cat docs/plans/<slug>.md)"`) so it syncs via Dolt — do not cite the `docs/plans/` path as a portable `Read:` target.
 - (User preferences for plan location override this default)
@@ -42,6 +43,7 @@ This structure informs the task decomposition. Each task should produce self-con
 ## Bite-Sized Task Granularity
 
 **Each step is one action (2-5 minutes):**
+
 - "Write the failing test" - step
 - "Run it to make sure it fails" - step
 - "Implement the minimal code to make the test pass" - step
@@ -72,6 +74,7 @@ This structure informs the task decomposition. Each task should produce self-con
 ### Task N: [Component Name]
 
 **Files:**
+
 - Create: `exact/path/to/file.py`
 - Modify: `exact/path/to/existing.py:123-145`
 - Test: `tests/exact/path/to/test.py`
@@ -114,6 +117,7 @@ git commit -m "feat: add specific feature"
 Every plan MUST end with a `## Verification` section that defines how to test the changes against the live system. This section is what `build-and-test` will execute after implementation.
 
 Include:
+
 - **What to build** - which components need rebuilding
 - **How to deploy** - exact deploy commands
 - **What to test** - specific API calls, expected responses, or observable behaviors
@@ -123,6 +127,7 @@ Include:
 The verification section must be executable without guesswork. Assume the repo is still using the generic stage-1 `build-and-test` skill unless a repo-specific specialization already exists.
 
 That means:
+
 - write exact shell commands, not summaries
 - prefer repo-owned wrapper commands when platform differences matter, such as local Windows with remote POSIX or Windows SSH execution
 - include URLs, ports, endpoints, paths, and process names when relevant
@@ -131,7 +136,8 @@ That means:
 - state whether a missing optional dependency such as a seeded database, a running service, or a live external API should fail the bead or downgrade the check to a skipped optional smoke test
 
 Example:
-````markdown
+
+```markdown
 ## Verification
 
 **Build:** `npm run build`
@@ -139,12 +145,13 @@ Example:
 **Smoke test:** `curl http://localhost:4173/api/health` -> `{"status": "ok"}`
 
 **Functional tests:**
+
 1. Create a record: `curl -X POST http://localhost:4173/api/todos -H 'Content-Type: application/json' -d '{"title":"buy milk"}'` -> 201 with a JSON body containing an `id`
 2. List records: `curl http://localhost:4173/api/todos` -> 200, array includes the new todo
 3. Observe in browser: open http://localhost:4173, confirm the new todo renders in the list
 
 **Success criteria:** All functional tests pass, no errors in the server log or the browser console
-````
+```
 
 Without this section, `build-and-test` will not know what to verify. Make it specific to the bead.
 

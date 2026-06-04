@@ -1,6 +1,6 @@
 ---
 name: prepare-android-chrome
-description: "Prepare a USB-connected Android phone so the user (or follow-up tools) can drive Chrome on it via the chrome-devtools-android MCP server. Verifies adb, ensures Chrome DevTools is reachable, registers/forwards the MCP endpoint, and — if a localhost URL is given — sets up adb reverse for the dev server. Performs no navigation, no screenshot, no audits, and no cleanup."
+description: 'Prepare a USB-connected Android phone so the user (or follow-up tools) can drive Chrome on it via the chrome-devtools-android MCP server. Verifies adb, ensures Chrome DevTools is reachable, registers/forwards the MCP endpoint, and — if a localhost URL is given — sets up adb reverse for the dev server. Performs no navigation, no screenshot, no audits, and no cleanup.'
 ---
 
 # Prepare Android Chrome (DevTools MCP)
@@ -16,10 +16,12 @@ Reference: https://github.com/ChromeDevTools/chrome-devtools-mcp/blob/main/docs/
 ## Prerequisites
 
 Machine:
+
 - `adb` on `PATH` (Android Platform Tools).
 - Chrome DevTools MCP server installed (invoked via `npx`).
 
 Phone:
+
 - Developer Options + USB debugging enabled. See https://developer.android.com/studio/debug/dev-options
 - Chrome (stable, beta, or Canary) installed and **opened at least once** interactively (to clear EULA/first-run prompts).
 - USB-connected to the machine, with the on-device "Allow USB debugging?" prompt accepted.
@@ -33,6 +35,7 @@ adb devices
 ```
 
 Expected: one line like `R3CMA0955JT  device`.
+
 - If `unauthorized`: ask the user to tap "Allow" on the phone.
 - If empty: ask the user to plug the phone in and confirm USB debugging is on.
 - If multiple devices listed: ask the user which serial to target and use `adb -s <serial>` for every subsequent `adb` command in this skill.
@@ -88,6 +91,7 @@ After they confirm it is added, they must **restart the agent** so the new MCP s
 Once the server is registered and loaded, call `list_pages` via the `chrome-devtools-android` MCP tools. The returned pages should match the tabs currently open in Chrome on the phone.
 
 If `list_pages` returns nothing or errors:
+
 - Re-run the `adb forward` from step 1.
 - Confirm no other DevTools client (e.g. `chrome://inspect` in desktop Chrome targeting the same phone) is attached — Chrome only allows one CDP client at a time.
 - Verify the `--wsEndpoint` registered in step 2 matches `ws://127.0.0.1:9222/devtools/browser`.

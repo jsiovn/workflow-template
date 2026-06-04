@@ -1,6 +1,6 @@
 ---
 name: validate-beads
-description: "Validate a planned epic before autonomous execution. Use after beads-planner to check dependency quality, bead size, fresh-session-safe bead contracts, verification instructions, and parallel-safety notes."
+description: 'Validate a planned epic before autonomous execution. Use after beads-planner to check dependency quality, bead size, fresh-session-safe bead contracts, verification instructions, and parallel-safety notes.'
 ---
 
 # Validate Beads

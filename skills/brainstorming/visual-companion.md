@@ -22,7 +22,7 @@ Decide per-question, not per-session. The test: **would the user understand this
 - **Technical decisions** — API design, data modeling, architectural approach selection
 - **Clarifying questions** — anything where the answer is words, not a visual preference
 
-A question *about* a UI topic is not automatically a visual question. "What kind of wizard do you want?" is conceptual — use the terminal. "Which of these wizard layouts feels right?" is visual — use the browser.
+A question _about_ a UI topic is not automatically a visual question. "What kind of wizard do you want?" is conceptual — use the terminal. "Which of these wizard layouts feels right?" is visual — use the browser.
 
 ## How It Works
 
@@ -49,12 +49,14 @@ Save `screen_dir` from the response. Tell user to open the URL.
 **Launching the server by platform:**
 
 **Claude Code:**
+
 ```bash
 # Default mode works — the script backgrounds the server itself
 scripts/start-server.sh --project-dir /path/to/project
 ```
 
 **Codex:**
+
 ```bash
 # Codex reaps background processes. The script auto-detects CODEX_CI and
 # switches to foreground mode. Run it normally — no extra flags needed.
@@ -62,6 +64,7 @@ scripts/start-server.sh --project-dir /path/to/project
 ```
 
 **Gemini CLI:**
+
 ```bash
 # Use --foreground and set is_background: true on your shell tool call
 # so the process survives across turns
@@ -207,8 +210,18 @@ The frame template provides these CSS classes for your content:
 
 ```html
 <div class="pros-cons">
-  <div class="pros"><h4>Pros</h4><ul><li>Benefit</li></ul></div>
-  <div class="cons"><h4>Cons</h4><ul><li>Drawback</li></ul></div>
+  <div class="pros">
+    <h4>Pros</h4>
+    <ul>
+      <li>Benefit</li>
+    </ul>
+  </div>
+  <div class="cons">
+    <h4>Cons</h4>
+    <ul>
+      <li>Drawback</li>
+    </ul>
+  </div>
 </div>
 ```
 
@@ -221,7 +234,7 @@ The frame template provides these CSS classes for your content:
   <div class="mock-content">Main content area</div>
 </div>
 <button class="mock-button">Action Button</button>
-<input class="mock-input" placeholder="Input field">
+<input class="mock-input" placeholder="Input field" />
 <div class="placeholder">Placeholder area</div>
 ```
 
