@@ -2,17 +2,19 @@
 set -euo pipefail
 
 with_screenshots=0
+with_codex=0
 positional=()
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --with-screenshots) with_screenshots=1; shift;;
+    --with-codex) with_codex=1; shift;;
     *) positional+=("$1"); shift;;
   esac
 done
 set -- ${positional[@]+"${positional[@]}"}
 
 if [[ $# -lt 1 ]]; then
-  printf 'usage: %s [--with-screenshots] <repo-path> [prefix]\n' "$0" >&2
+  printf 'usage: %s [--with-screenshots] [--with-codex] <repo-path> [prefix]\n' "$0" >&2
   exit 1
 fi
 
@@ -25,6 +27,12 @@ template_root="$(cd "${script_dir}/../.." && pwd)"
 # requiring the flag every time.
 if [[ -d "${repo_path}/.codex/skills/attach-web-screenshots" || -d "${repo_path}/.claude/skills/attach-web-screenshots" ]]; then
   with_screenshots=1
+fi
+
+# Claude Code is the primary AI; Codex is opt-in. Auto-detect an existing Codex
+# install so update-skills keeps refreshing it without re-passing --with-codex.
+if [[ -d "${repo_path}/.codex/skills" || -d "${repo_path}/.codex/agents" ]]; then
+  with_codex=1
 fi
 
 python_cmd=""
@@ -50,30 +58,7 @@ printf 'Copied .beads/PRIME.md\n'
 printf 'Copied .beads/.gitignore\n'
 printf 'Copied .beads/README.md\n'
 
-mkdir -p "${repo_path}/.codex/skills"
-if [[ ! -d "${repo_path}/.codex/skills/build-and-test" ]]; then
-  cp -R "${template_root}/templates/skills/build-and-test" "${repo_path}/.codex/skills/build-and-test"
-  printf 'Copied Codex build-and-test skill\n'
-else
-  printf 'Preserved existing Codex build-and-test skill\n'
-fi
-if [[ "${with_screenshots}" == "1" ]]; then
-  if [[ ! -d "${repo_path}/.codex/skills/attach-web-screenshots" ]]; then
-    cp -R "${template_root}/templates/skills/attach-web-screenshots" "${repo_path}/.codex/skills/attach-web-screenshots"
-    printf 'Copied Codex attach-web-screenshots skill\n'
-  else
-    printf 'Preserved existing Codex attach-web-screenshots skill\n'
-  fi
-fi
-
-find "${template_root}/skills" -mindepth 1 -maxdepth 1 -type d | while read -r src; do
-  name="$(basename "${src}")"
-  dst="${repo_path}/.codex/skills/${name}"
-  rm -rf "${dst}"
-  cp -R "${src}" "${dst}"
-  printf 'Copied Codex skill: %s\n' "${name}"
-done
-
+# --- Claude skills (always — Claude Code is the primary AI) ---
 mkdir -p "${repo_path}/.claude/skills"
 if [[ ! -d "${repo_path}/.claude/skills/build-and-test" ]]; then
   cp -R "${template_root}/templates/skills/build-and-test" "${repo_path}/.claude/skills/build-and-test"
@@ -98,9 +83,36 @@ find "${template_root}/skills" -mindepth 1 -maxdepth 1 -type d | while read -r s
   printf 'Copied Claude skill: %s\n' "${name}"
 done
 
+# --- Codex skills (opt-in via --with-codex or an existing .codex/ install) ---
+if [[ "${with_codex}" == "1" ]]; then
+  mkdir -p "${repo_path}/.codex/skills"
+  if [[ ! -d "${repo_path}/.codex/skills/build-and-test" ]]; then
+    cp -R "${template_root}/templates/skills/build-and-test" "${repo_path}/.codex/skills/build-and-test"
+    printf 'Copied Codex build-and-test skill\n'
+  else
+    printf 'Preserved existing Codex build-and-test skill\n'
+  fi
+  if [[ "${with_screenshots}" == "1" ]]; then
+    if [[ ! -d "${repo_path}/.codex/skills/attach-web-screenshots" ]]; then
+      cp -R "${template_root}/templates/skills/attach-web-screenshots" "${repo_path}/.codex/skills/attach-web-screenshots"
+      printf 'Copied Codex attach-web-screenshots skill\n'
+    else
+      printf 'Preserved existing Codex attach-web-screenshots skill\n'
+    fi
+  fi
+  find "${template_root}/skills" -mindepth 1 -maxdepth 1 -type d | while read -r src; do
+    name="$(basename "${src}")"
+    dst="${repo_path}/.codex/skills/${name}"
+    rm -rf "${dst}"
+    cp -R "${src}" "${dst}"
+    printf 'Copied Codex skill: %s\n' "${name}"
+  done
+fi
+
 # Prune legacy skills that previous versions of this template scaffolded.
 # Removing a name here also removes it from existing downstreams on next
 # update-skills run. Keep in lockstep with scripts/windows/scaffold-repo-files.ps1.
+# Both provider dirs are pruned; rm -rf on an absent .codex/ is a no-op.
 legacy_skills=(
   plan-debate
   plan-critic
@@ -123,25 +135,22 @@ for provider in .codex .claude; do
   done
 done
 
-# Shared agents — copied to both providers (same pattern as skills/).
+# Shared agents — Claude always; Codex opt-in (same gating as skills/).
 if [[ -d "${template_root}/agents" ]]; then
-  mkdir -p "${repo_path}/.codex/agents" "${repo_path}/.claude/agents"
+  mkdir -p "${repo_path}/.claude/agents"
+  if [[ "${with_codex}" == "1" ]]; then
+    mkdir -p "${repo_path}/.codex/agents"
+  fi
   find "${template_root}/agents" -mindepth 1 -maxdepth 1 -type f | while read -r src; do
     name="$(basename "${src}")"
-    cp "${src}" "${repo_path}/.codex/agents/${name}"
     cp "${src}" "${repo_path}/.claude/agents/${name}"
+    if [[ "${with_codex}" == "1" ]]; then
+      cp "${src}" "${repo_path}/.codex/agents/${name}"
+    fi
     printf 'Copied shared agent: %s\n' "${name}"
   done
 fi
 # Provider-specific agent overrides (applied after shared, so they win).
-if [[ -d "${template_root}/templates/.codex/agents" ]]; then
-  mkdir -p "${repo_path}/.codex/agents"
-  find "${template_root}/templates/.codex/agents" -mindepth 1 -maxdepth 1 -type f | while read -r src; do
-    name="$(basename "${src}")"
-    cp "${src}" "${repo_path}/.codex/agents/${name}"
-    printf 'Copied Codex agent override: %s\n' "${name}"
-  done
-fi
 if [[ -d "${template_root}/templates/.claude/agents" ]]; then
   mkdir -p "${repo_path}/.claude/agents"
   find "${template_root}/templates/.claude/agents" -mindepth 1 -maxdepth 1 -type f | while read -r src; do
@@ -150,8 +159,33 @@ if [[ -d "${template_root}/templates/.claude/agents" ]]; then
     printf 'Copied Claude agent override: %s\n' "${name}"
   done
 fi
+if [[ "${with_codex}" == "1" && -d "${template_root}/templates/.codex/agents" ]]; then
+  mkdir -p "${repo_path}/.codex/agents"
+  find "${template_root}/templates/.codex/agents" -mindepth 1 -maxdepth 1 -type f | while read -r src; do
+    name="$(basename "${src}")"
+    cp "${src}" "${repo_path}/.codex/agents/${name}"
+    printf 'Copied Codex agent override: %s\n' "${name}"
+  done
+fi
 
-mkdir -p "${repo_path}/scripts/windows" "${repo_path}/scripts/posix" "${repo_path}/scripts/shared"
+# The template's scripts/ no longer ships into downstream repos: bootstrap and
+# update-skills run from the template checkout only. Remove the helper scripts
+# older template versions installed here, without disturbing the downstream's own
+# scripts/ contents (only now-empty template dirs are pruned at the end).
+rm -f "${repo_path}/scripts/shared/manage_instructions.py"
+rm -f "${repo_path}/scripts/shared/manage_gitignore.py"
+rm -f "${repo_path}/scripts/shared/run_plan_critic.py"
+rm -f "${repo_path}/scripts/shared/shared_beads.py"
+rm -f "${repo_path}/scripts/shared/start_epic_worktree.py"
+rm -f "${repo_path}/scripts/shared/harness.py"
+rm -rf "${repo_path}/scripts/shared/harness_backends"
+rm -f "${repo_path}/scripts/shared/target_runtime.py"
+rm -f "${repo_path}/scripts/shared/agent_mail.py"
+rm -f "${repo_path}/scripts/shared/migrate_br_to_bd.py"
+rm -f "${repo_path}/scripts/shared/migrate_downstream_to_workflow_backup.py"
+rm -f "${repo_path}/scripts/shared/sync_workflow_backup.py"
+rm -f "${repo_path}/scripts/shared/workflow_backup.py"
+rm -rf "${repo_path}/scripts/shared/__pycache__"
 rm -f "${repo_path}/scripts/windows/shared-beads.ps1"
 rm -f "${repo_path}/scripts/windows/start-epic-worktree.ps1"
 rm -f "${repo_path}/scripts/windows/workflow-status.ps1"
@@ -168,20 +202,13 @@ rm -f "${repo_path}/scripts/posix/migrate-downstream-to-bd.sh"
 rm -f "${repo_path}/scripts/posix/migrate-downstream-to-workflow-backup.sh"
 rm -f "${repo_path}/scripts/posix/restore-workflow-backup.sh"
 rm -f "${repo_path}/scripts/posix/sync-workflow-backup.sh"
-cp "${template_root}/scripts/shared/manage_instructions.py" "${repo_path}/scripts/shared/manage_instructions.py"
-rm -f "${repo_path}/scripts/shared/run_plan_critic.py"
-rm -f "${repo_path}/scripts/shared/shared_beads.py"
-rm -f "${repo_path}/scripts/shared/start_epic_worktree.py"
-rm -f "${repo_path}/scripts/shared/harness.py"
-rm -rf "${repo_path}/scripts/shared/harness_backends"
-rm -f "${repo_path}/scripts/shared/target_runtime.py"
-rm -f "${repo_path}/scripts/shared/agent_mail.py"
-rm -f "${repo_path}/scripts/shared/migrate_br_to_bd.py"
-rm -f "${repo_path}/scripts/shared/migrate_downstream_to_workflow_backup.py"
-rm -f "${repo_path}/scripts/shared/sync_workflow_backup.py"
-rm -f "${repo_path}/scripts/shared/workflow_backup.py"
 rm -rf "${repo_path}/.beads/workflow"
-printf 'Copied script helpers\n'
+# Prune the template script dirs only when they end up empty (preserves any
+# scripts the downstream owns).
+for d in "scripts/shared" "scripts/posix" "scripts/windows" "scripts"; do
+  rmdir "${repo_path}/${d}" 2>/dev/null || true
+done
+printf 'Removed legacy template scripts (scripts/ no longer ships downstream)\n'
 
 mkdir -p "${repo_path}/docs"
 cp "${template_root}/docs/TROUBLESHOOTING.md" "${repo_path}/docs/TROUBLESHOOTING.md"
@@ -196,7 +223,12 @@ fi
 "${python_cmd}" "${template_root}/scripts/shared/manage_gitignore.py" ensure-ignore --repo "${repo_path}"
 printf 'Updated .gitignore managed workflow block\n'
 
-"${python_cmd}" "${template_root}/scripts/shared/manage_instructions.py" "${repo_path}/AGENTS.md" "${template_root}/templates/AGENTS.snippet.md"
 "${python_cmd}" "${template_root}/scripts/shared/manage_instructions.py" "${repo_path}/CLAUDE.md" "${template_root}/templates/CLAUDE.snippet.md"
-printf 'Updated AGENTS.md managed block\n'
 printf 'Updated CLAUDE.md managed block\n'
+
+# AGENTS.md is Codex's instruction file: only manage it when Codex is enabled or
+# the downstream already maintains an AGENTS.md.
+if [[ "${with_codex}" == "1" || -f "${repo_path}/AGENTS.md" ]]; then
+  "${python_cmd}" "${template_root}/scripts/shared/manage_instructions.py" "${repo_path}/AGENTS.md" "${template_root}/templates/AGENTS.snippet.md"
+  printf 'Updated AGENTS.md managed block\n'
+fi

@@ -182,4 +182,4 @@ After saving the plan:
 
 **When proceeding:** Use subagents when they help, with code review (`requesting-code-review`) after each major task.
 
-**After implementation is complete:** Invoke `build-and-test` (read the repo-local skill — `.claude/skills/build-and-test/SKILL.md` for Claude or `.codex/skills/build-and-test/SKILL.md` for Codex — and follow it). The skill executes the verification contract from the plan and may be generic or repo-specific depending on the repo's maturity. If `build-and-test` fails, fix the implementation or tighten the plan and re-run it before moving to verification. Do NOT skip this step.
+**After implementation is complete:** Invoke `build-and-test` (read the repo-local skill — `.claude/skills/build-and-test/SKILL.md` for Claude; `.codex/skills/build-and-test/SKILL.md` when running under Codex — and follow it). The skill executes the verification contract from the plan and may be generic or repo-specific depending on the repo's maturity. If `build-and-test` fails, fix the implementation or tighten the plan and re-run it before moving to verification. Do NOT skip this step.

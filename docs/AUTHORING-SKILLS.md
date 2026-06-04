@@ -15,8 +15,9 @@ seam instead of creating a parallel one.
       or an edit to one that already owns this seam? Prefer editing.
 - [ ] **Pick the mode.** Planner or executor (see `SKILLS_RELATIONSHIPS.md` §1).
       A skill belongs to exactly one. If it would touch both, it's two skills.
-- [ ] **Decide the surface.** Shared (`skills/<name>/`, copied to both providers
-      on every run), or stage-1 / bootstrap-only (`templates/skills/<name>/`,
+- [ ] **Decide the surface.** Shared (`skills/<name>/`, copied to `.claude/skills/`
+      on every run, and to `.codex/skills/` only when Codex is enabled via
+      `--with-codex`), or stage-1 / bootstrap-only (`templates/skills/<name>/`,
       copied once and preserved — used today for `build-and-test` and the
       opt-in `attach-web-screenshots`)?
 - [ ] **Pick the type.** Technique (concrete steps), Pattern (way of thinking),
@@ -61,7 +62,8 @@ A skill that has never been tested against a subagent under pressure is a draft.
 ## 4. Propagation check
 
 - [ ] **Provider parity.** If shared, confirm `scaffold-repo-files.{sh,ps1}`
-      copies it into *both* `.codex/skills/` and `.claude/skills/`.
+      copies it into `.claude/skills/` (always) and into `.codex/skills/`
+      (the Codex-gated `--with-codex` block).
 - [ ] **Renames/removals.** Removing or renaming a skill? Add explicit
       `rm -rf` / `Remove-Item` lines for the old downstream path in
       `scaffold-repo-files.{sh,ps1}` so existing downstreams get cleaned up.
@@ -78,8 +80,9 @@ A skill that has never been tested against a subagent under pressure is a draft.
 A change isn't done until it survives the full propagation cycle:
 
 - [ ] `update-skills` against a scratch downstream repo.
-- [ ] Inspect what landed — `.codex/skills/`, `.claude/skills/`, and confirm the
-      two provider copies are identical.
+- [ ] Inspect what landed — `.claude/skills/` always, and `.codex/skills/` only
+      when testing with `--with-codex`. When both are present, confirm the two
+      provider copies are identical.
 - [ ] Confirm the refreshed files appear as ordinary tracked files in
       `git status` (committed, not gitignored).
 - [ ] If you removed a skill, confirm its old path is *gone* downstream.

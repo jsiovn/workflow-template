@@ -1,8 +1,8 @@
 # Agent Workflow Template
 
-A scaffold that drops a consistent **planner → executor** agent workflow into any repo you work on. It installs a shared set of skills, agents, helper scripts, and [Beads](https://github.com/steveyegge/beads)-backed task tracking so that **Claude Code** and **Codex** follow the same playbook in every project — you plan once, execute one bead per PR, and ship.
+A scaffold that installs a consistent **planner → executor** workflow for **AI coding agents** into any repo — a shared set of skills, subagents, and [Beads](https://github.com/steveyegge/beads)-backed task tracking so that **Claude Code** (the primary AI) follows the same playbook in every project, with **Codex** as an optional opt-in. You plan once, execute one bead per PR, and ship.
 
-This repo doesn't run anything itself. You install it once on your machine, then run one script per project to scaffold (or refresh) the workflow inside that project.
+This repo runs nothing itself — it's developer tooling for AI coding agents, not a CI/CD or GitHub Actions "workflow." You install it once on your machine, then run one script per project to scaffold (or refresh) the workflow inside that project.
 
 ---
 
@@ -14,7 +14,7 @@ You need three machine-wide tools before bootstrapping any project:
 | --------- | --------------------------------- | ----------------------- |
 | `bd`      | Beads CLI (issue tracking)        | `bd version`            |
 | `dolt`    | Storage backend used by `bd`      | `dolt version`          |
-| `python3` | Helper scripts in `scripts/`      | `python3 --version`     |
+| `python3` | Template's scaffold scripts (run from the template checkout, not downstream) | `python3 --version`     |
 
 Per-OS install instructions:
 
@@ -56,7 +56,9 @@ Windows:
 pwsh -File "$HOME\www\workflow-template\scripts\windows\bootstrap-new-repo.ps1" -RepoPath D:\path\to\repo -Prefix myprefix
 ```
 
-`myprefix` is the short tag Beads uses for issue IDs in that repo (e.g. `acme` → `acme-1`, `acme-2`). The bootstrap script initializes git if needed, runs `bd init` and `bd setup codex`, and copies the shared skills, agents, and helper scripts into the project.
+`myprefix` is the short tag Beads uses for issue IDs in that repo (e.g. `acme` → `acme-1`, `acme-2`). The bootstrap script initializes git if needed, runs `bd init` and `bd setup claude` (and `bd setup codex` only with `--with-codex`), and copies the shared skills and agents into the project — Claude Code's `.claude/` surface always, and Codex's `.codex/` surface only when you opt in via `--with-codex`.
+
+Claude Code is the default, primary AI. To **also** set up Codex, add `--with-codex` (POSIX) or `-WithCodex` (PowerShell), which scaffolds the `.codex/` skills+agents and the `AGENTS.md` instruction file alongside the Claude surface. The flag is accepted by both `bootstrap-new-repo` and `update-skills` (so you can adopt Codex later). If a `.codex/` directory already exists in the downstream, it is detected and refreshed automatically.
 
 For web/UI projects, add `--with-screenshots` (POSIX) or `-WithScreenshots` (PowerShell) to also install the `attach-web-screenshots` skill and its companion `.github/workflows/cleanup-screenshots.yml`. Omit for backend, CLI, or library repos. The flag is also accepted by `update-skills` if you adopt screenshots later.
 
@@ -101,7 +103,7 @@ w-update    /path/to/your-repo
 
 ## How to use skills and agents
 
-Once a repo is bootstrapped, your AI tool (Claude Code or Codex) sees two kinds of building blocks:
+Once a repo is bootstrapped, your AI tool — Claude Code by default, or Codex if you opted in with `--with-codex` — sees two kinds of building blocks:
 
 - **Skills** — runnable workflows. You invoke a skill by name (e.g. `plan-beads`, `executor-task`) and the model executes the whole workflow end-to-end.
 - **Agents** — focused single-purpose roles (PM, architect, reviewer, …). You invoke an agent when you want that specific perspective on the current work.
@@ -245,8 +247,8 @@ Then run `bdtui` from inside any bootstrapped repo.
 
 | Purpose                                          | POSIX                                                           | Windows                                                     |
 | ------------------------------------------------ | --------------------------------------------------------------- | ----------------------------------------------------------- |
-| Bootstrap a new downstream repo                  | `scripts/posix/bootstrap-new-repo.sh <repo> <prefix>`           | `scripts/windows/bootstrap-new-repo.ps1`                    |
-| Refresh shared workflow surface                  | `scripts/posix/update-skills.sh <repo>`                         | `scripts/windows/update-skills.ps1`                         |
+| Bootstrap a new downstream repo                  | `scripts/posix/bootstrap-new-repo.sh <repo> <prefix> [--with-codex]` | `scripts/windows/bootstrap-new-repo.ps1 [-WithCodex]`  |
+| Refresh shared workflow surface                  | `scripts/posix/update-skills.sh <repo> [--with-codex]`          | `scripts/windows/update-skills.ps1 [-WithCodex]`           |
 | Prerequisite check                               | `scripts/posix/check-prereqs.sh`                                | `scripts/windows/check-prereqs.ps1`                         |
 
 ---

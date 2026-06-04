@@ -10,7 +10,7 @@ This repo uses **`bd`** for task state and selected execution-quality skills for
 
 ## Workflow Skills
 
-Codex and Claude Code can enter the workflow through repo-local skills installed under `.codex/skills/` and `.claude/skills/`:
+Claude Code (and Codex, when set up) can enter the workflow through repo-local skills installed under `.claude/skills/` (and `.codex/skills/` when Codex is set up):
 
 - `plan-beads`
 - `executor-task`
@@ -84,6 +84,6 @@ Use this after `bd reopen <bead-id>` and editing the bead's requirements. It sta
 
 ## Operational Notes
 
-- Workflow docs, skills, and helper scripts are committed and pushed as part of the normal git flow; refresh them from the template with `update-skills` when needed.
+- Workflow docs and skills are committed and pushed as part of the normal git flow; refresh them from the template with `update-skills` when needed.
 - If `bd where` or `bd context` fails in the current checkout, repair the repo with `bd bootstrap --yes` before continuing.
 - Use `bd ready` before asking what to work on next.

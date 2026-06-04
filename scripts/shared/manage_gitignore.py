@@ -36,7 +36,6 @@ IGNORE_ENTRIES = (
     ".bv/",
     ".dolt/",
     "*.db",
-    "scripts/shared/__pycache__/",
     "docs/plans/",
 )
 

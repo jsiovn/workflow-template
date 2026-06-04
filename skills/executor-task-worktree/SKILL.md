@@ -61,7 +61,7 @@ This is the preferred path when the main working tree has in-flight changes that
    - `writing-plans`
    - implementation
    - `systematic-debugging` if blocked
-   - **`build-and-test`** — REQUIRED after implementation. Read the repo-local skill from the worktree (`.claude/skills/build-and-test/SKILL.md` for Claude sessions or `.codex/skills/build-and-test/SKILL.md` for Codex sessions) and follow it. Do NOT skip this step.
+   - **`build-and-test`** — REQUIRED after implementation. Read the repo-local skill from the worktree (`.claude/skills/build-and-test/SKILL.md` for Claude sessions; `.codex/skills/build-and-test/SKILL.md` when running under Codex) and follow it. Do NOT skip this step.
    - `verification-before-completion` (run the verification commands)
    - `requesting-code-review` (dispatch the code-reviewer subagent; required, not optional)
    - `beads-close`

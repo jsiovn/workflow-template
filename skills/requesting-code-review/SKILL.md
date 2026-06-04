@@ -14,9 +14,9 @@ Dispatch the repo-local `code-reviewer` subagent to catch issues before they cas
 The `code-reviewer` subagent definition is the single source of truth for the reviewer's checklist, severity rules, and output format. In this template it lives at `agents/code-reviewer.md`. The scaffold installs it into the downstream repo at:
 
 - `.claude/agents/code-reviewer.md` for Claude Code sessions
-- `.codex/agents/code-reviewer.md` for Codex sessions
+- `.codex/agents/code-reviewer.md` for Codex sessions (only when Codex is set up)
 
-Both copies are kept in sync by the template scaffold. If neither exists, run `update-skills` against the repo to install them.
+The `.claude/` copy is always installed by the template scaffold; the `.codex/` copy is added only when Codex is enabled. If the Claude copy is missing, run `update-skills` against the repo to install it.
 
 The prompt template at `brief.md` (alongside this `SKILL.md`) is **only** the dynamic brief — placeholders for what was built, the plan, and the SHA range. It deliberately does not repeat the checklist; the agent definition already has it.
 
@@ -124,7 +124,7 @@ You: [Fix progress indicators]
 - `SKILL.md` — this file
 - `brief.md` — the prompt template (dynamic brief only) you fill in and pass to the subagent
 
-The reviewer's standing instructions live separately at `agents/code-reviewer.md` in the template root and are deployed by the scaffold to `.claude/agents/code-reviewer.md` / `.codex/agents/code-reviewer.md`.
+The reviewer's standing instructions live separately at `agents/code-reviewer.md` in the template root and are deployed by the scaffold to `.claude/agents/code-reviewer.md` (and `.codex/agents/code-reviewer.md` when Codex is set up).
 
 ## Pairing with `verification-before-completion`
 
