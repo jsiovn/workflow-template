@@ -72,6 +72,8 @@ Run from the repo root, on `<EPIC_BRANCH>`, **strictly one at a time** (the work
 
 ```bash
 timeout 3600 claude -p "<TASK_PROMPT>" \
+  --model claude-opus-4-8 \
+  --effort xhigh \
   --dangerously-skip-permissions \
   --output-format json \
   > "<tmp>/epic-task-<BEAD_ID>.json"
@@ -82,6 +84,7 @@ timeout 3600 claude -p "<TASK_PROMPT>" \
 > You are an executor in `<repo path>`, already checked out on branch `<EPIC_BRANCH>`. Deliver bead `<BEAD_ID>` and only that bead. Run, in order: `beads-claim` (claim `<BEAD_ID>` with `bd update <BEAD_ID> --status in_progress`), `writing-plans`, implementation, `systematic-debugging` if blocked, the repo-local `build-and-test` skill (required), `verification-before-completion`, `requesting-code-review` (dispatch the code-reviewer subagent — required), then `beads-close`. **Commit your work directly on the current branch `<EPIC_BRANCH>`.** Do NOT create or switch branches, do NOT open a PR, do NOT push, do NOT touch any other bead. If you hit a blocker you cannot resolve, do not force it: run `bd update <BEAD_ID> --status blocked` with a short note explaining why, then stop. End your final message with one line: `RESULT: closed|blocked — <short summary>`.
 
 Notes on the invocation:
+- **Model and effort are pinned**, not inherited: `--model claude-opus-4-8 --effort xhigh`. Each worker delivers a full bead (plan + implement + review), so it runs on the strongest model at high reasoning effort rather than whatever default the environment carries. `--effort` accepts `low|medium|high|xhigh|max`; `xhigh` is the "ultracode" level — raise to `max` if you want the ceiling, lower it only to economize on simple epics.
 - **Why headless and not a subagent:** a subagent cannot dispatch a further subagent, so it could not run `requesting-code-review`'s `code-reviewer` subagent. A headless `claude -p` run is a top-level session, so the full cycle — including code review — works unchanged.
 - **Outcome is read from `bd show`, not the `RESULT:` line.** The `RESULT:` line and the worker's `.result` text are for the human summary only; the bead's actual status is authoritative.
 - **Per-task timeout** (`timeout 3600`, ~1h) prevents one stuck bead from hanging the whole run. A timeout counts as a failure → force-block and skip.
