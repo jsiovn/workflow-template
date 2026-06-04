@@ -7,7 +7,7 @@ Preferred entry points are `plan-beads`, `executor-task`, and `executor-task-wor
 
 The executor test skill is installed under both `.claude/skills/build-and-test/SKILL.md` and `.codex/skills/build-and-test/SKILL.md` (kept in sync); read whichever matches your session and use it between implementation and final verification.
 
-Workflow scaffold files such as `AGENTS.md`, `CLAUDE.md`, `BEADS_WORKFLOW.md`, `docs/plans/`, and the `.codex`/`.claude` skills and agents are committed to this repo's git, so they travel with feature branches and `git worktree` checkouts. Refresh them from the template with `update-skills`.
+Workflow scaffold files such as `AGENTS.md`, `CLAUDE.md`, `BEADS_WORKFLOW.md`, and the `.codex`/`.claude` skills and agents are committed to this repo's git, so they travel with feature branches and `git worktree` checkouts. Refresh them from the template with `update-skills`. Plan files under `docs/plans/` are the exception: they are git-ignored local scratch, written fresh per bead — not committed and not pushed. When a bead needs to reference its plan across machines, inline the plan into the bead's `notes` (Dolt-synced), not the `docs/plans/` path.
 
 Keep repo exploration local. Verify the actual environment before running build, test, run, deploy, or migration commands; do not assume local execution.
 

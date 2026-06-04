@@ -3,9 +3,11 @@
 
 The workflow surface (skills, agents, docs, helper scripts) is committed to each
 downstream repo's own git, so it travels with feature branches and
-``git worktree`` checkouts. Only genuinely machine-local runtime artifacts stay
-ignored — this module writes that small managed block between the BEGIN/END
-markers and is idempotent: re-running it replaces the previous block in place.
+``git worktree`` checkouts. Machine-local runtime artifacts, plus the per-session
+plan files under ``docs/plans/`` (local scratch the planner/executor writes per
+bead — not part of the committed workflow surface), stay ignored. This module
+writes that small managed block between the BEGIN/END markers and is idempotent:
+re-running it replaces the previous block in place.
 """
 
 from __future__ import annotations
@@ -20,11 +22,14 @@ IGNORE_BLOCK_START = "# BEGIN TEMPLATE AGENT WORKFLOW LOCAL-ONLY"
 IGNORE_BLOCK_END = "# END TEMPLATE AGENT WORKFLOW LOCAL-ONLY"
 LEGACY_IGNORE_HEADER = "# Local agent workflow assets"
 
-# Local runtime artifacts that must never be committed downstream. Everything
-# else the template scaffolds is now tracked in git, so keep this list scoped to
-# machine-local state only. Older template versions listed every skill/agent/doc
-# path here; ensure_ignore_block() strips the previous block before rewriting, so
-# those stale entries are removed automatically on the next run.
+# Paths that must never be committed downstream: machine-local runtime artifacts,
+# plus the per-session plan files under docs/plans/ (local scratch the
+# planner/executor writes per bead — not part of the committed workflow surface).
+# Everything else the template scaffolds is tracked in git. Older template
+# versions listed every skill/agent/doc path here; ensure_ignore_block() strips
+# the previous block before rewriting, so those stale entries (and any standalone
+# docs/plans/ line a downstream added by hand) are folded into this block on the
+# next run.
 IGNORE_ENTRIES = (
     ".beads-credential-key",
     ".beads/interactions.jsonl",
@@ -32,6 +37,7 @@ IGNORE_ENTRIES = (
     ".dolt/",
     "*.db",
     "scripts/shared/__pycache__/",
+    "docs/plans/",
 )
 
 

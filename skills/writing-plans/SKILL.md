@@ -20,7 +20,8 @@ This is an **executor skill**. It should only be invoked in a session where a be
 </HARD-GATE>
 
 **Save plans to:** `docs/plans/YYYY-MM-DD-<feature-name>.md`
-- `docs/plans/` is committed to the repo and travels with feature branches and `git worktree` checkouts
+- `docs/plans/` is git-ignored local scratch: the plan is written fresh for this session (a worktree session writes it inside its own worktree) and is **not** committed or pushed. Do not rely on it traveling with the branch or reaching another machine.
+- If a teammate or a fresh executor on another machine must read this plan, inline its content into the bead's `notes` (`bd update <id> --append-notes "$(cat docs/plans/<slug>.md)"`) so it syncs via Dolt — do not cite the `docs/plans/` path as a portable `Read:` target.
 - (User preferences for plan location override this default)
 
 ## Scope Check

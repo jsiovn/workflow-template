@@ -79,6 +79,7 @@ Use this after `bd reopen <bead-id>` and editing the bead's requirements. It sta
 - Open pull requests instead of merging locally.
 - Beads state itself is local-only; code moves through Git, not Beads exports.
 - Workflow scaffold files are committed to this repo's git and travel with feature branches and `git worktree` checkouts.
+- Plan files under `docs/plans/` are git-ignored local scratch — written fresh per bead, never committed or pushed. To carry a plan across machines, inline it into the bead's `notes` (Dolt-synced), not the `docs/plans/` path.
 - `finishing-a-development-branch` handles branch push and PR creation.
 
 ## Operational Notes

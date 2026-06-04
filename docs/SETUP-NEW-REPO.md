@@ -17,7 +17,7 @@ Use this guide when starting a downstream repo from scratch or when a repo is st
    - runs `bd init -p <prefix> --server --skip-agents --skip-hooks`
    - runs `bd setup codex`
    - scaffolds the shared workflow docs, skills, and helper scripts
-   - installs the managed root `.gitignore` block for local runtime artifacts (Beads/Dolt state, `*.db`, `__pycache__`, etc.)
+   - installs the managed root `.gitignore` block for local runtime artifacts (Beads/Dolt state, `*.db`, `__pycache__`, etc.) plus `docs/plans/` (per-session plan scratch that stays local — see `writing-plans`)
    - creates a standalone stage-2 bead for specializing `build-and-test`, plus a matching bead for `attach-web-screenshots` only when that opt-in skill was installed
 4. Verify the repo is ready:
    - `bd where`

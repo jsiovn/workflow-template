@@ -40,7 +40,7 @@ Turn planning output into a Beads structure that another agent or engineer can e
    - For each non-portable plan or spec file:
      1. **Always inline the plan content into the bead's `notes` field via `bd update --append-notes`** (see step 9 — the create-time flags are not reliable).
      2. Optionally copy the file into the repo at `docs/plans/<slug>.md` for in-repo browsing convenience. Create the directory if missing. **Do NOT cite this path in the bead's `Read:` section if `docs/plans/` is git-ignored** — point fresh executors at the bead's `notes` field instead, e.g. `- This bead's `notes`field (view with`bd show <bead-id>`) — full settled plan.`
-     3. If `docs/plans/` is committed to git in this repo, you may cite `docs/plans/<slug>.md` directly in `Read:` and skip the inlined-notes pointer.
+     3. Template-scaffolded repos git-ignore `docs/plans/` by default, so inlining into notes is the normal path. Only if a downstream has deliberately un-ignored it — `git check-ignore -v docs/plans/` reports the path is **not** ignored — may you cite `docs/plans/<slug>.md` directly in `Read:` and skip the inlined-notes pointer.
    - If the same plan file is referenced by many beads in the epic, inline it once per bead anyway — every bead must be fresh-session-safe on its own. (A reader pulling one bead from Dolt won't have the epic's notes loaded.)
 
 9. **Inlining plan content into bead notes — use the verified pattern.** `bd create`'s `--notes` / `--append-notes` flags have been observed to silently drop the content at creation time. The reliable two-step pattern:

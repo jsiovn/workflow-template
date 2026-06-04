@@ -21,7 +21,7 @@ Three surfaces get written into every downstream repo:
 
 ### Downstream Git tracks the workflow surface
 
-The scaffolded workflow files (`AGENTS.md`, `CLAUDE.md`, `BEADS_WORKFLOW.md`, `docs/plans/`, `.codex/`, `.claude/`, scaffolded scripts) are **committed to each downstream repo's own git**, so they travel with feature branches and `git worktree` checkouts (the worktree executor flows depend on this). The downstream's `.gitignore` managed block — written by `scripts/shared/manage_gitignore.py` between the `# BEGIN/END TEMPLATE AGENT WORKFLOW LOCAL-ONLY` markers — now lists only genuinely machine-local runtime artifacts (`.beads-credential-key`, `.beads/interactions.jsonl`, `.bv/`, `.dolt/`, `*.db`, `scripts/shared/__pycache__/`). Any change you make here propagates in one round-trip: edit here → `update-skills` in the downstream → commit the refreshed files there. (There is no longer a sibling backup-mirror repo; that machinery has been retired.)
+The scaffolded workflow files (`AGENTS.md`, `CLAUDE.md`, `BEADS_WORKFLOW.md`, `.codex/`, `.claude/`, scaffolded scripts) are **committed to each downstream repo's own git**, so they travel with feature branches and `git worktree` checkouts (the worktree executor flows depend on the skills and agents being present in a fresh checkout). The downstream's `.gitignore` managed block — written by `scripts/shared/manage_gitignore.py` between the `# BEGIN/END TEMPLATE AGENT WORKFLOW LOCAL-ONLY` markers — lists the machine-local runtime artifacts (`.beads-credential-key`, `.beads/interactions.jsonl`, `.bv/`, `.dolt/`, `*.db`, `scripts/shared/__pycache__/`) **plus `docs/plans/`**. Plans are deliberately the one exception: the planner/executor writes them per bead as local scratch, so they are git-ignored — not committed and not pushed (a worktree executor session writes its plan fresh inside the worktree, so the flow does not depend on the plan traveling). Any change you make here propagates in one round-trip: edit here → `update-skills` in the downstream → commit the refreshed files there. (There is no longer a sibling backup-mirror repo; that machinery has been retired.)
 
 ## Primary Entry Points
 
@@ -62,8 +62,8 @@ When adding or editing a skill, follow `docs/AUTHORING-SKILLS.md` — it covers 
 There is no test suite. To verify a change:
 
 1. Run the relevant script (`bootstrap-new-repo.sh` or `update-skills.sh`) against a scratch downstream repo.
-2. Inspect what landed in the downstream (especially `.codex/skills/`, `.claude/skills/`, `AGENTS.md` managed block, `.gitignore` managed block — it should list only the runtime artifacts, not the skill/agent paths).
-3. Confirm the refreshed workflow files show up as ordinary tracked files in `git status` (they are committed, not gitignored).
+2. Inspect what landed in the downstream (especially `.codex/skills/`, `.claude/skills/`, `AGENTS.md` managed block, `.gitignore` managed block — it should list the runtime artifacts plus `docs/plans/`, not the skill/agent paths).
+3. Confirm the refreshed workflow files (skills, agents, scaffolded scripts) show up as ordinary tracked files in `git status` — they are committed, not gitignored. `docs/plans/` is the exception: it stays git-ignored.
 4. If the change touches a shared skill, also verify the `.codex/` and `.claude/` copies stayed identical.
 
 Because the workflow surface is committed to the downstream's own git, a fresh clone already carries it; run `update-skills` against the clone to pull the latest template versions.
@@ -74,4 +74,4 @@ Because the workflow surface is committed to the downstream's own git, a fresh c
 - `.beads/` is git-ignored here as well — this template repo is not itself managed by `bd`.
 - Beads is local-only: never add workflow to publish or sync live `.beads/` state across clones.
 - When removing a skill from the template, also add its name to the `legacy_skills`/`$legacySkills` prune list in `scaffold-repo-files.{sh,ps1}` (or an explicit `rm -rf`/`Remove-Item` line) so existing downstreams get it deleted on their next `update-skills` — the copy loop only iterates skills that still exist in the template, so a deleted source is never cleaned up otherwise.
-- When adding a new skill under `skills/`, the scaffold scripts pick it up automatically via `find` and copy it into both `.codex/skills/` and `.claude/skills/`. No `.gitignore` bookkeeping is needed: the workflow surface is committed downstream, and `scripts/shared/manage_gitignore.py` only ignores machine-local runtime artifacts.
+- When adding a new skill under `skills/`, the scaffold scripts pick it up automatically via `find` and copy it into both `.codex/skills/` and `.claude/skills/`. No `.gitignore` bookkeeping is needed: the workflow surface is committed downstream, and `scripts/shared/manage_gitignore.py` ignores only machine-local runtime artifacts plus the per-session plan files under `docs/plans/`.
