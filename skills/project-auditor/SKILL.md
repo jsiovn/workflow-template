@@ -1,6 +1,6 @@
 ---
 name: project-auditor
-description: "Run a full-repo audit covering naming conventions, folder structure, tech stack consistency, and a light architectural pass. Use when the user asks to audit, review consistency, or get a project health check."
+description: 'Run a full-repo audit covering naming conventions, folder structure, tech stack consistency, and a light architectural pass. Use when the user asks to audit, review consistency, or get a project health check.'
 ---
 
 # Project Auditor

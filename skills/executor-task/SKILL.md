@@ -1,6 +1,6 @@
 ---
 name: executor-task
-description: "Run a full executor cycle for one bead on a fresh feature branch off main: stash any in-flight work, switch to main, pull, create feat/<bead-id>-<short-slug>, execute the bead end-to-end, then push and open a PR. Use when the user wants a single bead delivered as its own PR."
+description: 'Run a full executor cycle for one bead on a fresh feature branch off main: stash any in-flight work, switch to main, pull, create feat/<bead-id>-<short-slug>, execute the bead end-to-end, then push and open a PR. Use when the user wants a single bead delivered as its own PR.'
 ---
 
 # Executor Task
@@ -49,16 +49,20 @@ This is the preferred manual path when each bead should ship as its own pull req
    - if clean, no action needed
 
 6. Switch to the default branch and update it:
+
    ```
    git checkout <DEFAULT_BRANCH>
    git pull --ff-only
    ```
+
    If `pull --ff-only` fails (local divergence on the default branch), stop and ask the user — do not force or rebase silently.
 
 7. Create the feature branch off the freshly pulled default:
+
    ```
    git checkout -b <BRANCH_NAME>
    ```
+
    If `<BRANCH_NAME>` already exists locally, stop and ask the user whether to reuse, rename, or delete it.
 
 8. Run the executor cycle for `<BEAD_ID>` — **every step in order**:

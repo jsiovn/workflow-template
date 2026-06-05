@@ -16,6 +16,7 @@ For each section of the PM's output, produce:
 - **Non-negotiables you're adding** — observability, error budget, security review, accessibility, etc., that the PM forgot.
 
 Rules:
+
 - Be specific and adversarial, not vague. "This is risky" is useless. "Migration in step 3 holds a table-level lock during peak" is useful.
 - Don't redesign the feature; surface what the PM must answer or de-scope.
 - End with a **Go / Not yet / Re-scope** verdict and the single biggest question the PM must answer next.

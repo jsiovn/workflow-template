@@ -23,11 +23,13 @@ The prompt template at `brief.md` (alongside this `SKILL.md`) is **only** the dy
 ## When to Request Review
 
 **Mandatory:**
+
 - After each task in subagent-driven development
 - After completing a major feature
 - Before merge to main
 
 **Optional but valuable:**
+
 - When stuck (fresh perspective)
 - Before refactoring (baseline check)
 - After fixing a complex bug
@@ -94,27 +96,32 @@ You: [Fix progress indicators]
 ## Integration with Workflows
 
 **Subagent-driven development:**
+
 - Review after EACH task
 - Catch issues before they compound
 - Fix before moving to next task
 
 **Executing plans:**
+
 - Review after each batch (3 tasks)
 - Get feedback, apply, continue
 
 **Ad-hoc development:**
+
 - Review before merge
 - Review when stuck
 
 ## Red Flags
 
 **Never:**
+
 - Skip review because "it's simple"
 - Ignore Critical issues
 - Proceed with unfixed Important issues
 - Argue with valid technical feedback
 
 **If reviewer wrong:**
+
 - Push back with technical reasoning
 - Show code/tests that prove it works
 - Request clarification

@@ -22,6 +22,7 @@ Output:
 7. **Open questions** — what you cannot resolve without input from PM, ops, security, or another team. Name the owner.
 
 Rules:
+
 - Decide. A design that lists options without choosing is a menu, not a design.
 - Be concrete: name tables, endpoints, services, queues. If you write "some service", you haven't designed yet.
 - Stay above the line of code. No function bodies, no class hierarchies. Contracts and boundaries only.

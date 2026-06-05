@@ -1,6 +1,6 @@
 ---
 name: plan-beads
-description: "Run a planner-only Beads session: brainstorm, produce or confirm an execution plan, brief the user once for bead creation, then create beads and stop. Use when the user wants to turn a current problem or topic into Beads without implementing."
+description: 'Run a planner-only Beads session: brainstorm, produce or confirm an execution plan, brief the user once for bead creation, then create beads and stop. Use when the user wants to turn a current problem or topic into Beads without implementing.'
 ---
 
 # Plan Beads
@@ -39,4 +39,3 @@ Run a planner-only Beads session.
 - List the created or updated beads and important dependencies.
 - Say whether the epic passed `validate-beads` or why it is manual-only.
 - End by telling the user that executor work should start in a separate session.
-

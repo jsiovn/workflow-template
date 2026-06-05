@@ -189,24 +189,24 @@ Recover:  git reset --hard <ORIG_HEAD_SHA>   # or: git reset --hard backup/<CURR
 
 ## Quick Reference
 
-| Situation | Action |
-|-----------|--------|
-| On `main`/`master` or `epic/*` | Refuse — only feature branches |
-| Detached HEAD | Refuse — stop |
-| Dirty working tree | Stop, ask user to commit or stash |
-| Beads parent epic resolves | Base = `epic/<epic-bead-id>` |
-| No epic parent / no Beads | Base = default branch (topology cross-check) |
-| Topology fork points unordered / signals disagree | Stop, ask |
-| `origin/<BASE>` missing | Stop, report — do not create it |
-| Base contained AND tip == remote | Report "up to date", stop |
-| Base contained but commits unpushed | Skip rebase, still verify + push |
-| Rebase conflict | Resolve (`ours`=base, `theirs`=your commit); `--continue` |
-| Conflict ambiguous | Stop and ask; `git rebase --abort` to restore |
-| Verification fails | Do NOT push; stop, report |
-| Branch never pushed (`EXPECTED_REMOTE` empty) | `git push -u origin HEAD` (no force) |
-| Upstream name ≠ local name | Push `HEAD:<remote-branch>` from `@{u}`; never a new `origin/<local-name>` |
-| Remote tip moved since start | Stop, ask — do not clobber |
-| Lease rejected | Stop — never bare `--force` |
+| Situation                                         | Action                                                                     |
+| ------------------------------------------------- | -------------------------------------------------------------------------- |
+| On `main`/`master` or `epic/*`                    | Refuse — only feature branches                                             |
+| Detached HEAD                                     | Refuse — stop                                                              |
+| Dirty working tree                                | Stop, ask user to commit or stash                                          |
+| Beads parent epic resolves                        | Base = `epic/<epic-bead-id>`                                               |
+| No epic parent / no Beads                         | Base = default branch (topology cross-check)                               |
+| Topology fork points unordered / signals disagree | Stop, ask                                                                  |
+| `origin/<BASE>` missing                           | Stop, report — do not create it                                            |
+| Base contained AND tip == remote                  | Report "up to date", stop                                                  |
+| Base contained but commits unpushed               | Skip rebase, still verify + push                                           |
+| Rebase conflict                                   | Resolve (`ours`=base, `theirs`=your commit); `--continue`                  |
+| Conflict ambiguous                                | Stop and ask; `git rebase --abort` to restore                              |
+| Verification fails                                | Do NOT push; stop, report                                                  |
+| Branch never pushed (`EXPECTED_REMOTE` empty)     | `git push -u origin HEAD` (no force)                                       |
+| Upstream name ≠ local name                        | Push `HEAD:<remote-branch>` from `@{u}`; never a new `origin/<local-name>` |
+| Remote tip moved since start                      | Stop, ask — do not clobber                                                 |
+| Lease rejected                                    | Stop — never bare `--force`                                                |
 
 ## Integration
 

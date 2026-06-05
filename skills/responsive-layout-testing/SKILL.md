@@ -22,20 +22,20 @@ NO "RESPONSIVE" / "FIXED" CLAIM WITHOUT A CLEAN OVERFLOW CHECK
 + FRESH SCREENSHOT AT EVERY WIDTH
 ```
 
-If you have not run the overflow probe and captured a screenshot at all six widths *after* your last edit, you cannot say the layout is fixed.
+If you have not run the overflow probe and captured a screenshot at all six widths _after_ your last edit, you cannot say the layout is fixed.
 
 ## The Breakpoints
 
 Test all six. Don't drop the narrow ones — 320px is where things break.
 
-| Label   | Width (px) | Height (px) | Represents              |
-| ------- | ---------- | ----------- | ----------------------- |
-| 320     | 320        | 800         | Smallest phones         |
-| 375     | 375        | 800         | iPhone-class phones      |
-| 425     | 425        | 800         | Large phones            |
-| 768     | 768        | 1024        | Tablet / `md`           |
-| 1024    | 1024       | 768         | Small laptop / `lg`     |
-| 1280    | 1280       | 800         | Desktop / `xl`          |
+| Label | Width (px) | Height (px) | Represents          |
+| ----- | ---------- | ----------- | ------------------- |
+| 320   | 320        | 800         | Smallest phones     |
+| 375   | 375        | 800         | iPhone-class phones |
+| 425   | 425        | 800         | Large phones        |
+| 768   | 768        | 1024        | Tablet / `md`       |
+| 1024  | 1024       | 768         | Small laptop / `lg` |
+| 1280  | 1280       | 800         | Desktop / `xl`      |
 
 ## Steps
 
@@ -86,7 +86,7 @@ A width **passes** only when `hasHorizontalScroll` is `false` and `offenders` is
 
 ### 3. Find the root cause before editing
 
-For each failing width, the probe already names the offending elements (innermost first). Treat it like `systematic-debugging`: trace *why* that element is wider than its viewport before you touch CSS. Common culprits:
+For each failing width, the probe already names the offending elements (innermost first). Treat it like `systematic-debugging`: trace _why_ that element is wider than its viewport before you touch CSS. Common culprits:
 
 - A fixed `width:` / `min-width:` (in `px`) that exceeds the narrow viewport.
 - Long unbroken strings or URLs with no `overflow-wrap` / `word-break`.
@@ -117,18 +117,18 @@ Do not declare the layout fixed on your own. Route the final claim through **`ve
 - About to say "responsive" / "looks good on mobile" after screenshotting only one or two widths.
 - Reaching for `overflow-x: hidden` on the page root to silence a scrollbar.
 - Editing CSS before reading which element the probe flagged.
-- Claiming the fix worked without re-running the probe *after* the edit.
+- Claiming the fix worked without re-running the probe _after_ the edit.
 - Skipping 320px because "no one uses a phone that small."
 
 ## Rationalization Prevention
 
-| Excuse                                   | Reality                                                              |
-| ---------------------------------------- | ------------------------------------------------------------------- |
-| "It looked fine at 1280, ship it."       | Breaks live in the narrow widths. Test all six.                     |
-| "`overflow-x: hidden` makes it go away." | It hides clipped content. The probe still flags the offender.        |
-| "I can see the overflow, just fix it."   | Seeing the symptom ≠ knowing which rule causes it. Read the probe.   |
-| "I already screenshotted before the fix." | Pre-fix shots prove the bug, not the fix. Re-shoot after editing.   |
-| "320px is too rare to matter."           | It's the cheapest width to test and the most likely to break.        |
+| Excuse                                    | Reality                                                            |
+| ----------------------------------------- | ------------------------------------------------------------------ |
+| "It looked fine at 1280, ship it."        | Breaks live in the narrow widths. Test all six.                    |
+| "`overflow-x: hidden` makes it go away."  | It hides clipped content. The probe still flags the offender.      |
+| "I can see the overflow, just fix it."    | Seeing the symptom ≠ knowing which rule causes it. Read the probe. |
+| "I already screenshotted before the fix." | Pre-fix shots prove the bug, not the fix. Re-shoot after editing.  |
+| "320px is too rare to matter."            | It's the cheapest width to test and the most likely to break.      |
 
 ## Related
 

@@ -1,6 +1,6 @@
 ---
 name: executor-epic-task
-description: "Run a full executor cycle for one bead on a fresh feature branch off its parent epic branch (epic/<epic-bead-id>): stash any in-flight work, switch to the epic branch, pull, create feat/<bead-id>-<short-slug>, execute the bead end-to-end, then push and open a PR targeting the epic branch. Use when the user wants a single bead delivered as its own PR into an in-progress epic branch instead of main."
+description: 'Run a full executor cycle for one bead on a fresh feature branch off its parent epic branch (epic/<epic-bead-id>): stash any in-flight work, switch to the epic branch, pull, create feat/<bead-id>-<short-slug>, execute the bead end-to-end, then push and open a PR targeting the epic branch. Use when the user wants a single bead delivered as its own PR into an in-progress epic branch instead of main.'
 ---
 
 # Executor Epic Task
@@ -73,9 +73,11 @@ This is the preferred manual path when an epic has its own long-lived integratio
    - If `pull --ff-only` fails (local divergence on the epic branch), stop and ask the user — do not force or rebase silently.
 
 9. Create the feature branch off the freshly updated epic branch:
+
    ```
    git checkout -b <BRANCH_NAME>
    ```
+
    If `<BRANCH_NAME>` already exists locally, stop and ask the user whether to reuse, rename, or delete it.
 
 10. Run the executor cycle for `<BEAD_ID>` — **every step in order**:

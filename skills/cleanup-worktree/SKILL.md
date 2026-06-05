@@ -1,6 +1,6 @@
 ---
 name: cleanup-worktree
-description: "Remove a sibling git worktree created by `executor-task-worktree` or `executor-epic-task-worktree` once follow-up work (review comments, screenshots, CI fixes) is done. Lists existing worktrees, confirms which to remove, verifies the branch is safe to drop (PR merged or user-approved), removes the worktree, prunes stale entries, and optionally deletes the local branch."
+description: 'Remove a sibling git worktree created by `executor-task-worktree` or `executor-epic-task-worktree` once follow-up work (review comments, screenshots, CI fixes) is done. Lists existing worktrees, confirms which to remove, verifies the branch is safe to drop (PR merged or user-approved), removes the worktree, prunes stale entries, and optionally deletes the local branch.'
 ---
 
 # Cleanup Worktree
@@ -12,16 +12,20 @@ This skill is **user-invoked only** — the executor skills never call it automa
 ## Steps
 
 1. **Never run from inside the worktree you're about to remove.** First, confirm the current working directory:
+
    ```
    pwd
    git rev-parse --show-toplevel
    ```
+
    If the current directory is the worktree the user wants removed, instruct them to `cd` into the main repo (or any other directory) first and re-invoke. `git worktree remove` refuses to delete the worktree it is being run from.
 
 2. List all worktrees attached to the current repo so the user can pick one:
+
    ```
    git worktree list
    ```
+
    Each row shows path, HEAD, and branch. The main working tree is always listed first — never offer it as a removal target.
 
 3. Determine which worktree to remove:
@@ -31,24 +35,29 @@ This skill is **user-invoked only** — the executor skills never call it automa
    - record the chosen path as `<WORKTREE_PATH>` and the branch as `<BRANCH_NAME>`
 
 4. **Safety check — verify the work is landed or explicitly disposable.** Run these inside the main repo (not the worktree):
+
    ```
    git -C <WORKTREE_PATH> status --porcelain
    git -C <WORKTREE_PATH> log --oneline @{u}..HEAD 2>/dev/null
    gh pr list --head <BRANCH_NAME> --state all --json number,state,url 2>/dev/null
    ```
+
    - if the worktree has uncommitted changes (porcelain output is non-empty), stop and report them; ask the user to commit, stash, or explicitly confirm discard
    - if there are unpushed commits, stop and report them; ask the user to push or explicitly confirm discard
    - if `gh` is available and finds a PR, report its state (MERGED / CLOSED / OPEN). Refuse to remove silently when the PR is still OPEN — ask the user to confirm
    - if `gh` is unavailable or finds no PR, report that and ask the user to confirm
 
 5. Remove the worktree:
+
    ```
    git worktree remove <WORKTREE_PATH>
    ```
+
    - if this fails because of leftover local changes the user already accepted, retry with `git worktree remove --force <WORKTREE_PATH>` — but only after explicit user confirmation in this conversation
    - never use `--force` preemptively
 
 6. Prune stale worktree metadata:
+
    ```
    git worktree prune
    ```

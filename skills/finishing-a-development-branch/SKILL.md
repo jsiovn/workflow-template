@@ -1,6 +1,6 @@
 ---
 name: finishing-a-development-branch
-description: "Use after all work on a feature branch is complete and verified. Pushes the branch and creates a PR targeting main."
+description: 'Use after all work on a feature branch is complete and verified. Pushes the branch and creates a PR targeting main.'
 ---
 
 # Finishing a Development Branch
@@ -66,13 +66,13 @@ Branch: <branch-name>
 
 ## Quick Reference
 
-| Situation | Action |
-|-----------|--------|
-| Uncommitted changes | Stop, ask user to commit |
-| No commits ahead of main | Stop, nothing to PR |
-| Push fails | Report error, stop |
-| `gh` not installed | Push branch, report for manual PR |
-| PR creation fails | Report error, branch is pushed |
+| Situation                | Action                            |
+| ------------------------ | --------------------------------- |
+| Uncommitted changes      | Stop, ask user to commit          |
+| No commits ahead of main | Stop, nothing to PR               |
+| Push fails               | Report error, stop                |
+| `gh` not installed       | Push branch, report for manual PR |
+| PR creation fails        | Report error, branch is pushed    |
 
 ## Beads Runtime Discipline
 
@@ -84,8 +84,10 @@ Branch: <branch-name>
 ## Integration
 
 **Called by:**
+
 - **`executor-task`** / **`executor-task-worktree`** — after the bead is closed and committed
 - Any workflow that completes work on a feature branch
 
 **Pairs with:**
+
 - **`build-and-test`** — must pass before invoking this skill

@@ -26,8 +26,9 @@ git checkout -b feat/<bead-id>
 - `plan-beads` handles discuss -> optional research -> bead creation -> validation
 - `executor-task` is the standard one-bead-per-PR executor (fresh `feat/<bead-id>` branch off main, PR into main)
 - `executor-task-worktree` is the same flow inside an isolated git worktree, for parallel work
-- `executor-epic-task` branches off the bead's parent epic branch (`epic/<epic-bead-id>-<slug>`) and PRs into it instead of main; auto-creates the epic branch from the default branch if it does not exist
+- `executor-epic-task` branches off the bead's parent epic branch (`epic/<epic-bead-id>`) and PRs into it instead of main; auto-creates the epic branch from the default branch if it does not exist
 - `executor-epic-task-worktree` is the epic flow inside an isolated git worktree (never touches the main checkout)
+- `executor-epic-sequential <epic-id>` delivers a **whole epic** unattended: it creates `epic/<epic-bead-id>` once, then runs every ready child bead in turn — each in a fresh headless `claude -p` session so context never carries between tasks — committing them onto that one branch, skipping any bead that blocks, and opening a single PR to the default branch at the end (relies on fresh-session-safe beads)
 - `executor-rework-in-place` re-executes a reopened bead on the **current** feature branch and pushes more commits into its **existing** open PR (no new branch, no new PR); use after `bd reopen <id>` when the task was wrong
 - Each bead must be fresh-session-safe: rely on the bead contract, persisted inputs, and local inspection rather than prior chat memory
 
