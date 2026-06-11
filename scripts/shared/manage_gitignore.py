@@ -33,10 +33,13 @@ LEGACY_IGNORE_HEADER = "# Local agent workflow assets"
 IGNORE_ENTRIES = (
     ".beads-credential-key",
     ".beads/interactions.jsonl",
+    ".beads/epic-runs",
+    ".claude/scheduled_tasks.lock",
+    ".claude/settings.local.json",
     ".bv/",
-    ".dolt/",
     "*.db",
-    "docs/plans/",
+    ".dolt/",
+    "docs/plans/"
 )
 
 

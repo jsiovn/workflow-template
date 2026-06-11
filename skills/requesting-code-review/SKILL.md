@@ -58,6 +58,8 @@ HEAD_SHA=$(git rev-parse HEAD)
 
 The subagent will run `git diff` itself, read the changed files, and return a structured review (Strengths / Critical / Important / Minor / Assessment). It is read-only — it cannot modify code.
 
+The reviewer always grounds itself in the repo's layered `CLAUDE.md` conventions (defined in the agent definition, noted here so callers know to expect it): for every changed file it reads the nearest `CLAUDE.md` walking up from the file's directory (e.g. `apps/web/CLAUDE.md` for web changes, `packages/utils/CLAUDE.md` for utils changes) plus the root `CLAUDE.md`, and judges the diff against those rules — including the root comment-discipline convention — not generic best practices.
+
 **3. Act on feedback:**
 
 - Fix Critical issues immediately

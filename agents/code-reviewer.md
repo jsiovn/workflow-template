@@ -29,6 +29,8 @@ cat tsconfig.json .eslintrc* .prettierrc* ruff.toml .editorconfig 2>/dev/null | 
 git ls-tree -r --name-only HEAD | head -200
 ```
 
+**Read the layered `CLAUDE.md` instructions for every changed path.** Start with the root `CLAUDE.md` (and `AGENTS.md` if present). Then, for each changed file, read the nearest `CLAUDE.md` walking up from the file's directory — e.g. a change under `apps/web/` → read `apps/web/CLAUDE.md`; under `apps/api/` → `apps/api/CLAUDE.md`; under `packages/utils/` → `packages/utils/CLAUDE.md`. These files are the authoritative conventions for that app/package and override generic best practices. Judge the diff against them, and when flagging a violation cite the specific `CLAUDE.md` rule.
+
 Then for each _new or modified_ file in the diff, find 1–2 sibling files of the same kind and skim them. Use Glob/Grep:
 
 - new React component? Read 1–2 existing components in the same dir.
@@ -62,6 +64,7 @@ Read every changed file in full when the diff is non-trivial — never review ba
 
 **Repo consistency** (informed by the consistency pass above)
 
+- Per-directory `CLAUDE.md` rules: the diff respects every rule in the root `CLAUDE.md` and in the nearest `CLAUDE.md` of each changed app/package (these override generic conventions)
 - Tech stack: only uses libraries/runtimes/tools the repo already adopts; no parallel implementations of something the repo standardized on
 - Folder structure: new files live where their siblings live; no orphaned dirs or layer-violating placements
 - Naming conventions: filenames, symbols, test suffixes, env vars, and route names match existing patterns
@@ -75,6 +78,7 @@ Read every changed file in full when the diff is non-trivial — never review ba
 - DRY without premature abstraction
 - Edge cases handled
 - Function / component / file size: flag sections that have grown long or multi-responsibility and would read more clearly broken into smaller functions or components. Prefer extraction when a single unit mixes concerns, has deep nesting, or repeats a pattern that has a natural name. Don't flag length alone — judge by cohesion and readability.
+- Comment discipline: comments must exist only for complex or critical, non-obvious logic (tricky algorithms, workarounds, ordering constraints, external quirks). Flag vibe-code/narration comments for removal — comments restating what the next line does, section banners, change-log notes ("added X", "now uses Y"), and boilerplate JSDoc on self-explanatory code.
 - Debug artifacts: flag leftover `console.log`/print statements, commented-out code blocks, and unresolved TODO/FIXME comments that were not part of the intended change.
 - Resource cleanup: async/effectful code must release what it allocates — missing `useEffect` cleanup, unclosed file handles, unsubscribed listeners, dangling timers, leaked subscriptions.
 
