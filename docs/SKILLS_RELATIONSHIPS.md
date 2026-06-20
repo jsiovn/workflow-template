@@ -43,6 +43,7 @@ flowchart LR
         ABR[audit-backlog-rules]
         PLB[prune-local-branches]
         RB[rebase-and-push]
+        CNW[create-new-worktree]
     end
 
     PLAN -->|hands off bead| EXEC
@@ -83,6 +84,7 @@ flowchart LR
 | `audit-backlog-rules`            | maintenance                     | Audit ready/blocked beads against current rules    | user                                                                      | —                                                                                  |
 | `prune-local-branches`           | maintenance                     | Clean up merged/stale local branches               | user                                                                      | —                                                                                  |
 | `rebase-and-push`                | maintenance                     | Rebase the current feature branch onto its base (parent epic or default), resolve conflicts, verify, force-push with lease | user                                                                      | `verification-before-completion`                                                   |
+| `create-new-worktree`            | maintenance                     | Create + prepare a sibling worktree from a branch name or bead id off the default branch (seed `.env*`, opt-in extra ignored files, ask-then-install deps, ensure Beads health), then stop for an executor | user                                                                      | —                                                                                  |
 
 > Note: `build-and-test` is **not** in `skills/` — it lives under `templates/skills/build-and-test/` because it is the one skill the downstream repo specializes (stage 2). The single source is always copied into `<downstream>/.claude/skills/build-and-test/`, and into `<downstream>/.codex/skills/build-and-test/` only when Codex is enabled (`--with-codex`, or an existing `.codex/` is auto-detected). Treat it as the implicit verification step in every executor chain.
 
@@ -181,6 +183,15 @@ flowchart LR
 
 Use `executor-task` for the standard one-bead-per-PR rhythm into main. Use `executor-task-worktree` when you need to run multiple beads in parallel without branch interference in the main checkout. Use the `executor-epic-task` variants when the whole epic should land in main as a single merge and each child bead ships as its own PR into the epic branch.
 
+### Worktree lifecycle bookends (`create-new-worktree` / `cleanup-worktree`)
+
+The `executor-*-worktree` orchestrators above bundle worktree **setup + the full executor cycle + leave-in-place** in one shot. When you instead want to prepare an isolated worktree and *then* drive an executor by hand (or just work a plain branch), the lifecycle splits into two user-invoked maintenance bookends:
+
+- **`create-new-worktree`** (setup bookend) — takes a branch name or a bead id/name, cuts a sibling worktree off the origin default branch, seeds its git-ignored `.env*`, optionally copies other git-ignored working files the user picks, asks-then-installs dependencies, and verifies Beads health inside the worktree — then **stops**. It never claims the bead, plans, or implements; it hands off to an executor (`cd` in, run the plain `executor-task` / `executor-epic-task`, *not* the `-worktree` variant, which would nest a second worktree).
+- **`cleanup-worktree`** (teardown bookend) — removes a sibling worktree once its PR has landed (or been abandoned).
+
+So the executor-agnostic flow is: `create-new-worktree` → (`cd` in) → `executor-task` → `cleanup-worktree`. This is distinct from `executor-task-worktree`, which is the all-in-one that owns setup, execution, and PR in a single invocation.
+
 ### Rework variant (`executor-rework-in-place`)
 
 When a bead has already been executed end-to-end, the PR is open, and reviewer or product feedback shows the task itself was wrong (mis-scoped, wrong approach), the user reopens the bead (`bd reopen <id>`), edits its requirements, and invokes `executor-rework-in-place` with the bead id. Unlike the four orchestrators above, this skill **stays on the current feature branch** in the **current main worktree** — no branch is created, no `git checkout <main>` happens, no new PR is opened. The chain re-runs `beads-claim` → `writing-plans` (regenerated against the updated bead text) → impl → `build-and-test` → verify → `requesting-code-review` → `beads-close`, then pushes additional commits into the existing PR and posts a fixup summary comment naming the bead id and the new tip SHA. Hard prereqs: `bead_id` is required, the working tree must be clean, the current branch must not be the default branch, and the branch must have an open PR. Used after, not instead of, `executor-task` / `executor-task-worktree`.
@@ -242,6 +253,7 @@ flowchart TD
     USER --> ABR[audit-backlog-rules]
     USER --> PLB[prune-local-branches]
     USER --> RB[rebase-and-push]
+    USER --> CNW[create-new-worktree]
 
     PB --> BS[brainstorming]
     PB -.-> PR[planner-research]
@@ -309,7 +321,7 @@ flowchart TD
 
     class PB,BS,PR,BP,VB planner
     class ET,ETW,EET,EETW,ERIP,EES,BC,WP,SD,BAT,VBC,RCR,BCL,FDB executor
-    class APC,PA,ABR,PLB,RB,SWB,RWB maint
+    class APC,PA,ABR,PLB,RB,CNW,SWB,RWB maint
     class AGCR,AGPF,AGPA,HW agent
 ```
 
