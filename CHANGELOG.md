@@ -36,6 +36,10 @@ template to a stable path, maintaining shell aliases, or running per-OS scripts.
   (npm refuses to pack a file basenamed `.gitignore`) and written to the dotted name on scaffold.
 - Rewrote `README.md` and the docs for the npm install flow; dropped the
   clone/alias/Python instructions.
+- `docs/TROUBLESHOOTING.md` is no longer scaffolded into downstream repos — it is
+  a maintainer/bd-tooling doc, and copying it overwrote a project's own
+  `docs/TROUBLESHOOTING.md`. The `bd bootstrap --yes` repair tip it carried is
+  already documented in the shipped `BEADS_WORKFLOW.md`.
 
 ### Removed
 
