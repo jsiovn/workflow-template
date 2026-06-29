@@ -2,6 +2,12 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Working principles
+
+How to approach any change in this repo: think before coding, keep it simple, make surgical edits, drive every task to a verified outcome.
+
+@docs/context/PRINCIPLES.md
+
 ## What This Repo Is
 
 This is a **template/scaffold repo**, not a deployed application. It produces and updates workflow files _in other (downstream) repos_. There is no build, no test suite, and no runtime service here — the "output" is files copied into downstream checkouts by the `agent-workflow-beads` CLI (`bin/cli.js` → `lib/`), which this repo publishes to npm as the `agent-workflow-beads` package.
@@ -15,7 +21,7 @@ Three surfaces get written into every downstream repo:
 1. **Shared workflow skills** — one source in `skills/<name>/`, always copied into `<downstream>/.claude/skills/<name>/`, and into `<downstream>/.codex/skills/<name>/` only when Codex is enabled (`--with-codex` on `agent-workflow-beads bootstrap` / `update`, or auto-detected when the downstream already has a `.codex/` directory).
 2. **Shared agents** — one source in `agents/<name>.md`, always copied into `<downstream>/.claude/agents/<name>.md`, and into `<downstream>/.codex/agents/<name>.md` only when Codex is enabled (`--with-codex`, or auto-detected `.codex/`). Provider-specific overrides can be placed in `templates/.claude/agents/` or `templates/.codex/agents/` and are applied on top.
 3. **Bootstrap-only / stage-1 skills** — sources in `templates/skills/<name>/`, always copied into `<downstream>/.claude/skills/<name>/`, and into `<downstream>/.codex/skills/<name>/` only when Codex is enabled (`--with-codex`, or auto-detected `.codex/`). The generic stage-1 `build-and-test` skill lives here and is the one file `agent-workflow-beads update` _preserves_ in the downstream if it already exists (downstream specialization). `attach-web-screenshots` also lives here but is opt-in — only installed when `agent-workflow-beads bootstrap` / `update` is invoked with `--with-screenshots`, or when the skill already exists in the downstream.
-4. **Repo-root scaffolding** — `templates/BEADS_WORKFLOW.md`, `templates/PRIME.md`, `templates/.beads/*` (the downstream's `.beads/.gitignore` ships in the package as `templates/.beads/beads.gitignore` — npm refuses to pack a file basenamed `.gitignore` — and `lib/scaffold.js` writes it to the dotted name), and the managed snippets `templates/CLAUDE.snippet.md` (always merged into the downstream's `CLAUDE.md`) and `templates/AGENTS.snippet.md` (merged into the downstream's `AGENTS.md` only when Codex is enabled, or when an `AGENTS.md` already exists) — each injected between `<!-- BEGIN/END TEMPLATE BD WORKFLOW -->` markers by `lib/manageInstructions.js`. The template's own `scripts/` folder no longer exists — the scaffold logic is pure Node in `lib/`, run from the globally-installed CLI. The scaffold still actively removes helper scripts that *older* template versions shipped into downstreams (e.g. `scripts/shared/manage_instructions.py`) and prunes now-empty template script dirs there. (A downstream may keep its own `scripts/`; the template never touches those.)
+4. **Repo-root scaffolding** — `templates/BEADS_WORKFLOW.md`, `templates/PRIME.md`, `templates/.beads/*` (the downstream's `.beads/.gitignore` ships in the package as `templates/.beads/beads.gitignore` — npm refuses to pack a file basenamed `.gitignore` — and `lib/scaffold.js` writes it to the dotted name), and the managed snippets `templates/CLAUDE.snippet.md` (always merged into the downstream's `CLAUDE.md`) and `templates/AGENTS.snippet.md` (merged into the downstream's `AGENTS.md` only when Codex is enabled, or when an `AGENTS.md` already exists) — each injected between `<!-- BEGIN/END TEMPLATE BD WORKFLOW -->` markers by `lib/manageInstructions.js`. The template's own `scripts/` folder no longer exists — the scaffold logic is pure Node in `lib/`, run from the globally-installed CLI. The scaffold still actively removes helper scripts that _older_ template versions shipped into downstreams (e.g. `scripts/shared/manage_instructions.py`) and prunes now-empty template script dirs there. (A downstream may keep its own `scripts/`; the template never touches those.)
 
 `lib/scaffold.js` is the authority on exactly what gets copied and what gets deleted (e.g. removed legacy skills like `plan-debate`, `start-epic-worktree`, `swarm-epic`, `executor-once` via its `LEGACY_SKILLS` list, and stale downstream helper scripts via `LEGACY_SCRIPT_PATHS`). Read it before adding or renaming anything that ships downstream.
 
@@ -27,11 +33,11 @@ The scaffolded workflow files (`CLAUDE.md`, `BEADS_WORKFLOW.md`, `.claude/`, and
 
 All user-facing operations go through one cross-platform CLI (`bin/cli.js` → `lib/cli.js`), published to npm as `agent-workflow-beads` and installed globally as the `agent-workflow-beads` command. There are no longer POSIX/PowerShell script twins — the scaffold logic is a single Node implementation in `lib/`.
 
-| Purpose                          | Command                                                              |
-| -------------------------------- | ------------------------------------------------------------------- |
-| New downstream repo              | `agent-workflow-beads bootstrap [--with-screenshots] [--with-codex] <repo> <prefix>` |
-| Refresh shared workflow surface  | `agent-workflow-beads update [--with-screenshots] [--with-codex] <repo>`  |
-| Prereq check                     | `agent-workflow-beads check [--with-codex]`                               |
+| Purpose                         | Command                                                                              |
+| ------------------------------- | ------------------------------------------------------------------------------------ |
+| New downstream repo             | `agent-workflow-beads bootstrap [--with-screenshots] [--with-codex] <repo> <prefix>` |
+| Refresh shared workflow surface | `agent-workflow-beads update [--with-screenshots] [--with-codex] <repo>`             |
+| Prereq check                    | `agent-workflow-beads check [--with-codex]`                                          |
 
 Claude Code is the **primary** AI in every downstream repo — the `.claude/` surface is always scaffolded. Codex is **opt-in**: the `.codex/` surface and `AGENTS.md` are only scaffolded with `--with-codex`, or auto-detected when the downstream already has a `.codex/` directory.
 
@@ -73,3 +79,21 @@ Because the workflow surface is committed to the downstream's own git, a fresh c
 - Beads is local-only: never add workflow to publish or sync live `.beads/` state across clones.
 - When removing a skill from the template, also add its name to the `LEGACY_SKILLS` list in `lib/scaffold.js` so existing downstreams get it deleted on their next `agent-workflow-beads update` — the copy loop only iterates skills that still exist in the template, so a deleted source is never cleaned up otherwise.
 - When adding a new skill under `skills/`, `lib/scaffold.js` picks it up automatically (it iterates every dir in `skills/`) and copies it into `.claude/skills/` always, and into `.codex/skills/` only when Codex is enabled. No `.gitignore` bookkeeping is needed: the workflow surface is committed downstream, and `lib/manageGitignore.js` ignores only machine-local runtime artifacts plus the per-session plan files under `docs/plans/`.
+
+## Project conventions
+
+### Pull request conventions
+
+When creating a PR, always set:
+
+- **Assignee:** `jsiovn` (repo owner)
+- **Reviewer:** `phudev95` (the repo's other collaborator)
+- **Labels:** one type label from the repo's label set — `enhancement`, `bug`, or `documentation` (these are the GitHub defaults; there is no `refactor` or epic-name label, so don't invent one — create the label first if you need it)
+
+```bash
+gh pr create \
+  --assignee jsiovn \
+  --reviewer phudev95 \
+  --label "enhancement" \
+  ...
+```
