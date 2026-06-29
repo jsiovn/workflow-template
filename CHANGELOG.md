@@ -32,6 +32,9 @@ template to a stable path, maintaining shell aliases, or running per-OS scripts.
   `lib/prereqs.js`, `lib/proc.js`, `lib/which.js`, `lib/fsx.js`). Behavior toward
   downstream repos is unchanged — managed-block, `.gitignore`, and bead semantics are
   byte-for-byte identical to the previous implementation.
+- The managed `.gitignore` writer (`lib/manageGitignore.js`) strips the orphaned
+  `# Beads / Dolt files (added by bd init)` header that `bd init` leaves behind — its
+  entries (`.dolt/`, `*.db`, …) are already covered by the managed block.
 - `templates/.beads/.gitignore` is stored in-package as `templates/.beads/beads.gitignore`
   (npm refuses to pack a file basenamed `.gitignore`) and written to the dotted name on scaffold.
 - Rewrote `README.md` and the docs for the npm install flow; dropped the
