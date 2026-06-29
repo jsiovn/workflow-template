@@ -1,0 +1,61 @@
+# Changelog
+
+All notable changes to this project are documented here. The format is based on
+[Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres
+to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [1.0.0] - 2026-06-29
+
+First npm release. The scaffolder is now a single cross-platform Node CLI —
+`agent-workflow-beads` — installed with `npm install -g`. No more cloning the
+template to a stable path, maintaining shell aliases, or running per-OS scripts.
+
+### Added
+
+- `agent-workflow-beads` CLI with `bootstrap`, `update`, and `check` subcommands
+  (`bin/cli.js`, `lib/`). Same command on macOS, Linux, and Windows.
+- `npm install -g agent-workflow-beads` as the single install path. Bundled assets
+  (`skills/`, `agents/`, `templates/`) ship via the `package.json` `files` allowlist
+  and resolve relative to the install location, independent of the working directory.
+- Consolidated `docs/INSTALL.md` covering Node.js, `bd`, `dolt`, and the CLI.
+- Bootstrap drives `bd` non-interactively (`--non-interactive` + `BD_NON_INTERACTIVE`):
+  init defaults to the maintainer role ("N" to "Contributing to someone else's repo?"),
+  Beads auto-export is disabled so state stays local-only (code moves through git, not
+  `.beads/issues.jsonl`), and bootstrap prints optional GitHub-backed Dolt-remote setup
+  guidance for cross-machine sync.
+- After bootstrap, prints next-step guidance to review and commit the scaffolded
+  workflow files (`git add -A && git commit`) — `bd init` commits its own `.beads/`
+  scaffolding, but the rest of the workflow surface is left for the developer to commit.
+
+### Changed
+
+- Ported all scaffolding logic from the POSIX/PowerShell scripts and Python helpers
+  to pure Node with **zero runtime dependencies** (`lib/scaffold.js`,
+  `lib/manageInstructions.js`, `lib/manageGitignore.js`, `lib/ensureStage1Beads.js`,
+  `lib/prereqs.js`, `lib/proc.js`, `lib/which.js`, `lib/fsx.js`). Behavior toward
+  downstream repos is unchanged — managed-block, `.gitignore`, and bead semantics are
+  byte-for-byte identical to the previous implementation.
+- The managed `.gitignore` writer (`lib/manageGitignore.js`) strips the orphaned
+  `# Beads / Dolt files (added by bd init)` header that `bd init` leaves behind — its
+  entries (`.dolt/`, `*.db`, …) are already covered by the managed block.
+- `templates/.beads/.gitignore` is stored in-package as `templates/.beads/beads.gitignore`
+  (npm refuses to pack a file basenamed `.gitignore`) and written to the dotted name on scaffold.
+- Rewrote `README.md` and the docs for the npm install flow; dropped the
+  clone/alias/Python instructions.
+- `docs/TROUBLESHOOTING.md` is no longer scaffolded into downstream repos — it is
+  a maintainer/bd-tooling doc, and copying it overwrote a project's own
+  `docs/TROUBLESHOOTING.md`. The `bd bootstrap --yes` repair tip it carried is
+  already documented in the shipped `BEADS_WORKFLOW.md`.
+
+### Removed
+
+- `scripts/posix/`, `scripts/windows/`, `scripts/shared/` — logic now lives in `lib/`.
+- Per-OS install guides `docs/INSTALL-MACOS.md`, `docs/INSTALL-UBUNTU.md`,
+  `docs/INSTALL-WINDOWS.md` (collapsed into `docs/INSTALL.md`).
+- The `python3` prerequisite.
+
+### Requirements
+
+- Node.js >= 18; `git`, `bd`, and `dolt` on `PATH`.
+
+[1.0.0]: https://github.com/jsiovn/agent-workflow-beads/releases/tag/v1.0.0

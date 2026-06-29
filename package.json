@@ -1,0 +1,44 @@
+{
+  "name": "agent-workflow-beads",
+  "version": "1.0.0",
+  "description": "Scaffold a consistent planner → executor workflow (shared skills, subagents, and Beads-backed task tracking) for AI coding agents into any repo.",
+  "license": "MIT",
+  "author": "jsiovn",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jsiovn/agent-workflow-beads.git"
+  },
+  "homepage": "https://github.com/jsiovn/agent-workflow-beads#readme",
+  "bugs": {
+    "url": "https://github.com/jsiovn/agent-workflow-beads/issues"
+  },
+  "keywords": [
+    "claude-code",
+    "codex",
+    "beads",
+    "ai-agents",
+    "workflow",
+    "scaffold",
+    "cli"
+  ],
+  "bin": {
+    "agent-workflow-beads": "bin/cli.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "bin/",
+    "lib/",
+    "skills/",
+    "agents/",
+    "templates/"
+  ],
+  "scripts": {
+    "format": "prettier --write \"bin/**/*.js\" \"lib/**/*.js\" package.json",
+    "format:check": "prettier --check \"bin/**/*.js\" \"lib/**/*.js\" package.json"
+  },
+  "devDependencies": {
+    "prettier": "^3.3.3"
+  }
+}

@@ -91,6 +91,6 @@ Use this after `bd reopen <bead-id>` and editing the bead's requirements. It sta
 
 ## Operational Notes
 
-- Workflow docs and skills are committed and pushed as part of the normal git flow; refresh them from the template with `update-skills` when needed.
+- Workflow docs and skills are committed and pushed as part of the normal git flow; refresh them from the template with `agent-workflow-beads update` when needed.
 - If `bd where` or `bd context` fails in the current checkout, repair the repo with `bd bootstrap --yes` before continuing.
 - Use `bd ready` before asking what to work on next.
