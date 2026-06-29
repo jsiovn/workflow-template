@@ -34,6 +34,7 @@ flowchart LR
         EETW[executor-epic-task-worktree<br/>orchestrator<br/>parallel-safe → epic branch]
         ERIP[executor-rework-in-place<br/>orchestrator<br/>amend existing PR in current tree]
         EES[executor-epic-sequential<br/>orchestrator<br/>whole epic → one branch + one PR<br/>fresh headless session per bead]
+        EESW[executor-epic-sequential-worktree<br/>orchestrator<br/>whole epic in a worktree<br/>main tree untouched]
         FDB[finishing-a-development-branch]
     end
 
@@ -78,12 +79,13 @@ flowchart LR
 | `executor-epic-task-worktree`    | executor (orchestrator)         | Same as `executor-epic-task`, but in an isolated git worktree (parallel-safe; never touches the main checkout) | user                                                                      | same chain as `executor-task`                                                      |
 | `executor-rework-in-place`       | executor (orchestrator)         | Re-execute a reopened bead on the **current** feature branch and push into its **existing** open PR (no new branch, no new PR) | user                                                                      | `beads-claim` → `writing-plans` (regenerate) → impl → `build-and-test` → verify → `requesting-code-review` → `beads-close` → push + fixup PR comment |
 | `executor-epic-sequential`       | executor (orchestrator)         | Run **all** ready beads of one epic sequentially on a single `epic/<epic-bead-id>` branch — each bead in a **fresh headless `claude -p` session** (clean context per task); failures are blocked + skipped; ends with one PR epic → default branch | user                                                                      | a fresh headless executor cycle **per bead** (`beads-claim` → `writing-plans` → impl → `build-and-test` → verify → `requesting-code-review` → `beads-close`) → `finishing-a-development-branch` (once) |
-| `finishing-a-development-branch` | executor                        | Push the branch and create a PR                    | `executor-task`, `executor-task-worktree`, `executor-epic-task`, `executor-epic-task-worktree`, `executor-rework-in-place`, `executor-epic-sequential`, user | —                                                                                  |
+| `executor-epic-sequential-worktree` | executor (orchestrator)      | Same as `executor-epic-sequential`, but runs the whole epic inside a sibling git worktree checked out on `epic/<epic-bead-id>` — never touches the main checkout; seeds git-ignored `.env*`; leaves the worktree in place for PR follow-up | user                                                                      | a fresh headless executor cycle **per bead** (in the worktree) → `finishing-a-development-branch` (once) → pairs with `cleanup-worktree` |
+| `finishing-a-development-branch` | executor                        | Push the branch and create a PR                    | `executor-task`, `executor-task-worktree`, `executor-epic-task`, `executor-epic-task-worktree`, `executor-rework-in-place`, `executor-epic-sequential`, `executor-epic-sequential-worktree`, user | —                                                                                  |
 | `address-pr-comments`            | maintenance                     | Iterative PR review-comment loop                   | user                                                                      | `pr-comment-fixer` subagent                                                        |
 | `project-auditor`                | maintenance                     | Full-repo audit (naming, structure, light arch)    | user                                                                      | `project-auditor` subagent                                                         |
 | `audit-backlog-rules`            | maintenance                     | Audit ready/blocked beads against current rules    | user                                                                      | —                                                                                  |
-| `prune-local-branches`           | maintenance                     | Clean up merged/stale local branches               | user                                                                      | —                                                                                  |
-| `rebase-and-push`                | maintenance                     | Rebase the current feature branch onto its base (parent epic or default), resolve conflicts, verify, force-push with lease | user                                                                      | `verification-before-completion`                                                   |
+| `prune-local-branches`           | maintenance                     | Bulk-clean `[gone]`-upstream local branches **and their attached worktrees** (removes each worktree before deleting the branch); the bulk counterpart to `cleanup-worktree` | user                                                                      | —                                                                                  |
+| `rebase-and-push`                | maintenance                     | Rebase the current branch onto its base — a feature branch onto its parent epic or default, or an epic branch onto the default branch (only when no open child PR targets it) — resolve conflicts, verify, force-push with lease | user                                                                      | `verification-before-completion`                                                   |
 | `create-new-worktree`            | maintenance                     | Create + prepare a sibling worktree from a branch name or bead id off the default branch (seed `.env*`, opt-in extra ignored files, ask-then-install deps, ensure Beads health), then stop for an executor | user                                                                      | —                                                                                  |
 
 > Note: `build-and-test` is **not** in `skills/` — it lives under `templates/skills/build-and-test/` because it is the one skill the downstream repo specializes (stage 2). The single source is always copied into `<downstream>/.claude/skills/build-and-test/`, and into `<downstream>/.codex/skills/build-and-test/` only when Codex is enabled (`--with-codex`, or an existing `.codex/` is auto-detected). Treat it as the implicit verification step in every executor chain.
@@ -204,6 +206,8 @@ Its distinguishing mechanic is **context isolation per task**: the driver does n
 
 Failure handling is **skip-and-continue**: a bead that fails or blocks is marked `blocked` (outcome read from `bd show`, not the worker's self-report) and skipped; its dependents stay out of `bd ready` and are skipped too; the run finishes and reports everything that was delivered vs. blocked. Hard prereqs: the bead must be an epic, the working tree must be clean (no auto-stash), and the `claude` CLI must be on `PATH` (the per-bead runner). This whole flow leans hard on **fresh-session-safe beads** — each headless worker sees only the bead contract and the code on the branch, never the planner chat.
 
+**Worktree variant (`executor-epic-sequential-worktree`).** Same whole-epic mechanic — one epic branch, one fresh headless session per bead, skip-and-continue, one final PR — but instead of switching the **main** checkout onto the epic branch, it cuts a sibling git worktree at `../<repo>-epic-<epic-bead-id>`, checks that worktree out on `epic/<epic-bead-id>`, and runs the entire loop (every `bd`, `git`, and `claude -p` worker) from inside it. The main working tree is never touched, so it does **not** require a clean main tree — that is the one prereq it drops relative to `executor-epic-sequential`. It seeds the git-ignored `.env*` family into the worktree up front (same step as `executor-task-worktree`/`executor-epic-task-worktree`) so the first worker's `build-and-test` has its environment, and it leaves the worktree in place afterward for the epic PR's review comments and CI fixes — `cleanup-worktree` is the teardown bookend. The driver guards that the epic branch is not already checked out elsewhere (a branch can live in only one worktree), recommending the non-worktree variant if the main tree is already on the epic branch.
+
 ---
 
 ## 5. Agents (subagents)
@@ -244,6 +248,7 @@ flowchart TD
     USER --> EETW[executor-epic-task-worktree]
     USER --> ERIP[executor-rework-in-place]
     USER --> EES[executor-epic-sequential]
+    USER --> EESW[executor-epic-sequential-worktree]
     USER --> VB[validate-beads]
     USER --> BC[beads-claim]
     USER --> BCL[beads-close]
@@ -308,6 +313,9 @@ flowchart TD
     EES -.->|fresh claude -p per bead| HW([headless worker:<br/>per-bead executor cycle])
     EES --> FDB
 
+    EESW -.->|fresh claude -p per bead in worktree| HW
+    EESW --> FDB
+
     RB --> VBC
 
     RCR --> AGCR([agent: code-reviewer])
@@ -320,8 +328,8 @@ flowchart TD
     classDef agent fill:#fffde1,stroke:#9e9d24
 
     class PB,BS,PR,BP,VB planner
-    class ET,ETW,EET,EETW,ERIP,EES,BC,WP,SD,BAT,VBC,RCR,BCL,FDB executor
-    class APC,PA,ABR,PLB,RB,CNW,SWB,RWB maint
+    class ET,ETW,EET,EETW,ERIP,EES,EESW,BC,WP,SD,BAT,VBC,RCR,BCL,FDB executor
+    class APC,PA,ABR,PLB,RB,CNW maint
     class AGCR,AGPF,AGPA,HW agent
 ```
 
@@ -368,5 +376,6 @@ If you're trying to learn the system from scratch, read the SKILL.md files in th
 7. `executor-task-worktree` — the parallel-safe variant
 8. `executor-epic-task` and `executor-epic-task-worktree` — same chain, but base/target the bead's parent epic branch instead of main
 9. `executor-epic-sequential` — the same epic branch, but driving the *whole* epic: one fresh headless session per bead, skip-and-continue, one final PR
+10. `executor-epic-sequential-worktree` — the same whole-epic drive, but isolated in a sibling git worktree so the main checkout is never touched
 
 Then re-read this document. The graph should make more sense.

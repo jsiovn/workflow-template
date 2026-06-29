@@ -4,6 +4,48 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-06-29
+
+Worktree-lifecycle release: deliver a whole epic unattended without touching the
+main checkout, refresh epic branches with `rebase-and-push`, and bulk-tear-down the
+worktrees the executor flows leave behind.
+
+### Added
+
+- `executor-epic-sequential-worktree` skill — runs every ready child bead of one
+  epic sequentially in a fresh sibling git worktree checked out on the epic branch
+  (`epic/<epic-bead-id>`), so the main working tree is never touched. Each bead runs
+  in its own fresh headless `claude -p` session (clean context per task), commits
+  directly onto the single epic branch, blocked beads are skipped, and the run ends
+  with one PR (`epic → default`) and the worktree left in place for follow-up. The
+  worktree-isolated companion to `executor-epic-sequential`.
+
+### Changed
+
+- `rebase-and-push` now also rebases an **epic branch** onto the default branch
+  (previously it hard-refused on `epic/*`). It still refuses the default branch, and
+  guards the shared-base case with a fail-closed check: if any open child PR still
+  targets the epic branch, it stops and asks rather than rewriting the base those PRs
+  are stacked on.
+- `prune-local-branches` now tears down the sibling worktree attached to a `[gone]`
+  branch before deleting it (the bulk counterpart to `cleanup-worktree`). It detects
+  gone branches via `git for-each-ref` plumbing (not `git branch -vv | grep`),
+  protects the main and current worktrees, and default-skips dirty/locked/unknown
+  worktrees.
+- `cleanup-worktree` recognizes worktrees created by
+  `executor-epic-sequential-worktree` and `create-new-worktree`, and points to
+  `prune-local-branches` for bulk teardown.
+- The four `executor-epic-*` skills note that the epic branch is refreshed out of
+  band with the user-invoked `rebase-and-push` skill.
+- Propagated the new skill across `docs/SKILLS_RELATIONSHIPS.md`,
+  `templates/BEADS_WORKFLOW.md`, `templates/PRIME.md`,
+  `templates/CLAUDE.snippet.md`, and `README.md`.
+
+### Fixed
+
+- `package-lock.json` `bin` entry corrected from `agent-workflow` to
+  `agent-workflow-beads`, matching the package rename in 1.0.0.
+
 ## [1.0.0] - 2026-06-29
 
 First npm release. The scaffolder is now a single cross-platform Node CLI —
@@ -58,4 +100,5 @@ template to a stable path, maintaining shell aliases, or running per-OS scripts.
 
 - Node.js >= 18; `git`, `bd`, and `dolt` on `PATH`.
 
+[1.1.0]: https://github.com/jsiovn/agent-workflow-beads/releases/tag/v1.1.0
 [1.0.0]: https://github.com/jsiovn/agent-workflow-beads/releases/tag/v1.0.0

@@ -88,6 +88,7 @@ executor-task                # default: PR into main
 executor-task-worktree       # same, in an isolated worktree (parallel-safe)
 executor-epic-task           # bead belongs to an epic — PR into the epic branch
 executor-epic-sequential <epic-id>   # run a WHOLE epic on one branch, fresh session per bead, one PR
+executor-epic-sequential-worktree <epic-id>   # same, but in an isolated worktree (main tree untouched)
 executor-rework-in-place <bead-id>   # bead was reopened, amend the existing PR
 ```
 
@@ -126,6 +127,7 @@ Other useful skills you'll reach for:
 | `executor-epic-task`            | Same as `executor-task` but branches off (and PRs into) the bead's parent epic branch      | Epic delivered as one merge to main; each child bead ships as its own PR into the epic |
 | `executor-epic-task-worktree`   | Same as `executor-epic-task` but runs in an isolated git worktree                          | Epic flow + parallel beads + main tree must stay untouched                             |
 | `executor-epic-sequential`      | Runs **every** ready bead of one epic sequentially on a single `epic/<epic-bead-id>` branch — each bead in a fresh headless `claude -p` session (clean context per task); blocked beads are skipped; ends with one PR to the default branch | Deliver a whole epic unattended as one branch + one PR, instead of one bead at a time |
+| `executor-epic-sequential-worktree` | Same as `executor-epic-sequential` but runs in a sibling git worktree (`../<repo>-epic-<epic-bead-id>`) and never touches the main checkout; leaves the worktree in place for the PR's follow-up | Deliver a whole epic unattended as one branch + one PR while the main tree keeps its in-flight work |
 | `executor-rework-in-place`      | Re-execute a reopened bead on the current feature branch; push commits into the existing open PR (no new branch, no new PR); requires `bead_id` | Bead was already executed but the task was wrong — user reopened the bead, updated its requirements, and wants to amend the existing PR |
 | `beads-close`                   | Closes the bead, creates follow-ups, commits `.beads/` state                               | Final step of an executor cycle                                                        |
 

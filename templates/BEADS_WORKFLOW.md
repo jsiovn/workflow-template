@@ -18,6 +18,7 @@ Claude Code (and Codex, when set up) can enter the workflow through repo-local s
 - `executor-epic-task`
 - `executor-epic-task-worktree`
 - `executor-epic-sequential`
+- `executor-epic-sequential-worktree`
 - `executor-rework-in-place`
 
 When an executor skill stops on a blocker, continue in normal chat by telling the agent to resume the blocked bead.
@@ -64,9 +65,12 @@ Use the `epic-*` variants when the whole epic should land in main as one merge a
 
 To run an **entire epic unattended** on a single branch instead of one bead at a time:
 
-- **Whole epic, one branch, one PR:** `executor-epic-sequential`
+- **Whole epic, one branch, one PR (current checkout):** `executor-epic-sequential`
+- **Whole epic, one branch, one PR (isolated worktree, main tree untouched):** `executor-epic-sequential-worktree`
 
-It creates `epic/<epic-bead-id>` once, then executes every ready child bead in turn — each in a **fresh headless `claude -p` session**, so context never carries between tasks — committing each directly onto that branch, and finishes with a single PR (`epic/<epic-bead-id>` → default branch). A bead that fails or blocks is marked blocked and skipped (its dependents are skipped too) and the run continues. Prereqs: the target must be an epic, the working tree must be clean (no auto-stash), and the `claude` CLI must be on `PATH`. The flow relies on fresh-session-safe beads, so run `validate-beads` on the epic first. Unattended runs use `--dangerously-skip-permissions` by default (auto-approves the workers' tool calls); each worker is separate token usage.
+It creates `epic/<epic-bead-id>` once, then executes every ready child bead in turn — each in a **fresh headless `claude -p` session**, so context never carries between tasks — committing each directly onto that branch, and finishes with a single PR (`epic/<epic-bead-id>` → default branch). A bead that fails or blocks is marked blocked and skipped (its dependents are skipped too) and the run continues. Prereqs: the target must be an epic and the `claude` CLI must be on `PATH`. The flow relies on fresh-session-safe beads, so run `validate-beads` on the epic first. Unattended runs use `--dangerously-skip-permissions` by default (auto-approves the workers' tool calls); each worker is separate token usage.
+
+`executor-epic-sequential` switches the **main checkout** onto the epic branch, so it requires a clean working tree (no auto-stash). `executor-epic-sequential-worktree` does the same run inside a **sibling git worktree** (`../<repo>-epic-<epic-bead-id>`) and never touches the main tree — use it when the main checkout has in-flight work that must stay undisturbed. It leaves the worktree in place for the PR's review comments and CI fixes; remove it with `cleanup-worktree` once the PR lands.
 
 When a bead was already executed but the task itself turned out to be wrong:
 

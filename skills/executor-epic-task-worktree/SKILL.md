@@ -127,7 +127,7 @@ This is the preferred path when an epic has its own long-lived integration branc
 
 - Never modify the main working tree during execution. The only interaction with it is step 11's read-only copy of git-ignored `.env*` files into the worktree.
 - If `bd where` fails inside the worktree, stop and repair with `bd bootstrap --yes` from within the worktree before continuing.
-- Never rebase or force-push the epic branch or the default branch.
+- Never rebase or force-push the epic branch or the default branch during the run. (To refresh the epic branch against the default branch out of band, the user can run the `rebase-and-push` skill on it once its open child PRs are merged.)
 - If the epic branch (`epic/<EPIC_BEAD_ID>`) does not exist locally or on origin, create it from the latest default branch with `git branch` (no checkout, so the main tree stays put) and push it before cutting the worktree off `origin/<EPIC_BRANCH>`.
 - The feature branch must be named `feat/<BEAD_ID>-<TASK_SLUG>` so it is unambiguously tied to the bead and human-readable. Fall back to `feat/<BEAD_ID>` only when the title yields fewer than 2 meaningful tokens.
 - The worktree directory name must be `../<repo>-feat-<BEAD_ID>` (no task slug suffix) so a `git worktree list` makes the active bead obvious without the path getting unwieldy.

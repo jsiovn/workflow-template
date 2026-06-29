@@ -115,7 +115,7 @@ ONE branch, ONE PR. Never create a per-task feature branch, never open a per-tas
 
 - **Skip-and-continue is mandatory.** A bead that fails or blocks is marked `blocked` and skipped; the run continues with the next ready bead. Never halt the whole run on a single bead's failure, and never retry a blocked bead in a loop.
 - **Outcome from Beads, not self-report.** Always read `bd show <BEAD_ID> --json` to decide done vs blocked.
-- **Never operate from a dirty epic branch**, and never rebase or force-push the epic or default branch.
+- **Never operate from a dirty epic branch**, and never rebase or force-push the epic or default branch during the run. (To refresh the epic branch against the default branch out of band — e.g. before the single PR merges — use the user-invoked `rebase-and-push` skill.)
 - **Sequential only.** One headless worker at a time — they share the working tree.
 - If the loop would exceed the iteration cap, stop and report rather than spinning.
 
