@@ -1,22 +1,23 @@
 ---
 name: rebase-and-push
-description: Use when the user wants to rebase the current feature branch onto its up-to-date base and force-push with lease — e.g. "rebase this branch", "rebase and push", "bring my branch up to date with the epic". Detects whether the branch was cut from its parent epic branch (epic/<epic-bead-id>) or the default branch (main/master), rebases onto the matching origin ref, resolves conflicts, runs verification-before-completion, then pushes with --force-with-lease. Maintenance op; refuses to run on the default branch or an epic branch.
+description: Use when the user wants to rebase the current branch onto its up-to-date base and force-push with lease — e.g. "rebase this branch", "rebase and push", "bring my branch up to date with the epic", "bring the epic branch up to date with main". Works on a feature branch (rebased onto its parent epic branch epic/<epic-bead-id> or the default branch main/master) and on an epic branch itself (rebased onto the default branch). Detects the base, rebases onto the matching origin ref, resolves conflicts, runs verification-before-completion, then pushes with --force-with-lease. Maintenance op; refuses to run on the default branch, and stops to confirm before rebasing an epic branch that still has open child PRs targeting it.
 ---
 
 # Rebase and Push
 
-Rebase the **current feature branch** onto its up-to-date base, resolve any conflicts, prove the result still passes via `verification-before-completion`, then push with `--force-with-lease`.
+Rebase the **current branch** onto its up-to-date base, resolve any conflicts, prove the result still passes via `verification-before-completion`, then push with `--force-with-lease`.
 
 **Announce at start:** "I'm using the rebase-and-push skill to rebase the current branch onto its base and push with lease."
 
-This is a maintenance op, user-invoked. It rewrites history and force-pushes — so it only ever touches a feature branch, never the default branch or an epic branch.
+This is a maintenance op, user-invoked. It rewrites history and force-pushes — so it **never** touches the default branch, and it will not rebase an epic branch that still has open child PRs without explicit confirmation, since rebasing a shared epic base would rewrite the base those PRs are stacked on.
 
 ## The base it rebases onto
 
-The base is the branch this feature branch was cut from:
+The base is the branch the **current branch** was cut from:
 
-- Cut from an **epic** → rebase onto `origin/epic/<epic-bead-id>`.
-- Cut from the **default branch** → rebase onto `origin/<default-branch>` (`main`, else `master`).
+- **Feature branch** cut from an **epic** → rebase onto `origin/epic/<epic-bead-id>`.
+- **Feature branch** cut from the **default branch** → rebase onto `origin/<default-branch>` (`main`, else `master`).
+- **Epic branch** (`epic/<epic-bead-id>`) itself → rebase onto `origin/<default-branch>`. An epic branch is always cut from the default branch, so its base is unambiguous and the per-bead resolution in step 3 is skipped — but the shared-base child-PR guard (step 3, mode 0) applies first.
 
 The skill always rebases onto the **`origin/` ref** (the freshly fetched remote tip), never a stale local copy.
 
@@ -38,11 +39,12 @@ UPSTREAM=$(git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null ||
 EXPECTED_REMOTE=$(git rev-parse --verify --quiet "${UPSTREAM:-refs/remotes/origin/$CURRENT_BRANCH}" || true)
 ```
 
-Refuse to run — stop and report — if any of these hold:
+Refuse to run — stop and report — if either of these holds:
 
 - `CURRENT_BRANCH` is `HEAD` (detached).
 - `CURRENT_BRANCH` is the default branch (`main`/`master`).
-- `CURRENT_BRANCH` matches `epic/*`.
+
+If `CURRENT_BRANCH` matches `epic/*`, this is **epic-branch mode** (rebase onto the default branch): record `IS_EPIC_BRANCH=yes` and apply the child-PR guard in step 3 (mode 0). Do **not** refuse.
 
 **Resolve the remote-side branch name** (`REMOTE_BRANCH`) — what we fetch and push in step 8:
 
@@ -64,7 +66,20 @@ If there is **any** output (tracked changes, staged, or untracked), stop and ask
 
 ### 3. Determine the base branch
 
-Resolve `<BASE>` in this order; stop at the first that yields a confident answer:
+**(0) Epic-branch mode.** If `IS_EPIC_BRANCH=yes` (`CURRENT_BRANCH` matches `epic/*`): `<BASE>` = the default branch (an epic branch is always cut from default), and the per-bead/topology resolution in (a)–(c) is **skipped**. First, guard against rewriting a base other branches are stacked on — check for open child PRs targeting this epic branch. **This is a hard precondition: it must pass before any destructive step (rebase / force-push), and it fails CLOSED — an inconclusive check is never "safe".** Query by the *remote* branch name (`REMOTE_BRANCH` from step 1 — a PR's base is the GitHub-side name, which may differ from the local branch) and branch on the **exit status**, not on whether stdout merely looks empty:
+
+```bash
+CHILDREN=$(gh pr list --base "$REMOTE_BRANCH" --state open --json number,headRefName) \
+  || { echo "gh query failed — cannot confirm there are no open child PRs"; CHILDREN=FAILED; }
+```
+
+- **Query failed** (`CHILDREN=FAILED`: `gh` missing/unauthenticated, not a GitHub remote, or any non-zero exit) → **stop and ask.** You cannot confirm the base is unshared, so do not proceed — ask the user to verify manually (or fix `gh`) first. Never read a failed or empty result as "no children".
+- **Query succeeded with open PR(s)** (`CHILDREN` is a non-empty array, not `[]`) → **stop and ask.** Rebasing the epic rewrites the base those child PRs are stacked on, ballooning each child's diff until it too is rebased. Proceed only if the user **explicitly confirms — naming the affected PR(s) and accepting that each must be rebased afterward**; a blanket "just do it" / "I don't care about the child PRs" is **not** that confirmation.
+- **Query succeeded with `[]`** (no open child PRs — the single-PR `executor-epic-sequential*` model, or every child already merged into the epic) → proceed. The epic branch now behaves like one feature branch with its single `epic → default` PR.
+
+Then resolve the default branch as `<BASE>` (same detection as (c) below) and continue to step 4.
+
+For a **feature branch** (`IS_EPIC_BRANCH` unset), resolve `<BASE>` in this order; stop at the first that yields a confident answer:
 
 **(a) Explicit override.** If the user named a base in the request, use it. Normalise a bare epic bead id `X` to `epic/X`; treat `main`/`master`/"default" as the default branch.
 
@@ -178,7 +193,7 @@ Recover:  git reset --hard <ORIG_HEAD_SHA>   # or: git reset --hard backup/<CURR
 
 ## Hard Rules
 
-- **Feature branches only.** Refuse on the default branch, any `epic/*` branch, or detached HEAD. Never rebase or force-push the default or an epic branch.
+- **Never the default branch.** Refuse on the default branch (`main`/`master`) or detached HEAD; never rebase or force-push the default branch. Feature **and** epic branches are allowed: a feature branch rebases onto its parent epic or the default branch; an epic branch (`epic/<epic-bead-id>`) rebases onto the default branch **only when no open child PR still targets it** (otherwise stop and ask — rebasing rewrites the children's base).
 - **Verification gates the push.** No push without fresh `verification-before-completion` evidence. A verification failure means no push, full stop.
 - **Lease, never bare force.** Always `--force-with-lease=<remote-branch>:<expected>`; capture `<expected>` from the branch's upstream BEFORE any fetch. If the lease is rejected, stop — never escalate to `--force`.
 - **Push to the real upstream.** Resolve the remote branch name from `@{u}`; never create a new `origin/<local-name>` when the upstream is named differently.
@@ -191,7 +206,9 @@ Recover:  git reset --hard <ORIG_HEAD_SHA>   # or: git reset --hard backup/<CURR
 
 | Situation                                         | Action                                                                     |
 | ------------------------------------------------- | -------------------------------------------------------------------------- |
-| On `main`/`master` or `epic/*`                    | Refuse — only feature branches                                             |
+| On `main`/`master`                                | Refuse — never the default branch                                          |
+| On `epic/*`, open child PR(s) target it           | Stop, ask — rebasing rewrites the children's base                          |
+| On `epic/*`, no open child PRs                     | Base = default branch; rebase like a feature branch                        |
 | Detached HEAD                                     | Refuse — stop                                                              |
 | Dirty working tree                                | Stop, ask user to commit or stash                                          |
 | Beads parent epic resolves                        | Base = `epic/<epic-bead-id>`                                               |
@@ -216,7 +233,8 @@ Recover:  git reset --hard <ORIG_HEAD_SHA>   # or: git reset --hard backup/<CURR
 
 **Complements:**
 
-- **`executor-epic-task`** / **`executor-epic-task-worktree`** — they create `epic/<epic-bead-id>` and cut `feat/<bead-id>` branches off it; this skill refreshes such a feature branch against its parent epic later, when the epic has moved on.
-- **`prune-local-branches`** — sibling maintenance op for cleaning up branches whose upstream is gone.
+- **`executor-epic-task`** / **`executor-epic-task-worktree`** — they create `epic/<epic-bead-id>` and cut `feat/<bead-id>` branches off it; this skill refreshes such a feature branch against its parent epic later, when the epic has moved on. While those child PRs are still open, this skill **stops and asks** before rebasing the epic branch itself (it would rewrite their base) — finish/merge the children first, or confirm you'll rebase them after.
+- **`executor-epic-sequential`** / **`executor-epic-sequential-worktree`** — they deliver a whole epic as a single `epic/<epic-bead-id>` branch with **one** `epic → default` PR and no child PRs; this skill rebases that epic branch onto the default branch to bring the single PR up to date before merge.
+- **`prune-local-branches`** — sibling maintenance op for cleaning up branches whose upstream is gone, and tearing down any worktree still attached to them.
 
-**Called by:** the user, manually, whenever a feature branch needs to catch up to its base before review or merge.
+**Called by:** the user, manually, whenever a feature branch needs to catch up to its base, or an epic branch needs to catch up to the default branch, before review or merge.

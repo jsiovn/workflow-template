@@ -1,6 +1,6 @@
 ---
 name: cleanup-worktree
-description: 'Remove a sibling git worktree created by `executor-task-worktree` or `executor-epic-task-worktree` once follow-up work (review comments, screenshots, CI fixes) is done. Lists existing worktrees, confirms which to remove, verifies the branch is safe to drop (PR merged or user-approved), removes the worktree, prunes stale entries, and optionally deletes the local branch.'
+description: 'Remove a sibling git worktree created by `executor-task-worktree`, `executor-epic-task-worktree`, `executor-epic-sequential-worktree`, or `create-new-worktree` once follow-up work (review comments, screenshots, CI fixes) is done. Lists existing worktrees, confirms which to remove, verifies the branch is safe to drop (PR merged or user-approved), removes the worktree, prunes stale entries, and optionally deletes the local branch.'
 ---
 
 # Cleanup Worktree
@@ -8,6 +8,8 @@ description: 'Remove a sibling git worktree created by `executor-task-worktree` 
 Manually remove one of the sibling worktrees that an `executor-*-worktree` skill created and intentionally left in place. Use this once the PR has merged (or been abandoned) and you no longer need the working directory for review comments, screenshots, or CI fixes.
 
 This skill is **user-invoked only** — the executor skills never call it automatically.
+
+For bulk cleanup of many already-landed branches and their attached worktrees in one pass, use `prune-local-branches` instead — it sweeps every branch whose upstream is `[gone]` (remote head deleted on origin), removing each one's worktree before deleting the branch. This skill is the single, PR-aware teardown for **one** worktree whose upstream may still be live.
 
 ## Steps
 

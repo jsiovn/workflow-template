@@ -107,7 +107,7 @@ This is the preferred manual path when an epic has its own long-lived integratio
 ## Checkout Discipline
 
 - If `bd where` fails in the current checkout, stop and repair the repo with `bd bootstrap --yes` before continuing.
-- Never rebase or force-push the epic branch or the default branch.
+- Never rebase or force-push the epic branch or the default branch during the run. (To refresh the epic branch against the default branch out of band, the user can run the `rebase-and-push` skill on it once its open child PRs are merged.)
 - If the epic branch does not exist locally or on origin, create it from the latest default branch and push it before cutting the feature branch off it.
 - The feature branch must be named `feat/<BEAD_ID>-<TASK_SLUG>` so it is unambiguously tied to the bead and human-readable. Fall back to `feat/<BEAD_ID>` only when the title yields fewer than 2 meaningful tokens.
 
