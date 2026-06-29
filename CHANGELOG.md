@@ -23,6 +23,9 @@ template to a stable path, maintaining shell aliases, or running per-OS scripts.
   Beads auto-export is disabled so state stays local-only (code moves through git, not
   `.beads/issues.jsonl`), and bootstrap prints optional GitHub-backed Dolt-remote setup
   guidance for cross-machine sync.
+- After bootstrap, prints next-step guidance to review and commit the scaffolded
+  workflow files (`git add -A && git commit`) — `bd init` commits its own `.beads/`
+  scaffolding, but the rest of the workflow surface is left for the developer to commit.
 
 ### Changed
 
