@@ -1,103 +1,68 @@
-# Agent Workflow Template
+# Agent Workflow Beads
 
 A scaffold that installs a consistent **planner → executor** workflow for **AI coding agents** into any repo — a shared set of skills, subagents, and [Beads](https://github.com/steveyegge/beads)-backed task tracking so that **Claude Code** (the primary AI) follows the same playbook in every project, with **Codex** as an optional opt-in. You plan once, execute one bead per PR, and ship.
 
-This repo runs nothing itself — it's developer tooling for AI coding agents, not a CI/CD or GitHub Actions "workflow." You install it once on your machine, then run one script per project to scaffold (or refresh) the workflow inside that project.
+This repo runs nothing itself — it's developer tooling for AI coding agents, not a CI/CD or GitHub Actions "workflow." You install the `agent-workflow-beads` CLI once on your machine, then run one command per project to scaffold (or refresh) the workflow inside that project.
+
+> **Inspired by** [obra/superpowers](https://github.com/obra/superpowers) — the execution-quality skills are curated copies adapted to a Beads-native flow — and [Beads](https://github.com/steveyegge/beads), which backs all task tracking. See [ATTRIBUTION.md](ATTRIBUTION.md).
 
 ---
 
 ## Preinstall
 
-You need three machine-wide tools before bootstrapping any project:
+You need these machine-wide tools before bootstrapping any project:
 
-| Tool      | What for                          | Verify                  |
-| --------- | --------------------------------- | ----------------------- |
-| `bd`      | Beads CLI (issue tracking)        | `bd version`            |
-| `dolt`    | Storage backend used by `bd`      | `dolt version`          |
-| `python3` | Template's scaffold scripts (run from the template checkout, not downstream) | `python3 --version`     |
+| Tool       | What for                                  | Verify             |
+| ---------- | ----------------------------------------- | ------------------ |
+| Node.js ≥18 | Runs the `agent-workflow-beads` CLI (via `npm`) | `node --version`   |
+| `bd`       | Beads CLI (issue tracking)                | `bd version`       |
+| `dolt`     | Storage backend used by `bd`              | `dolt version`     |
 
-Per-OS install instructions:
+`git` is also required (you almost certainly already have it). Per-OS instructions for installing `bd` and `dolt` are in [docs/INSTALL.md](docs/INSTALL.md). The CLI itself is pure Node — there is no Python, bash, or PowerShell dependency, and it works the same on macOS, Linux, and Windows.
 
-- macOS — [docs/INSTALL-MACOS.md](docs/INSTALL-MACOS.md)
-- Ubuntu / Linux — [docs/INSTALL-UBUNTU.md](docs/INSTALL-UBUNTU.md)
-- Windows — [docs/INSTALL-WINDOWS.md](docs/INSTALL-WINDOWS.md)
-
-To verify everything is in place in one shot:
+To verify the runtime tools are in place in one shot (after installing the CLI, below):
 
 ```bash
-bash ./scripts/posix/check-prereqs.sh
-# Windows:
-pwsh -File .\scripts\windows\check-prereqs.ps1
+agent-workflow-beads check
 ```
 
 ---
 
 ## How to install
 
-### 1. Clone this template to a stable path on your machine
+### 1. Install the CLI globally
 
 ```bash
-git clone https://github.com/jsiovn/workflow-template.git ~/www/workflow-template
+npm install -g agent-workflow-beads
 ```
 
-Pick any path you like — just keep it stable, because your shell aliases (next section) and downstream `update-skills` invocations will point at it.
+This puts a single cross-platform `agent-workflow-beads` command on your `PATH`. Upgrade later the same way you upgrade any global package (`npm install -g agent-workflow-beads@latest`); there is no checkout to keep in sync and no shell alias to maintain.
 
 ### 2. Bootstrap a project
 
 Run this once per repo you want to use the workflow in:
 
 ```bash
-bash ~/www/workflow-template/scripts/posix/bootstrap-new-repo.sh /path/to/your-repo myprefix
+# myprefix = Beads issue-ID tag for this repo (acme → acme-1, acme-2)
+# Bootstrap: git init if needed → bd init + bd setup claude → scaffold Claude's .claude/ (skills + agents)
+agent-workflow-beads bootstrap /path/to/your-repo myprefix
+
+# Opt-in flags — also accepted by `update`, so you can adopt them later
+# (and are auto-detected on later runs once the surface exists):
+#   --with-codex         also scaffold Codex: .codex/ skills+agents + AGENTS.md + `bd setup codex`
+#   --with-screenshots   web/UI only: attach-web-screenshots skill + cleanup-screenshots.yml CI workflow
+agent-workflow-beads bootstrap /path/to/your-repo myprefix --with-codex --with-screenshots
 ```
-
-Windows:
-
-```powershell
-pwsh -File "$HOME\www\workflow-template\scripts\windows\bootstrap-new-repo.ps1" -RepoPath D:\path\to\repo -Prefix myprefix
-```
-
-`myprefix` is the short tag Beads uses for issue IDs in that repo (e.g. `acme` → `acme-1`, `acme-2`). The bootstrap script initializes git if needed, runs `bd init` and `bd setup claude` (and `bd setup codex` only with `--with-codex`), and copies the shared skills and agents into the project — Claude Code's `.claude/` surface always, and Codex's `.codex/` surface only when you opt in via `--with-codex`.
-
-Claude Code is the default, primary AI. To **also** set up Codex, add `--with-codex` (POSIX) or `-WithCodex` (PowerShell), which scaffolds the `.codex/` skills+agents and the `AGENTS.md` instruction file alongside the Claude surface. The flag is accepted by both `bootstrap-new-repo` and `update-skills` (so you can adopt Codex later). If a `.codex/` directory already exists in the downstream, it is detected and refreshed automatically.
-
-For web/UI projects, add `--with-screenshots` (POSIX) or `-WithScreenshots` (PowerShell) to also install the `attach-web-screenshots` skill and its companion `.github/workflows/cleanup-screenshots.yml`. Omit for backend, CLI, or library repos. The flag is also accepted by `update-skills` if you adopt screenshots later.
 
 ### 3. Refresh later
 
-When this template gets updates, refresh any downstream repo with:
+When this template gets updates, upgrade the CLI (`npm install -g agent-workflow-beads@latest`) and refresh any downstream repo with:
 
 ```bash
-bash ~/www/workflow-template/scripts/posix/update-skills.sh /path/to/your-repo
+agent-workflow-beads update /path/to/your-repo
 ```
 
 For a guided walkthrough of a brand-new project, see [docs/SETUP-NEW-REPO.md](docs/SETUP-NEW-REPO.md).
-
----
-
-## How to setup aliases
-
-Typing the full path every time is annoying. Add aliases to your shell:
-
-**bash / zsh** (`~/.bashrc` or `~/.zshrc`):
-
-```bash
-alias w-bootstrap='bash ~/www/workflow-template/scripts/posix/bootstrap-new-repo.sh'
-alias w-update='bash ~/www/workflow-template/scripts/posix/update-skills.sh'
-```
-
-**PowerShell** (`$PROFILE`):
-
-```powershell
-function w-bootstrap { pwsh -File "$HOME\www\workflow-template\scripts\windows\bootstrap-new-repo.ps1" @args }
-function w-update    { pwsh -File "$HOME\www\workflow-template\scripts\windows\update-skills.ps1" @args }
-```
-
-Reload the shell, then:
-
-```bash
-w-bootstrap /path/to/your-repo myprefix
-w-update    /path/to/your-repo
-```
 
 ---
 
@@ -187,7 +152,7 @@ Other useful skills you'll reach for:
 | `attach-web-screenshots`         | Takes screenshots of a running web app and attaches them to the open PR               | After implementing a UI feature, before or alongside review                  |
 | `finishing-a-development-branch` | Pushes the branch and opens a PR                                                      | When all work on a feature branch is done and verified                       |
 
-> `attach-web-screenshots` is opt-in — pass `--with-screenshots` to `bootstrap-new-repo` (or `update-skills` to adopt later). It ships a companion CI workflow (`.github/workflows/cleanup-screenshots.yml`) that prunes stale screenshot folders for merged branches.
+> `attach-web-screenshots` is opt-in — pass `--with-screenshots` to `agent-workflow-beads bootstrap` (or `agent-workflow-beads update` to adopt later). It ships a companion CI workflow (`.github/workflows/cleanup-screenshots.yml`) that prunes stale screenshot folders for merged branches.
 
 </details>
 
@@ -247,19 +212,21 @@ Then run `bdtui` from inside any bootstrapped repo.
 
 ## Command reference
 
-| Purpose                                          | POSIX                                                           | Windows                                                     |
-| ------------------------------------------------ | --------------------------------------------------------------- | ----------------------------------------------------------- |
-| Bootstrap a new downstream repo                  | `scripts/posix/bootstrap-new-repo.sh <repo> <prefix> [--with-codex]` | `scripts/windows/bootstrap-new-repo.ps1 [-WithCodex]`  |
-| Refresh shared workflow surface                  | `scripts/posix/update-skills.sh <repo> [--with-codex]`          | `scripts/windows/update-skills.ps1 [-WithCodex]`           |
-| Prerequisite check                               | `scripts/posix/check-prereqs.sh`                                | `scripts/windows/check-prereqs.ps1`                         |
+One cross-platform command, three subcommands:
+
+| Purpose                          | Command                                                                       |
+| -------------------------------- | ----------------------------------------------------------------------------- |
+| Bootstrap a new downstream repo  | `agent-workflow-beads bootstrap [--with-screenshots] [--with-codex] <repo> <prefix>` |
+| Refresh shared workflow surface  | `agent-workflow-beads update [--with-screenshots] [--with-codex] <repo>`            |
+| Prerequisite check               | `agent-workflow-beads check [--with-codex]`                                          |
+
+Run `agent-workflow-beads --help` for the full usage, or `agent-workflow-beads --version` to see the installed version.
 
 ---
 
 ## More docs
 
-- [docs/INSTALL-MACOS.md](docs/INSTALL-MACOS.md) — macOS install
-- [docs/INSTALL-UBUNTU.md](docs/INSTALL-UBUNTU.md) — Ubuntu / Linux install
-- [docs/INSTALL-WINDOWS.md](docs/INSTALL-WINDOWS.md) — Windows install
+- [docs/INSTALL.md](docs/INSTALL.md) — install `bd`, `dolt`, and the CLI (macOS / Linux / Windows)
 - [docs/SETUP-NEW-REPO.md](docs/SETUP-NEW-REPO.md) — guided new-repo walkthrough
 - [docs/SKILLS_RELATIONSHIPS.md](docs/SKILLS_RELATIONSHIPS.md) — internal skill graph
 - [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) — common issues

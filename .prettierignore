@@ -1,4 +1,9 @@
 node_modules/
+# Verbatim downstream payload / managed-content — must not be reformatted, the
+# bytes are copied or injected as-is by lib/scaffold.js & lib/manageInstructions.js.
+skills/
+agents/
+templates/
 dist/
 build/
 coverage/

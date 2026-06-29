@@ -2,11 +2,10 @@
 
 ## Stage 1: General Workflow Bootstrap
 
-1. Install `bd`, `dolt`, and Python on the machine.
-2. Bootstrap the repo with the template script. If the target path is empty, the script initializes git first.
-   - macOS/Linux: `bash ./scripts/posix/bootstrap-new-repo.sh [--with-codex] /path/to/repo <prefix>`
-   - Windows: `pwsh -File .\scripts\windows\bootstrap-new-repo.ps1 -RepoPath D:\path\to\repo -Prefix <prefix> [-WithCodex]`
-   - Claude Code is the primary AI and `.claude/` is always installed; pass `--with-codex` / `-WithCodex` to also install the Codex (`.codex/`) surface and `AGENTS.md`.
+1. Install Node.js ≥18, `bd`, and `dolt` on the machine, then `npm install -g agent-workflow-beads`.
+2. Bootstrap the repo with the CLI. If the target path is empty, it initializes git first.
+   - `agent-workflow-beads bootstrap [--with-codex] /path/to/repo <prefix>` (same command on macOS, Linux, and Windows)
+   - Claude Code is the primary AI and `.claude/` is always installed; pass `--with-codex` to also install the Codex (`.codex/`) surface and `AGENTS.md`.
 3. Verify:
    - `bd version`
    - `bd ready --json`

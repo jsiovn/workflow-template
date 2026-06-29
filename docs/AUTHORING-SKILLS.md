@@ -2,7 +2,7 @@
 
 A checklist for adding or changing a skill in this template repo before it ships
 downstream. A skill bug here has wide blast radius — it lands in every downstream
-repo on its next `update-skills`. Treat each change as a release, not an edit.
+repo on its next `agent-workflow-beads update`. Treat each change as a release, not an edit.
 
 Read `docs/SKILLS_RELATIONSHIPS.md` first so the change slots into an existing
 seam instead of creating a parallel one.
@@ -61,14 +61,13 @@ A skill that has never been tested against a subagent under pressure is a draft.
 
 ## 4. Propagation check
 
-- [ ] **Provider parity.** If shared, confirm `scaffold-repo-files.{sh,ps1}`
-      copies it into `.claude/skills/` (always) and into `.codex/skills/`
-      (the Codex-gated `--with-codex` block).
-- [ ] **Renames/removals.** Removing or renaming a skill? Add explicit
-      `rm -rf` / `Remove-Item` lines for the old downstream path in
-      `scaffold-repo-files.{sh,ps1}` so existing downstreams get cleaned up.
-- [ ] **Script parity.** Any `scripts/posix/*.sh` edit needs the twin
-      `scripts/windows/*.ps1` change.
+- [ ] **Provider parity.** A new shared skill under `skills/<name>/` is picked up
+      automatically — `lib/scaffold.js` copies every `skills/` dir into
+      `.claude/skills/` (always) and into `.codex/skills/` (only with
+      `--with-codex`). No copy line to add.
+- [ ] **Renames/removals.** Removing or renaming a skill? Add the old name to the
+      `LEGACY_SKILLS` list in `lib/scaffold.js` so existing downstreams get the
+      stale copy pruned on their next `agent-workflow-beads update`.
 - [ ] **Snippet markers intact.** If the change touches `AGENTS.snippet.md` or
       `CLAUDE.snippet.md`, the `BEGIN/END TEMPLATE BD WORKFLOW` markers must
       survive untouched.
@@ -79,7 +78,8 @@ A skill that has never been tested against a subagent under pressure is a draft.
 
 A change isn't done until it survives the full propagation cycle:
 
-- [ ] `update-skills` against a scratch downstream repo.
+- [ ] `agent-workflow-beads update` against a scratch downstream repo (use `npm link`
+      from the template checkout to run your in-progress CLI changes).
 - [ ] Inspect what landed — `.claude/skills/` always, and `.codex/skills/` only
       when testing with `--with-codex`. When both are present, confirm the two
       provider copies are identical.

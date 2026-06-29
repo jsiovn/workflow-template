@@ -5,14 +5,15 @@ Use this guide when starting a downstream repo from scratch or when a repo is st
 ## Stage 1: General Bootstrap
 
 1. Ensure machine prerequisites exist:
+   - Node.js ≥18 (to install/run the `agent-workflow-beads` CLI: `npm install -g agent-workflow-beads`)
    - `bd`
    - `dolt`
-   - Python
+   - `git`
 2. Bootstrap the repo from this template:
-   - macOS/Linux: `bash ./scripts/posix/bootstrap-new-repo.sh [--with-screenshots] [--with-codex] /path/to/repo <prefix>`
-   - Windows: `pwsh -File .\scripts\windows\bootstrap-new-repo.ps1 -RepoPath D:\path\to\repo -Prefix <prefix> [-WithScreenshots] [-WithCodex]`
-   - Pass `--with-screenshots` / `-WithScreenshots` only for web/UI projects that want the `attach-web-screenshots` skill plus its companion `.github/workflows/cleanup-screenshots.yml`. Omit for backend, CLI, or library repos.
-   - Claude Code is the primary AI: the `.claude/` surface is always installed. Pass `--with-codex` / `-WithCodex` to also install the Codex (`.codex/`) surface and `AGENTS.md`. (Codex is auto-detected and kept current if the downstream already has a `.codex/` directory.)
+   - `agent-workflow-beads bootstrap [--with-screenshots] [--with-codex] /path/to/repo <prefix>`
+   - The same command works on macOS, Linux, and Windows.
+   - Pass `--with-screenshots` only for web/UI projects that want the `attach-web-screenshots` skill plus its companion `.github/workflows/cleanup-screenshots.yml`. Omit for backend, CLI, or library repos.
+   - Claude Code is the primary AI: the `.claude/` surface is always installed. Pass `--with-codex` to also install the Codex (`.codex/`) surface and `AGENTS.md`. (Codex is auto-detected and kept current if the downstream already has a `.codex/` directory.)
 3. The bootstrap script:
    - initializes git if the target path is not already a repo
    - runs `bd init -p <prefix> --server --skip-agents --skip-hooks`
@@ -51,7 +52,7 @@ Typical stage-2 changes:
 - (if installed) specialize `.claude/skills/attach-web-screenshots/SKILL.md` and the `.codex/` mirror when Codex is enabled
 - add runtime-specific setup or operational notes
 - add repo-specific guidance outside the managed blocks in `CLAUDE.md` (and `AGENTS.md` when Codex is enabled)
-- run `update-skills` to refresh shared workflow docs and skills from the template — they are committed to the downstream's own git and travel with feature branches
+- run `agent-workflow-beads update <repo>` to refresh shared workflow docs and skills from the template — they are committed to the downstream's own git and travel with feature branches
 
 Examples:
 
@@ -61,7 +62,7 @@ Examples:
 
 ## Ongoing Maintenance
 
-- edit shared workflow skills in this template repo, then run `update-skills` for downstream repos
+- edit shared workflow skills in this template repo, publish a new CLI version, then run `agent-workflow-beads update <repo>` for downstream repos
 - the scaffolded workflow docs and skills are committed to the downstream repo's own git (no backup mirror)
 - keep repo-specific `build-and-test` customizations local to the downstream repo
 - if template changes should not overwrite a downstream specialization, rely on the existing scaffold behavior that preserves `build-and-test`

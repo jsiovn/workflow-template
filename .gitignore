@@ -5,3 +5,5 @@ __pycache__/
 /.beads/
 .idea/
 .claude/settings.local.json
+node_modules/
+*.tgz
