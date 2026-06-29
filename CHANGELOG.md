@@ -18,6 +18,11 @@ template to a stable path, maintaining shell aliases, or running per-OS scripts.
   (`skills/`, `agents/`, `templates/`) ship via the `package.json` `files` allowlist
   and resolve relative to the install location, independent of the working directory.
 - Consolidated `docs/INSTALL.md` covering Node.js, `bd`, `dolt`, and the CLI.
+- Bootstrap drives `bd` non-interactively (`--non-interactive` + `BD_NON_INTERACTIVE`):
+  init defaults to the maintainer role ("N" to "Contributing to someone else's repo?"),
+  Beads auto-export is disabled so state stays local-only (code moves through git, not
+  `.beads/issues.jsonl`), and bootstrap prints optional GitHub-backed Dolt-remote setup
+  guidance for cross-machine sync.
 
 ### Changed
 
