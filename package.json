@@ -6,11 +6,11 @@
   "author": "jsiovn",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/jsiovn/workflow-template.git"
+    "url": "git+https://github.com/jsiovn/agent-workflow-beads.git"
   },
-  "homepage": "https://github.com/jsiovn/workflow-template#readme",
+  "homepage": "https://github.com/jsiovn/agent-workflow-beads#readme",
   "bugs": {
-    "url": "https://github.com/jsiovn/workflow-template/issues"
+    "url": "https://github.com/jsiovn/agent-workflow-beads/issues"
   },
   "keywords": [
     "claude-code",

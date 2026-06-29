@@ -48,4 +48,4 @@ template to a stable path, maintaining shell aliases, or running per-OS scripts.
 
 - Node.js >= 18; `git`, `bd`, and `dolt` on `PATH`.
 
-[1.0.0]: https://github.com/jsiovn/workflow-template/releases/tag/v1.0.0
+[1.0.0]: https://github.com/jsiovn/agent-workflow-beads/releases/tag/v1.0.0
