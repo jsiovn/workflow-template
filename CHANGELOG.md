@@ -4,6 +4,26 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2026-07-07
+
+Patch release fixing an `agent-workflow-beads update` / `bootstrap` crash on
+downstream repos with a large Beads backlog.
+
+### Fixed
+
+- `agent-workflow-beads update` / `bootstrap` aborted with a misleading
+  `bd list failed with status 1` on downstream repos whose backlog serialized to
+  more than ~1 MiB of JSON. `runCapture` (`lib/proc.js`) invoked `spawnSync`
+  without a `maxBuffer`, so Node's 1 MiB default tripped `ENOBUFS` on the
+  `bd list --all --limit 0 --json` read that seeds and dedupes the stage-1
+  follow-up beads — the final step of the scaffold. `spawnSync` now runs with a
+  256 MiB buffer, far above any realistic command output while still bounding a
+  runaway process.
+
+### Changed
+
+- Point the README `bdtui` screenshot at the current `bdtui-jul-03.png` asset.
+
 ## [1.1.0] - 2026-06-29
 
 Worktree-lifecycle release: deliver a whole epic unattended without touching the
@@ -100,5 +120,6 @@ template to a stable path, maintaining shell aliases, or running per-OS scripts.
 
 - Node.js >= 18; `git`, `bd`, and `dolt` on `PATH`.
 
+[1.1.1]: https://github.com/jsiovn/agent-workflow-beads/releases/tag/v1.1.1
 [1.1.0]: https://github.com/jsiovn/agent-workflow-beads/releases/tag/v1.1.0
 [1.0.0]: https://github.com/jsiovn/agent-workflow-beads/releases/tag/v1.0.0
